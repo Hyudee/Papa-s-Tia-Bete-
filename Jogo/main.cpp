@@ -9,8 +9,9 @@
 // animação de sprites
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define COLUNAS 25
 #define LINHAS 19
@@ -69,6 +70,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    //adaptar a tela
     int larguraTela, alturaTela;
 
     SDL_GetWindowSize(window, &larguraTela, &alturaTela);
@@ -81,18 +83,13 @@ int main(int argc, char* argv[])
 
     // CARREGAMENTO DOS TILESETS
  
-    /*
+    SDL_Texture* background =
+        IMG_LoadTexture(renderer, "assets/background.png");
 
-
-    SDL_Texture* mesa =
-        IMG_LoadTexture(renderer, "assets/grass.png");
-
-    SDL_Texture* plataforma =
-        IMG_LoadTexture(renderer, "assets/dirt.png");
-
-    SDL_Texture* acucar =
-        IMG_LoadTexture(renderer, "assets/stone.png");
-    */
+    if (!background)
+    {
+        SDL_Log("Erro ao carregar background: %s", SDL_GetError());
+    }
 
     SDL_FRect player = {
         320.0f,
@@ -104,6 +101,7 @@ int main(int argc, char* argv[])
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo inimigos[MAX_INIMIGOS] = { 0 };
 
+    //gravidade 
     float speed = 5.0f;
 
     float velocidadeY = 0.0f;
@@ -283,6 +281,12 @@ int main(int argc, char* argv[])
             player.x += speed;
         }
 
+        if (key[SDL_SCANCODE_W] && noChao)
+        {
+            velocidadeY = -10.0f;
+            noChao = false;
+        }
+
         if (key[SDL_SCANCODE_SPACE] && noChao)
         {
             velocidadeY = -10.0f;
@@ -313,6 +317,20 @@ int main(int argc, char* argv[])
         );
 
         SDL_RenderClear(renderer);
+
+        SDL_FRect fundo = {
+            0,
+            0,  
+            (float)larguraTela,
+            (float)alturaTela
+        };
+
+        SDL_RenderTexture(
+            renderer,
+            background,
+            NULL,
+            &fundo
+        );
 
         // DESENHO DO MAPA
 
@@ -361,7 +379,7 @@ int main(int argc, char* argv[])
         SDL_SetRenderDrawColor(
             renderer,
             255,
-            255,
+            0,
             0,
             255
         );
@@ -405,7 +423,7 @@ int main(int argc, char* argv[])
 
     // destruir texturas
    
-
+    SDL_DestroyTexture(background);
     /*
     SDL_DestroyTexture;
     */
