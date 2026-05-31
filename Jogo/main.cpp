@@ -12,6 +12,7 @@
 #include <SDL3_image/SDL_image.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 
 #define COLUNAS 25
 #define LINHAS 19
@@ -19,6 +20,8 @@
 #define MAX_PROJETEIS 5
 
 #define MAX_INIMIGOS 10
+
+#define MAX_VIDAS 3
 
 typedef struct
 {
@@ -36,8 +39,12 @@ typedef struct
     float velY;
 } Projetil;
 
+
+
+
 int main(int argc, char* argv[])
 {
+    srand((unsigned)time(NULL));
     SDL_Log("Inicializando o jogo...");
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
@@ -98,6 +105,8 @@ int main(int argc, char* argv[])
         32.0f
     };
 
+    int vidas = MAX_VIDAS;
+    
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo inimigos[MAX_INIMIGOS] = { 0 };
 
@@ -238,6 +247,29 @@ int main(int argc, char* argv[])
                 if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
                 {
                     inimigos[i].ativo = false;
+                }
+            }
+        }
+        //colisao player e inimigos
+        for (int i = 0; i < MAX_INIMIGOS; i++)
+        {
+            if (inimigos[i].ativo)
+            {
+                if (SDL_HasRectIntersectionFloat(
+                    &player,
+                    &inimigos[i].rect))
+                {
+                    vidas--;
+
+                    inimigos[i].ativo = false;
+
+                    SDL_Log("Vidas restantes: %d", vidas);
+
+                    if (vidas <= 0)
+                    {
+                        SDL_Log("GAME OVER");
+                        running = false;
+                    }
                 }
             }
         }
@@ -412,6 +444,20 @@ int main(int argc, char* argv[])
                     &inimigos[i].rect
                 );
             }
+        }
+        //vidas
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+
+        for (int i = 0; i < vidas; i++)
+        {
+            SDL_FRect vida = {
+                10 + (i * 40),
+                10,
+                30,
+                30
+            };
+
+            SDL_RenderFillRect(renderer, &vida);
         }
 
 
