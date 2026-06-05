@@ -65,7 +65,22 @@ typedef struct
     SDL_FRect rect;
     bool      ativo;
     float     speed;
+
+    int frame;
+    Uint64 ultimoFrame;
 } Inimigo;
+
+typedef struct {
+    SDL_FRect rect;
+    bool ativo;
+    float speed;
+
+    int vida;
+    int vidaMax;
+
+    int frame;
+    Uint64 ultimoFrame;
+}Boss;
 
 typedef struct
 {
@@ -233,12 +248,20 @@ int main(int argc, char* argv[])
         SDL_Log("Erro ao carregar Botão de sair: %s", SDL_GetError());
     }
     SDL_Texture* texturaInimigo =
-        IMG_LoadTexture(renderer, "assets/Acucar.png");
+        IMG_LoadTexture(renderer, "assets/acucar.png");
 
     if (!texturaInimigo)
     {
         SDL_Log("Erro ao carregar inimigos: %s", SDL_GetError());
     }
+    
+    SDL_Texture* texturaPlayer =
+            IMG_LoadTexture(renderer, "assets/player.png");
+
+    if (!texturaPlayer) {
+            SDL_Log("Erro ao carregar player: %s", SDL_GetError());
+        }
+
     SDL_Texture* projetil =
         IMG_LoadTexture(renderer, "assets/tiro.png");
 
@@ -272,8 +295,8 @@ int main(int argc, char* argv[])
     SDL_FRect player = {
         320.0f,
         240.0f,
-        32.0f,
-        32.0f
+        64.0f,
+        64.0f
     };
 
     float speed = 5.0f;
@@ -281,6 +304,10 @@ int main(int argc, char* argv[])
     float gravidade = 0.5f;
     bool  noChao = true;
     float alturaChao = alturaTela - player.h;
+    int framePlayer = 0;
+    bool atirando = false;
+    bool olhandoDireita = true;
+    Uint64 ultimoFramePlayer = 0;
 
     // Variavéis da base
 
@@ -308,6 +335,7 @@ int main(int argc, char* argv[])
 
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo  inimigos[MAX_INIMIGOS] = { 0 };
+    Boss boss = { 0 };
 
     int  mapa[LINHAS][COLUNAS] = { 0 };
     int  pontos = 0;
@@ -317,10 +345,15 @@ int main(int argc, char* argv[])
     int  vidas = MAX_VIDAS;
     int  inimigosDerrotados = 0;
     int  inimigosAtivos = 5;
+    int spawnBoss = 1000;
+    int bossAtivados = 0;
 
-    const int larguraFrameTiro = 223;
-    const int alturaFrameTiro = 223;
+    const int larguraFrameTiro = 64;
+    const int alturaFrameTiro = 64;
     const int totalFramesTiro = 5;
+    const int larguraFrameInimigo = 64;
+    const int alturaFrameInimigo = 64;
+    const int totalFramesInimigo = 3;
 
     SDL_Texture* texturaPontos = NULL;
     SDL_Texture* TexturaOndas = NULL;
@@ -476,6 +509,10 @@ int main(int argc, char* argv[])
                         dirX /= tamanho;
                         dirY /= tamanho;
                     }
+
+                    atirando = true;
+                    framePlayer = 2;
+                    ultimoFramePlayer = SDL_GetTicks();
 
                     for (int i = 0; i < MAX_PROJETEIS; i++)
                     {
@@ -662,7 +699,7 @@ int main(int argc, char* argv[])
         // Spawn automático
         tempoAtual = SDL_GetTicks();
 
-        if (tempoAtual - ultimoSpawn >= intervaloSpawn && vivos < inimigosAtivos)
+        if (!boss.ativo && tempoAtual - ultimoSpawn >= intervaloSpawn && vivos < inimigosAtivos)
         {
             ultimoSpawn = tempoAtual;
 
@@ -671,9 +708,11 @@ int main(int argc, char* argv[])
                 if (!inimigos[i].ativo)
                 {
                     inimigos[i].ativo = true;
+                    inimigos[i].frame = 0;
+                    inimigos[i].ultimoFrame = SDL_GetTicks();
 
-                    inimigos[i].rect.w = 32;
-                    inimigos[i].rect.h = 32;
+                    inimigos[i].rect.w = 64;
+                    inimigos[i].rect.h = 64;
 
                     inimigos[i].rect.x = larguraTela;
                     inimigos[i].rect.x -= inimigos[i].speed;
@@ -751,7 +790,18 @@ int main(int argc, char* argv[])
         for (int i = 0; i < MAX_INIMIGOS; i++)
         {
             if (inimigos[i].ativo)
-            {
+            {   
+                if (SDL_GetTicks() - inimigos[i].ultimoFrame > 150)
+                {
+                    inimigos[i].frame++;
+
+                    if (inimigos[i].frame >= totalFramesInimigo)
+                    {
+                        inimigos[i].frame = 0;
+                    }
+
+                    inimigos[i].ultimoFrame = SDL_GetTicks();
+                }
                 inimigos[i].rect.x -= inimigos[i].speed;
 
                 if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
@@ -759,6 +809,11 @@ int main(int argc, char* argv[])
                     inimigos[i].ativo = false;
                 }
             }
+        }
+
+        // ATUALIZAÇÃO DO BOSS
+        if (boss.ativo){
+            boss.rect.x -= boss.speed;
         }
 
         // ------------------------------------------------------
@@ -782,6 +837,34 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Colisão do tiro com o boss
+        if (boss.ativo) {
+            for (int j = 0; j < MAX_PROJETEIS; j++) {
+                if (!projeteis[j].ativo) {
+                    continue;
+
+                    if (SDL_HasRectIntersectionFloat(
+                        &boss.rect,
+                        &projeteis[j].rect
+                    ))
+                    {
+                        projeteis[j].explodindo = true;
+						projeteis[j].frame = 3; 
+                        projeteis[j].velX = 0;
+                        projeteis[j].velY = 0;
+
+                        boss.vida--;
+
+                        if (boss.vida <= 0){
+                            boss.ativo = false;
+                            pontos += 100;
+                            bossAtivados++;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Colisão base e inimigos
 
         for (int i = 0; i < MAX_INIMIGOS; i++)
@@ -807,7 +890,24 @@ int main(int argc, char* argv[])
                 }
             }
         }
+        
+        // Colisão do boss com a base
 
+        if (boss.ativo) {
+            if (SDL_HasRectIntersectionFloat(
+                &base,
+                &boss.rect
+            ))
+            {
+                vidas -= 3;
+                boss.ativo = false;
+
+                if (vidas <= 0){
+                    estado = GAMEOVER;
+                    tempoAtual = SDL_GetTicks();
+                }
+            }
+        }
 
         // ------------------------------------------------------
         // COLISÃO: PROJETEIS E INIMIGOS
@@ -833,7 +933,7 @@ int main(int argc, char* argv[])
                     projeteis[j].velX = 0;
                     projeteis[j].velY = 0;
                     projeteis[j].ultimoFrame = SDL_GetTicks();
-                    pontos += 10;
+                    pontos += 500;
                     inimigosDerrotados++;
                 }
             }
@@ -855,11 +955,13 @@ int main(int argc, char* argv[])
         if (key[SDL_SCANCODE_A])
         {
             player.x -= speed;
+            olhandoDireita = false;
         }
 
         if (key[SDL_SCANCODE_D])
         {
             player.x += speed;
+            olhandoDireita = true;
         }
 
         if (key[SDL_SCANCODE_W] && noChao)
@@ -874,6 +976,23 @@ int main(int argc, char* argv[])
             noChao = false;
         }
 
+        // Atualização da animação do player
+
+        if (atirando)
+        {
+            if (SDL_GetTicks() - ultimoFramePlayer > 80)
+            {
+                framePlayer++;
+
+                if (framePlayer > 5)
+                {
+                    atirando = false;
+                    framePlayer = 0;
+                }
+
+                ultimoFramePlayer = SDL_GetTicks();
+            }
+        }
         //------------------------------------------------------
         // Colisões da tela
         //------------------------------------------------------
@@ -926,6 +1045,26 @@ int main(int argc, char* argv[])
                 SDL_CreateTextureFromSurface(renderer, surfacePontos);
 
             SDL_DestroySurface(surfacePontos);
+
+        }
+
+        // Spawn do boss
+        if (!boss.ativo && pontos >= spawnBoss) {
+            boss.ativo = true;
+
+            boss.rect.w = 128;
+            boss.rect.h = 128;
+
+            boss.rect.x = larguraTela;
+            boss.rect.y = (float)(rand() % (alturaTela - 128));
+
+            boss.speed = 1.5f + (bossAtivados * 0.5f);
+
+            boss.vidaMax = 30;
+            boss.vida = boss.vidaMax;
+
+            boss.frame = 0;
+            boss.ultimoFrame = SDL_GetTicks();
         }
         
         // Atualizando textura de onda
@@ -989,10 +1128,29 @@ int main(int argc, char* argv[])
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
         SDL_RenderFillRect(renderer, &base);
 
+        // Desenho da direção do player
+        if (!atirando) {
+            if (olhandoDireita) {
+                framePlayer = 0;
+            }
+            else {
+                framePlayer = 1;
+            }
+        }
         // Jogador
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &player);
+        SDL_FRect srcPlayer = {
+        framePlayer * 64,
+        0,
+        64,
+        64
+        };
 
+        SDL_RenderTexture(
+            renderer,
+            texturaPlayer,
+            &srcPlayer,
+            &player
+        );
         // Desenhar balas
 
         for (int i = 0; i < MAX_PROJETEIS; i++)
@@ -1021,10 +1179,10 @@ int main(int argc, char* argv[])
             if (inimigos[i].ativo)
             {
                 SDL_FRect src = {
-                    0.0f,
-                    0.0f,
-                    32.0f,
-                    32.0f
+                inimigos[i].frame * larguraFrameInimigo,
+                0,
+                larguraFrameInimigo,
+                alturaFrameInimigo
                 };
 
                 SDL_RenderTexture(
@@ -1034,6 +1192,44 @@ int main(int argc, char* argv[])
                     &inimigos[i].rect
                 );
             }
+        }
+
+        // Desenhar boss
+
+        if (boss.ativo){
+            SDL_RenderTexture(
+                renderer,
+                texturaInimigo, // trocar pra do boss dps
+                NULL,
+                &boss.rect
+            );
+        }
+
+        // Barra de vida do boss
+
+        if (boss.ativo){
+            SDL_FRect fundoVida = {
+                larguraTela / 2 - 200,
+                20,
+                400,
+                25
+            };
+
+            SDL_FRect vidaBoss = {
+                larguraTela / 2 - 200,
+                20,
+                400.0f * ((float)(boss.vida) / boss.vidaMax),
+                25
+            };
+
+            SDL_SetRenderDrawColor(renderer, 100, 0, 0, 255);
+            SDL_RenderFillRect(renderer, &fundoVida);
+
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            SDL_RenderFillRect(renderer, &vidaBoss);
+
+
+
         }
 
         // Vidas    
@@ -1084,6 +1280,7 @@ int main(int argc, char* argv[])
 
     SDL_DestroyTexture(texturaPontos);
     SDL_DestroyTexture(TexturaOndas);
+    SDL_DestroyTexture(texturaPlayer);
     SDL_DestroyTexture(menu);
     SDL_DestroyTexture(logo);
     SDL_DestroyTexture(jogar);
