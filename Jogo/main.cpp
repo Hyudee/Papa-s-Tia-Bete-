@@ -20,11 +20,10 @@ Desenhar e incluir:
 Coração de vida
 Personagem com spritesheet
 Inimigos com spritesheet
+Base com spritesheet
 Boss com spritesheet
-Fundo do menu (Pode ser online)
-Alvo dos inimigos
 Sons
-
+Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, ou um stun, sla)
 */
 
 // ============================================================
@@ -37,6 +36,7 @@ Sons
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <stdio.h>
 
 // ============================================================
 // DEFINES
@@ -73,6 +73,10 @@ typedef struct
     bool      ativo;
     float     velX;
     float     velY;
+
+    int frame;
+    Uint64 ultimoFrame;
+    bool explodindo;
 } Projetil;
 
 // ============================================================
@@ -118,17 +122,24 @@ int main(int argc, char* argv[])
     }
 
     if (!TTF_Init()) {
-        SDL_Log("Falha ao inicializar a ttf: %s", SDL_GetError);
+        SDL_Log("Falha ao inicializar a ttf: %s", SDL_GetError());
+        return -1;
     }
 
     // Fonte do jogo
 
     TTF_Font* font = TTF_OpenFont("assets/PixelifySans.ttf", 32);
+    TTF_Font* fontHud = TTF_OpenFont("assets/PixelifySans.ttf", 18);
 
     if (!font)
     {
         SDL_Log("Erro ao carregar fonte");
     }
+
+
+    // Textos da tela
+
+    SDL_Color preto = { 0, 0, 0, 255 };
 
     // ----------------------------------------------------------
     // ADAPTAR A TELA
@@ -149,24 +160,31 @@ int main(int argc, char* argv[])
     SDL_FRect botaoJogar;
     SDL_FRect botaoRanking;
     SDL_FRect botaoSair;
+    SDL_FRect logoRect;
 
-    float larguraBotao = 500.0f;
-    float alturaBotao = 50.0f;
+    float textoW, textoH;
+    SDL_FRect textoRect;
 
-    botaoJogar.w = larguraBotao;
-    botaoJogar.h = alturaBotao;
-    botaoJogar.x = (larguraTela - larguraBotao) / 2;
-    botaoJogar.y = alturaTela * 0.35f;
+    logoRect.w = larguraTela * 0.35f; 
+    logoRect.h = logoRect.w * 0.5f; 
 
-    botaoRanking.w = larguraBotao;
-    botaoRanking.h = alturaBotao;
-    botaoRanking.x = (larguraTela - larguraBotao) / 2;
-    botaoRanking.y = alturaTela * 0.50f;
+    logoRect.x = larguraTela * 0.05f;
+    logoRect.y = alturaTela * 0.05f;
 
-    botaoSair.w = larguraBotao;
-    botaoSair.h = alturaBotao;
-    botaoSair.x = (larguraTela - larguraBotao) / 2;
-    botaoSair.y = alturaTela * 0.65f;
+    botaoJogar.w = larguraTela * 0.25f;
+    botaoJogar.h = alturaTela * 0.10f;
+    botaoJogar.x = larguraTela * 0.12f;
+    botaoJogar.y = alturaTela * 0.45f;
+
+    botaoRanking.w = botaoJogar.w;
+    botaoRanking.h = botaoJogar.h;
+    botaoRanking.x = botaoJogar.x;
+    botaoRanking.y = botaoJogar.y + botaoJogar.h + 20;
+
+    botaoSair.w = botaoJogar.w;
+    botaoSair.h = botaoJogar.h;
+    botaoSair.x = botaoJogar.x;
+    botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
 
     srand((unsigned)time(NULL));
 
@@ -175,12 +193,77 @@ int main(int argc, char* argv[])
     // ----------------------------------------------------------
 
     SDL_Texture* background =
-        IMG_LoadTexture(renderer, "assets/background.png");
+        IMG_LoadTexture(renderer, "assets/cozinha.png");
 
     if (!background)
     {
         SDL_Log("Erro ao carregar background: %s", SDL_GetError());
     }
+
+    SDL_Texture* menu =
+        IMG_LoadTexture(renderer, "assets/menu.jpeg");
+
+    if (!menu)
+    {
+        SDL_Log("Erro ao carregar menu: %s", SDL_GetError());
+    }
+
+    SDL_Texture* logo =
+        IMG_LoadTexture(renderer, "assets/logo.png");
+
+    SDL_Texture* jogar =
+        IMG_LoadTexture(renderer, "assets/jogar.png");
+
+    if (!jogar)
+    {
+        SDL_Log("Erro ao carregar Botão de jogar: %s", SDL_GetError());
+    }
+    SDL_Texture* creditos =
+        IMG_LoadTexture(renderer, "assets/creditos.png");
+
+    if (!creditos)
+    {
+        SDL_Log("Erro ao carregar Botão de creditos: %s", SDL_GetError());
+    }
+    SDL_Texture* sair =
+        IMG_LoadTexture(renderer, "assets/sair.png");
+
+    if (!sair)
+    {
+        SDL_Log("Erro ao carregar Botão de sair: %s", SDL_GetError());
+    }
+    SDL_Texture* texturaInimigo =
+        IMG_LoadTexture(renderer, "assets/Acucar.png");
+
+    if (!texturaInimigo)
+    {
+        SDL_Log("Erro ao carregar inimigos: %s", SDL_GetError());
+    }
+    SDL_Texture* projetil =
+        IMG_LoadTexture(renderer, "assets/tiro.png");
+
+    if (!projetil)
+    {
+        SDL_Log("Erro ao carregar projeteis: %s", SDL_GetError());
+    }
+    SDL_Texture* gameover =
+        IMG_LoadTexture(renderer, "assets/gameover.png");
+
+    if (!gameover)
+    {
+        SDL_Log("Erro ao carregar tela de Game over: %s", SDL_GetError());
+    }
+    SDL_Texture* coracao =
+        IMG_LoadTexture(renderer, "assets/coracao.png");
+
+    if (!coracao)
+    {
+        SDL_Log("Erro ao carregar corações de vida: %s", SDL_GetError());
+    }
+    
+
+
+
 
     // ----------------------------------------------------------
     // VARIÁVEIS DO JOGADOR
@@ -199,6 +282,26 @@ int main(int argc, char* argv[])
     bool  noChao = true;
     float alturaChao = alturaTela - player.h;
 
+    // Variavéis da base
+
+    SDL_FRect base = {
+    0.0f,
+    0.0f,
+    80.0f,
+    (float)alturaTela
+    };
+
+    // Spritesheets
+
+     
+
+    //Inimigos
+    SDL_FRect srcInimigo = {
+        0,
+        0,
+        32,
+        32
+    };
     // ----------------------------------------------------------
     // VARIÁVEIS DE JOGO
     // ----------------------------------------------------------
@@ -208,13 +311,52 @@ int main(int argc, char* argv[])
 
     int  mapa[LINHAS][COLUNAS] = { 0 };
     int  pontos = 0;
+    int pontosAntigos = -1;
     int  ondas = 1;
+    int ondaAntiga = -1;
     int  vidas = MAX_VIDAS;
     int  inimigosDerrotados = 0;
     int  inimigosAtivos = 5;
 
+    const int larguraFrameTiro = 223;
+    const int alturaFrameTiro = 223;
+    const int totalFramesTiro = 5;
+
+    SDL_Texture* texturaPontos = NULL;
+    SDL_Texture* TexturaOndas = NULL;
+
     bool running = true;
     bool spam = false;
+
+
+    // ----------------------------------------------------------
+    // Textura de pontos
+    // ----------------------------------------------------------
+    char buffer[50];
+    sprintf_s(buffer, sizeof(buffer), "Pontos: %d", pontos);
+
+    SDL_Surface* surfacePontos =
+        TTF_RenderText_Blended(fontHud, buffer, 0, preto);
+
+    texturaPontos =
+        SDL_CreateTextureFromSurface(renderer, surfacePontos);
+
+    SDL_DestroySurface(surfacePontos);
+
+    pontosAntigos = pontos;
+
+    // Ondas
+
+    char bufferOnda[50];
+    sprintf_s(bufferOnda, sizeof(bufferOnda), "Onda: %d", ondas);
+
+    SDL_Surface* surfaceOnda =
+        TTF_RenderText_Blended(fontHud, bufferOnda, 0, preto);
+
+    TexturaOndas =
+        SDL_CreateTextureFromSurface(renderer, surfaceOnda);
+
+    SDL_DestroySurface(surfaceOnda);
 
     // ----------------------------------------------------------
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
@@ -288,14 +430,28 @@ int main(int argc, char* argv[])
 
                 alturaChao = alturaTela - player.h;
 
-                botaoJogar.x = (larguraTela - botaoJogar.w) / 2;
-                botaoJogar.y = alturaTela * 0.35f;
+                logoRect.w = larguraTela * 0.35f;
+                logoRect.h = logoRect.w * 0.5f;
 
-                botaoRanking.x = (larguraTela - botaoRanking.w) / 2;
-                botaoRanking.y = alturaTela * 0.50f;
+                logoRect.x = larguraTela * 0.05f;
+                logoRect.y = alturaTela * 0.05f;
 
-                botaoSair.x = (larguraTela - botaoSair.w) / 2;
-                botaoSair.y = alturaTela * 0.65f;
+                botaoJogar.w = larguraTela * 0.25f;
+                botaoJogar.h = alturaTela * 0.10f;
+                botaoJogar.x = larguraTela * 0.12f;
+                botaoJogar.y = alturaTela * 0.45f;
+
+                botaoRanking.w = botaoJogar.w;
+                botaoRanking.h = botaoJogar.h;
+                botaoRanking.x = botaoJogar.x;
+                botaoRanking.y = botaoJogar.y + botaoJogar.h + 20;
+
+                botaoSair.w = botaoJogar.w;
+                botaoSair.h = botaoJogar.h;
+                botaoSair.x = botaoJogar.x;
+                botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
+
+                base.h = (float)alturaTela;
             }
 
             // Atirar
@@ -326,12 +482,15 @@ int main(int argc, char* argv[])
                         if (!projeteis[i].ativo)
                         {
                             projeteis[i].ativo = true;
+                            projeteis[i].frame = 0;
+                            projeteis[i].explodindo = false;
+                            projeteis[i].ultimoFrame = SDL_GetTicks();
 
                             projeteis[i].rect.x = centroPlayerX;
                             projeteis[i].rect.y = centroPlayerY;
 
-                            projeteis[i].rect.w = 10;
-                            projeteis[i].rect.h = 10;
+                            projeteis[i].rect.w = 32;
+                            projeteis[i].rect.h = 32;
 
                             float velocidade = 12.0f;
 
@@ -395,17 +554,24 @@ int main(int argc, char* argv[])
         // Desenhar o menu
         if (estado == MENU)
         {
-            SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+
             SDL_RenderClear(renderer);
 
-            SDL_SetRenderDrawColor(renderer, 0, 200, 0, 255);
-            SDL_RenderFillRect(renderer, &botaoJogar);
+            SDL_FRect menuRect = {
+                0,
+                0,
+                (float)larguraTela,
+                (float)alturaTela
+            };
 
-            SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-            SDL_RenderFillRect(renderer, &botaoRanking);
+            SDL_RenderTexture(renderer, menu, NULL, &menuRect);
 
-            SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255);
-            SDL_RenderFillRect(renderer, &botaoSair);
+            //Desenhar logo e botões
+
+            SDL_RenderTexture(renderer, logo, NULL, &logoRect);
+            SDL_RenderTexture(renderer, jogar, NULL, &botaoJogar);
+            SDL_RenderTexture(renderer, creditos, NULL, &botaoRanking);
+            SDL_RenderTexture(renderer, sair, NULL, &botaoSair);
 
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
@@ -428,17 +594,14 @@ int main(int argc, char* argv[])
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
-            // Fundo vermelho
-            SDL_SetRenderDrawColor(renderer, 180, 0, 0, 255);
-
-            SDL_FRect tela = {
+            SDL_FRect gameoverRect = {
                 0,
                 0,
                 (float)larguraTela,
                 (float)alturaTela
             };
 
-            SDL_RenderFillRect(renderer, &tela);
+            SDL_RenderTexture(renderer, gameover, NULL, &gameoverRect);
             SDL_RenderPresent(renderer);
 
             if (SDL_GetTicks() - tempoAtual >= 3000)
@@ -513,6 +676,7 @@ int main(int argc, char* argv[])
                     inimigos[i].rect.h = 32;
 
                     inimigos[i].rect.x = larguraTela;
+                    inimigos[i].rect.x -= inimigos[i].speed;
                     inimigos[i].rect.y =
                         (float)(rand() % (alturaTela - 32));
 
@@ -531,23 +695,54 @@ int main(int argc, char* argv[])
         // ------------------------------------------------------
         // ATUALIZAÇÃO DE PROJETEIS
         // ------------------------------------------------------
-
+        
         for (int i = 0; i < MAX_PROJETEIS; i++)
         {
-            if (projeteis[i].ativo)
+            if (!projeteis[i].ativo)
+                continue;
+
+            // Se não estiver explodindo, movimenta
+            if (!projeteis[i].explodindo)
             {
                 projeteis[i].rect.x += projeteis[i].velX;
                 projeteis[i].rect.y += projeteis[i].velY;
 
-                if (projeteis[i].rect.x < 0 ||
-                    projeteis[i].rect.x > larguraTela ||
-                    projeteis[i].rect.y < 0 ||
-                    projeteis[i].rect.y > alturaTela)
+                // Frames de voo (0,1,2)
+                if (SDL_GetTicks() - projeteis[i].ultimoFrame > 80)
                 {
-                    projeteis[i].ativo = false;
+                    projeteis[i].frame++;
+
+                    if (projeteis[i].frame > 2)
+                        projeteis[i].frame = 0;
+
+                    projeteis[i].ultimoFrame = SDL_GetTicks();
                 }
             }
+            else
+            {
+                // Frames de explosão (3,4)
+                if (SDL_GetTicks() - projeteis[i].ultimoFrame > 100)
+                {
+                    projeteis[i].frame++;
+
+                    if (projeteis[i].frame > 4)
+                    {
+                        projeteis[i].ativo = false;
+                    }
+
+                    projeteis[i].ultimoFrame = SDL_GetTicks();
+                }
+            }
+
+            if (projeteis[i].rect.x < 0 ||
+                projeteis[i].rect.x > larguraTela ||
+                projeteis[i].rect.y < 0 ||
+                projeteis[i].rect.y > alturaTela)
+            {
+                projeteis[i].ativo = false;
+            }
         }
+
 
         // ------------------------------------------------------
         // ATUALIZAÇÃO DE INIMIGOS
@@ -578,6 +773,25 @@ int main(int argc, char* argv[])
                     &player,
                     &inimigos[i].rect))
                 {
+                    pontos -= 50;
+                    player.x -= 100.0f;
+                    player.y -= 50.0f;
+
+                    inimigos[i].ativo = false;
+                }
+            }
+        }
+
+        // Colisão base e inimigos
+
+        for (int i = 0; i < MAX_INIMIGOS; i++)
+        {
+            if (inimigos[i].ativo)
+            {
+                if (SDL_HasRectIntersectionFloat(
+                    &base,
+                    &inimigos[i].rect))
+                {
                     vidas--;
 
                     inimigos[i].ativo = false;
@@ -593,6 +807,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
+
 
         // ------------------------------------------------------
         // COLISÃO: PROJETEIS E INIMIGOS
@@ -613,7 +828,11 @@ int main(int argc, char* argv[])
                     &projeteis[j].rect))
                 {
                     inimigos[i].ativo = false;
-                    projeteis[j].ativo = false;
+                    projeteis[j].explodindo = true;
+                    projeteis[j].frame = 3;
+                    projeteis[j].velX = 0;
+                    projeteis[j].velY = 0;
+                    projeteis[j].ultimoFrame = SDL_GetTicks();
                     pontos += 10;
                     inimigosDerrotados++;
                 }
@@ -683,6 +902,51 @@ int main(int argc, char* argv[])
             noChao = true;
         }
 
+        // Teto
+        if (player.y <0){
+            player.y = 0;
+            velocidadeY = 0.0f;
+
+        }
+
+        // Atualizando textura de pontos
+        if (pontos != pontosAntigos)
+        {
+            pontosAntigos = pontos;
+
+            char buffer[50];
+            sprintf_s(buffer, sizeof(buffer), "Pontos: %d", pontos);
+
+            SDL_Surface* surfacePontos =
+                TTF_RenderText_Blended(fontHud, buffer, 0, preto);
+
+            SDL_DestroyTexture(texturaPontos);
+
+            texturaPontos =
+                SDL_CreateTextureFromSurface(renderer, surfacePontos);
+
+            SDL_DestroySurface(surfacePontos);
+        }
+        
+        // Atualizando textura de onda
+        if (ondas != ondaAntiga) {
+
+            ondaAntiga = ondas;
+
+            char bufferOndas[50];
+            sprintf_s(bufferOndas, sizeof(bufferOndas), "Ondas: %d", ondas);
+
+            SDL_Surface* surfaceOndas =
+                TTF_RenderText_Blended(fontHud, bufferOndas, 0, preto);
+
+            SDL_DestroyTexture(TexturaOndas);
+
+            TexturaOndas =
+                SDL_CreateTextureFromSurface(renderer, surfaceOndas);
+
+            SDL_DestroySurface(surfaceOndas);
+        }
+
         // ------------------------------------------------------
         // RENDERIZAÇÃO
         // ------------------------------------------------------
@@ -721,87 +985,94 @@ int main(int argc, char* argv[])
                 SDL_RenderRect(renderer, &tile);*/
             }
         }
+        // Base
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+        SDL_RenderFillRect(renderer, &base);
 
         // Jogador
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         SDL_RenderFillRect(renderer, &player);
 
         // Desenhar balas
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
         for (int i = 0; i < MAX_PROJETEIS; i++)
         {
-            if (projeteis[i].ativo)
-            {
-                SDL_RenderFillRect(renderer, &projeteis[i].rect);
-            }
+            if (!projeteis[i].ativo)
+                continue;
+
+            SDL_FRect srcTiro = {
+                projeteis[i].frame * larguraFrameTiro,
+                0,
+                larguraFrameTiro,
+                alturaFrameTiro
+            };
+
+            SDL_RenderTexture(
+                renderer,
+                projetil,
+                &srcTiro,
+                &projeteis[i].rect
+            );
         }
 
         // Desenhar inimigos
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
-
         for (int i = 0; i < MAX_INIMIGOS; i++)
         {
             if (inimigos[i].ativo)
             {
-                SDL_RenderFillRect(renderer, &inimigos[i].rect);
+                SDL_FRect src = {
+                    0.0f,
+                    0.0f,
+                    32.0f,
+                    32.0f
+                };
+
+                SDL_RenderTexture(
+                    renderer,
+                    texturaInimigo,
+                    &src,
+                    &inimigos[i].rect
+                );
             }
         }
 
-        // Vidas
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        // Vidas    
 
         for (int i = 0; i < vidas; i++)
         {
             SDL_FRect vida = {
                 10 + (i * 40),
                 10,
-                30,
-                30
+                32,
+                32
             };
 
-            SDL_RenderFillRect(renderer, &vida);
+            SDL_RenderTexture(renderer, coracao, NULL, &vida);
         }
 
-        
-        // Renderizar o texto
-        SDL_Color preto = { 0, 0, 0, 255 };
+        // Pontuação
+        SDL_GetTextureSize(texturaPontos, &textoW, &textoH);
 
-        SDL_Surface* textoSurface =
-            TTF_RenderText_Blended(font, "JOGAR", 0, preto);
+        textoRect.x = larguraTela - textoW - 10;
+        textoRect.y = 10;
+        textoRect.w = textoW;
+        textoRect.h = textoH;
 
-        SDL_Texture* textoTexture =
-            SDL_CreateTextureFromSurface(renderer, textoSurface);
+        SDL_RenderTexture(renderer, texturaPontos, NULL, &textoRect);
 
-        SDL_DestroySurface(textoSurface);
+        // Ondas
+        SDL_GetTextureSize(TexturaOndas, &textoW, &textoH);
 
-        float textoW;
-        float textoH;
+        textoRect.x = larguraTela - textoW - 10;
+        textoRect.y = 40;
+        textoRect.w = textoW;
+        textoRect.h = textoH;
 
-        SDL_GetTextureSize(
-            textoTexture,
-            &textoW,
-            &textoH
-        );
-
-        SDL_FRect textoRect =
-        {
-            botaoJogar.x + (botaoJogar.w - textoW) / 2,
-            botaoJogar.y + (botaoJogar.h - textoH) / 2,
-            textoW,
-            textoH
-        };
-
-        SDL_RenderTexture(
-            renderer,
-            textoTexture,
-            NULL,
-            &textoRect
-        );
+        SDL_RenderTexture(renderer, TexturaOndas, NULL, &textoRect);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
-
+    
     } // fim do loop principal
 
     // ==========================================================
@@ -809,13 +1080,31 @@ int main(int argc, char* argv[])
     // ==========================================================
 
     // Destruir texturas
+
+
+    SDL_DestroyTexture(texturaPontos);
+    SDL_DestroyTexture(TexturaOndas);
+    SDL_DestroyTexture(menu);
+    SDL_DestroyTexture(logo);
+    SDL_DestroyTexture(jogar);
+    SDL_DestroyTexture(creditos);
+    SDL_DestroyTexture(sair);
     SDL_DestroyTexture(background);
+    SDL_DestroyTexture(texturaInimigo);
+    SDL_DestroyTexture(projetil);
+    SDL_DestroyTexture(coracao);
+    SDL_DestroyTexture(gameover);
+
+
+
     /*
     SDL_DestroyTexture;
     */
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_Quit();
 
     return 0;
