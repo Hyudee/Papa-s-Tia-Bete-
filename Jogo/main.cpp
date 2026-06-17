@@ -37,6 +37,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 #include <stdbool.h>
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 
 // ============================================================
 // DEFINES
@@ -58,6 +59,7 @@ typedef enum {
     MENU,
     JOGAR,
     RANKING,
+    DIGITAR_NOME,
     GAMEOVER,
     SAIR
 } Sistema;
@@ -115,6 +117,83 @@ typedef struct
     Uint64 ultimoFrame;
     bool explodindo;
 } Projetil;
+
+typedef struct
+{
+    char nome[20];
+    int pontos;
+} Ranking;
+
+
+// Funções do ranking
+
+void InicializarRanking(Ranking ranking[])
+{
+    for (int i = 0; i < 3; i++)
+    {
+        strcpy_s(ranking[i].nome,
+            sizeof(ranking[i].nome),
+            "???");
+        ranking[i].pontos = 0;
+    }
+}
+
+void CarregarRanking(Ranking ranking[])
+{
+    FILE* arq;
+    fopen_s(&arq,
+        "ranking.dat",
+        "rb");
+
+    if (arq == NULL)
+    {
+        InicializarRanking(ranking);
+        return;
+    }
+
+    fread(ranking, sizeof(Ranking), 3, arq);
+    fclose(arq);
+}
+
+void SalvarRanking(Ranking ranking[])
+{
+    FILE* arq;
+    fopen_s(&arq,
+        "ranking.dat",
+        "wb");
+
+    if (arq == NULL)
+        return;
+
+    fwrite(ranking, sizeof(Ranking), 3, arq);
+    fclose(arq);
+}
+
+int AdicionarPontuacao(Ranking ranking[],
+    char nome[],
+    int pontos)
+{
+    if (pontos <= ranking[2].pontos)
+        return 0;
+
+    strcpy_s(ranking[2].nome,
+        sizeof(ranking[2].nome),
+        nome);
+    ranking[2].pontos = pontos;
+
+    for (int i = 2; i > 0; i--)
+    {
+        if (ranking[i].pontos >
+            ranking[i - 1].pontos)
+        {
+            Ranking temp = ranking[i];
+            ranking[i] = ranking[i - 1];
+            ranking[i - 1] = temp;
+        }
+    }
+
+    return 1;
+}
 
 // ============================================================
 // MAIN
@@ -177,6 +256,7 @@ int main(int argc, char* argv[])
     // Textos da tela
 
     SDL_Color preto = { 0, 0, 0, 255 };
+    SDL_Color branco = { 255, 255, 255, 255 };
 
     // ----------------------------------------------------------
     // ADAPTAR A TELA
@@ -223,7 +303,12 @@ int main(int argc, char* argv[])
     botaoSair.x = botaoJogar.x;
     botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
 
+    Ranking ranking[3];
+    char nomeJogador[20] = "";
+    int tamanhoNome = 0;
+
     srand((unsigned)time(NULL));
+    CarregarRanking(ranking);
 
     // ----------------------------------------------------------
     // CARREGAMENTO DOS TILESETS
@@ -256,7 +341,7 @@ int main(int argc, char* argv[])
         SDL_Log("Erro ao carregar Botão de jogar: %s", SDL_GetError());
     }
     SDL_Texture* creditos =
-        IMG_LoadTexture(renderer, "assets/creditos.png");
+        IMG_LoadTexture(renderer, "assets/acucar.png");
 
     if (!creditos)
     {
@@ -305,8 +390,22 @@ int main(int argc, char* argv[])
     {
         SDL_Log("Erro ao carregar corações de vida: %s", SDL_GetError());
     }
-    
+    SDL_Texture* powerUpAtq =
+        IMG_LoadTexture(renderer, "assets/powerup_atk.png");
 
+    if (!powerUpAtq)
+    {
+        SDL_Log("Erro ao carregar textura de powerUp de ataque: %s", SDL_GetError());
+    }
+    SDL_Texture* powerUpVida =
+        IMG_LoadTexture(renderer, "assets/powerup_vida.png");
+
+    if (!powerUpVida)
+    {
+        SDL_Log("Erro ao carregar textura de powerUp de vida: %s", SDL_GetError());
+    }
+    
+        
 
 
 
@@ -381,6 +480,7 @@ int main(int argc, char* argv[])
     int  inimigosAtivos = 5;
     int spawnBoss = 1000;
     int bossAtivados = 0;
+
 
     const int larguraFrameTiro = 64;
     const int alturaFrameTiro = 64;
@@ -511,6 +611,61 @@ int main(int argc, char* argv[])
             if (event.type == SDL_EVENT_QUIT)
             {
                 running = false;
+            }
+
+            if (estado == DIGITAR_NOME &&
+                event.type == SDL_EVENT_TEXT_INPUT)
+            {
+                size_t len = strlen(nomeJogador);
+                size_t add = strlen(event.text.text);
+
+                if (len + add < sizeof(nomeJogador))
+                {
+                    strcat_s(
+                        nomeJogador,
+                        sizeof(nomeJogador),
+                        event.text.text
+                    );
+
+                    tamanhoNome = strlen(nomeJogador);
+                }
+            }
+
+            if (estado == DIGITAR_NOME &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_BACKSPACE &&
+                    tamanhoNome > 0)
+                {
+                    nomeJogador[--tamanhoNome] = '\0';
+                }
+
+                if (event.key.key == SDLK_RETURN &&
+                    tamanhoNome > 0)
+                {
+                    AdicionarPontuacao(
+                        ranking,
+                        nomeJogador,
+                        pontos
+                    );
+
+                    SalvarRanking(ranking);
+
+                    SDL_StopTextInput(window);
+
+                    estado = GAMEOVER;
+                    tempoAtual = SDL_GetTicks();
+                }
+            }
+
+            // Sair do ranking
+            if (estado == RANKING &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    estado = MENU;
+                }
             }
 
             // Redimensionamento da janela
@@ -699,6 +854,253 @@ int main(int argc, char* argv[])
             SDL_SetRenderDrawColor(renderer, 20, 20, 80, 255);
             SDL_RenderClear(renderer);
 
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[50];
+
+            // Titulo
+
+            surface = TTF_RenderText_Blended(
+                font,
+                "RANKING",
+                0,
+                branco
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            for (int i = 0; i < 3; i++)
+            {
+                sprintf_s(
+                    texto,
+                    sizeof(texto),
+                    "%d. %s - %d",
+                    i + 1,
+                    ranking[i].nome,
+                    ranking[i].pontos
+                );
+
+                surface =
+                    TTF_RenderText_Blended(
+                        font,
+                        texto,
+                        0,
+                        branco
+                    );
+
+                texture =
+                    SDL_CreateTextureFromSurface(
+                        renderer,
+                        surface
+                    );
+
+                SDL_GetTextureSize(
+                    texture,
+                    &rect.w,
+                    &rect.h
+                );
+
+                rect.x =
+                    larguraTela / 2 -
+                    rect.w / 2;
+
+                rect.y =
+                    150 + i * 80;
+
+                SDL_RenderTexture(
+                    renderer,
+                    texture,
+                    NULL,
+                    &rect
+                );
+
+                SDL_DestroySurface(surface);
+                SDL_DestroyTexture(texture);
+            }
+
+            // Voltar
+
+            surface = TTF_RenderText_Blended(
+                fontHud,
+                "ESC - Voltar",
+                0,
+                branco
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x = 20;
+            rect.y = alturaTela - 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+}
+
+        //Nome
+
+        if (estado == DIGITAR_NOME)
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                0,
+                0,
+                0,
+                255
+            );
+
+            SDL_RenderClear(renderer);
+
+            //desenha os textos aqui
+
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+
+            surface = TTF_RenderText_Blended(
+                font,
+                "NOVO RECORDE!",
+                0,
+                branco
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 120;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            surface = TTF_RenderText_Blended(
+                fontHud,
+                "Digite seu nome:",
+                0,
+                branco
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 200;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            surface = TTF_RenderText_Blended(
+                font,
+                nomeJogador,
+                0,
+                branco
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 260;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
             continue;
@@ -722,9 +1124,16 @@ int main(int argc, char* argv[])
 
             ultimoSpawnAtq = SDL_GetTicks();
 
+            //Limpar powerUps
+
             for (int i = 0; i < MAX_POWERUPSATQ; i++)
             {
                 ataquePowerup[i].ativo = false;
+            }
+
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                vidasPowerup[i].ativo = false;
             }
 
             if (SDL_GetTicks() - tempoAtual >= 3000)
@@ -743,6 +1152,10 @@ int main(int argc, char* argv[])
                 pontos = 0;
                 ondas = 1;
                 inimigosAtivos = 5;
+                boss.ativo = false;
+                boss.vida = 0;
+                spawnBoss = 1000;
+                bossAtivados = 0;
                 inimigosDerrotados = 0;
                 spam = false;
                 intervaloSpawn = 2000 - (ondas * 150);
@@ -1027,16 +1440,21 @@ int main(int argc, char* argv[])
             if (!vidasPowerup[i].ativo)
                 continue;
 
-            if (SDL_HasRectIntersectionFloat(
-                &projeteis[i].rect,
-                &vidasPowerup[i].rect))
+            for (int j = 0; j < MAX_PROJETEIS; j++)
             {
-                if (vidas < MAX_VIDAS)
-                {
-                    vidas++;
-                }
+                if (!projeteis[j].ativo)
+                    continue;
 
-                vidasPowerup[i].ativo = false;
+                if (SDL_HasRectIntersectionFloat(
+                    &projeteis[j].rect,
+                    &vidasPowerup[i].rect))
+                {
+                    if (vidas < MAX_VIDAS)
+                        vidas++;
+
+                    vidasPowerup[i].ativo = false;
+                    projeteis[j].ativo = false;
+                }
             }
         }
 
@@ -1108,11 +1526,23 @@ int main(int argc, char* argv[])
 
                     SDL_Log("Vidas restantes: %d", vidas);
 
+
                     if (vidas <= 0)
                     {
-                        SDL_Log("GAME OVER");
-                        estado = GAMEOVER;
-                        tempoAtual = SDL_GetTicks();
+                        if (pontos > ranking[2].pontos)
+                        {
+                            estado = DIGITAR_NOME;
+
+                            nomeJogador[0] = '\0';
+                            tamanhoNome = 0;
+
+                            SDL_StartTextInput(window);
+                        }
+                        else
+                        {
+                            estado = GAMEOVER;
+                            tempoAtual = SDL_GetTicks();
+                        }
                     }
                 }
             }
@@ -1129,9 +1559,22 @@ int main(int argc, char* argv[])
                 vidas -= 3;
                 boss.ativo = false;
 
-                if (vidas <= 0){
-                    estado = GAMEOVER;
-                    tempoAtual = SDL_GetTicks();
+                if (vidas <= 0)
+                {
+                    if (pontos > ranking[2].pontos)
+                    {
+                        estado = DIGITAR_NOME;
+
+                        nomeJogador[0] = '\0';
+                        tamanhoNome = 0;
+
+                        SDL_StartTextInput(window);
+                    }
+                    else
+                    {
+                        estado = GAMEOVER;
+                        tempoAtual = SDL_GetTicks();
+                    }
                 }
             }
         }
