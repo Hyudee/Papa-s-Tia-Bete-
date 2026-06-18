@@ -125,6 +125,7 @@ typedef struct
 } Ranking;
 
 
+
 // Funções do ranking
 
 void InicializarRanking(Ranking ranking[])
@@ -279,6 +280,11 @@ int main(int argc, char* argv[])
     SDL_FRect botaoSair;
     SDL_FRect logoRect;
 
+    SDL_FRect abaConfig;
+    SDL_FRect abaControles;
+    SDL_FRect abaRanking;
+    SDL_FRect abaAjuda;
+
     float textoW, textoH;
     SDL_FRect textoRect;
 
@@ -302,6 +308,23 @@ int main(int argc, char* argv[])
     botaoSair.h = botaoJogar.h;
     botaoSair.x = botaoJogar.x;
     botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
+
+    float larguraAba = larguraTela * 0.03f;
+    float alturaAba = alturaTela * 0.18f;
+    float padding = larguraTela * 0.005f;
+
+    abaConfig.w = abaControles.w = abaRanking.w = abaAjuda.w = larguraAba;
+    abaConfig.h = abaControles.h = abaRanking.h = abaAjuda.h = alturaAba;
+
+    abaConfig.y = 0;
+    abaControles.y = 0;
+    abaRanking.y = 0;
+    abaAjuda.y = 0;
+
+    abaConfig.x = larguraTela * 0.74f;
+    abaControles.x = abaConfig.x + larguraAba + padding;
+    abaRanking.x = abaControles.x + larguraAba + padding;
+    abaAjuda.x = abaRanking.x + larguraAba + padding;
 
     Ranking ranking[3];
     char nomeJogador[20] = "";
@@ -542,6 +565,7 @@ int main(int argc, char* argv[])
         );
 
     SDL_DestroySurface(surfaceBuff);
+
     // ----------------------------------------------------------
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
     // ----------------------------------------------------------
@@ -551,7 +575,7 @@ int main(int argc, char* argv[])
     Uint64 ultimoSpawnAtq = SDL_GetTicks();
     Uint64 intervaloSpawn = 2000 - (ondas * 150);
     Uint64 intervaloSpawnPowerUp = 20000 + (ondas * 150);
-    Uint64 intervaloSpawnAtq = 60000;
+    Uint64 intervaloSpawnAtq = 40000;
     Uint64 tempoAtual = 0;
     Uint64 inicioOnda = SDL_GetTicks();
     Uint64 inicioSpam = SDL_GetTicks();
@@ -590,13 +614,6 @@ int main(int argc, char* argv[])
                     ultimoSpawnAtq = SDL_GetTicks();
                 }
 
-                if (mouseX >= botaoRanking.x &&
-                    mouseX <= botaoRanking.x + botaoRanking.w &&
-                    mouseY >= botaoRanking.y &&
-                    mouseY <= botaoRanking.y + botaoRanking.h)
-                {
-                    estado = RANKING;
-                }
 
                 if (mouseX >= botaoSair.x &&
                     mouseX <= botaoSair.x + botaoSair.w &&
@@ -604,6 +621,42 @@ int main(int argc, char* argv[])
                     mouseY <= botaoSair.y + botaoSair.h)
                 {
                     running = false;
+                }
+
+                // Troféu
+                if (mouseX >= abaRanking.x &&
+                    mouseX <= abaRanking.x + abaRanking.w &&
+                    mouseY >= abaRanking.y &&
+                    mouseY <= abaRanking.y + abaRanking.h)
+                {
+                    estado = RANKING;
+                }
+
+                // Engrenagem
+                if (mouseX >= abaConfig.x &&
+                    mouseX <= abaConfig.x + abaConfig.w &&
+                    mouseY >= abaConfig.y &&
+                    mouseY <= abaConfig.y + abaConfig.h)
+                {
+                    // estado = CONFIG;
+                }
+
+                // Controles
+                if (mouseX >= abaControles.x &&
+                    mouseX <= abaControles.x + abaControles.w &&
+                    mouseY >= abaControles.y &&
+                    mouseY <= abaControles.y + abaControles.h)
+                {
+                    // estado = Controles;
+                }
+
+                // Ajuda
+                if (mouseX >= abaAjuda.x &&
+                    mouseX <= abaAjuda.x + abaAjuda.w &&
+                    mouseY >= abaAjuda.y &&
+                    mouseY <= abaAjuda.y + abaAjuda.h)
+                {
+                    // estado = AJUDA;
                 }
             }
 
@@ -698,6 +751,23 @@ int main(int argc, char* argv[])
                 botaoSair.h = botaoJogar.h;
                 botaoSair.x = botaoJogar.x;
                 botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
+
+                float larguraAba = larguraTela * 0.03f;
+                float alturaAba = alturaTela * 0.18f;
+                float padding = larguraTela * 0.005f;
+
+                abaConfig.w = abaControles.w = abaRanking.w = abaAjuda.w = larguraAba;
+                abaConfig.h = abaControles.h = abaRanking.h = abaAjuda.h = alturaAba;
+
+                abaConfig.y = 0;
+                abaControles.y = 0;
+                abaRanking.y = 0;
+                abaAjuda.y = 0;
+
+                abaConfig.x = larguraTela * 0.74f;
+                abaControles.x = abaConfig.x + larguraAba + padding;
+                abaRanking.x = abaControles.x + larguraAba + padding;
+                abaAjuda.x = abaRanking.x + larguraAba + padding;
 
                 base.h = (float)alturaTela;
             }
@@ -836,6 +906,12 @@ int main(int argc, char* argv[])
             };
 
             SDL_RenderTexture(renderer, menu, NULL, &menuRect);
+            /*
+            SDL_RenderTexture(renderer, texturaEngrenagem, NULL, &abaConfig);
+            SDL_RenderTexture(renderer, texturaCoracao, NULL, &abaCreditos);
+            SDL_RenderTexture(renderer, texturaTrofeu, NULL, &abaRanking);
+            SDL_RenderTexture(renderer, texturaAjuda, NULL, &abaAjuda);
+            */
 
             //Desenhar logo e botões
 
@@ -1855,12 +1931,37 @@ int main(int argc, char* argv[])
         SDL_RenderFillRect(renderer, &base);
 
         // Desenho da direção do player
-        if (!dano && !atirando  && !pulando && !aterrissando) {
-            if (olhandoDireita) {
-                framePlayer = 0;
+        static Uint64 ultimoFrameAndar = 0;
+
+        bool andando = key[SDL_SCANCODE_A] || key[SDL_SCANCODE_D];
+
+        if (!dano && !atirando && !pulando && !aterrissando)
+        {
+            if (andando)
+            {
+                if (SDL_GetTicks() - ultimoFrameAndar > 120)
+                {
+                    if (olhandoDireita)
+                    {
+                        framePlayer++;
+
+                        if (framePlayer < 16 || framePlayer > 19)
+                            framePlayer = 16;
+                    }
+                    else
+                    {
+                        framePlayer++;
+
+                        if (framePlayer < 20 || framePlayer > 23)
+                            framePlayer = 20;
+                    }
+
+                    ultimoFrameAndar = SDL_GetTicks();
+                }
             }
-            else {
-                framePlayer = 1;
+            else
+            {
+                framePlayer = olhandoDireita ? 0 : 1;
             }
         }
         // Jogador
@@ -2060,11 +2161,13 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(coracao);
     SDL_DestroyTexture(gameover);
 
-
-
     /*
-    SDL_DestroyTexture;
+    SDL_DestroyTexture(texturaTrofeu);
+    SDL_DestroyTexture(texturaEngrenagem);
+    SDL_DestroyTexture(texturaCoracao);
+    SDL_DestroyTexture(texturaAjuda);
     */
+
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
