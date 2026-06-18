@@ -33,6 +33,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_mixer/SDL_mixer.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
@@ -47,9 +48,10 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 #define LINHAS       19
 #define MAX_PROJETEIS 5
 #define MAX_INIMIGOS  50
-#define MAX_VIDAS     3
+#define MAX_VIDAS     4
 #define MAX_POWERUPS  2
 #define MAX_POWERUPSATQ  1
+#define MAX_OBSTACULOS 4
 
 // ============================================================
 // TIPOS E STRUCTS
@@ -58,7 +60,10 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 typedef enum {
     MENU,
     JOGAR,
+    CONFIGURACOES,
+    CONTROLES,
     RANKING,
+    AJUDA,
     DIGITAR_NOME,
     GAMEOVER,
     SAIR
@@ -124,6 +129,29 @@ typedef struct
     int pontos;
 } Ranking;
 
+typedef enum
+{
+    OBSTACULO_SOMBRA,
+    OBSTACULO_CAINDO,
+    OBSTACULO_CHAO
+} EstadoObstaculo;
+
+typedef struct
+{
+    SDL_FRect rect;
+
+    bool ativo;
+
+    EstadoObstaculo estado;
+
+    int frame;
+    Uint64 ultimoFrame;
+
+    float velocidadeY;
+
+    Uint64 inicioEstado;
+
+} Obstaculo;
 
 
 // Funções do ranking
@@ -291,7 +319,7 @@ int main(int argc, char* argv[])
     logoRect.w = larguraTela * 0.35f; 
     logoRect.h = logoRect.w * 0.5f; 
 
-    logoRect.x = larguraTela * 0.05f;
+    logoRect.x = larguraTela * 0.07f;
     logoRect.y = alturaTela * 0.05f;
 
     botaoJogar.w = larguraTela * 0.25f;
@@ -343,6 +371,13 @@ int main(int argc, char* argv[])
     if (!background)
     {
         SDL_Log("Erro ao carregar background: %s", SDL_GetError());
+    }
+    SDL_Texture* backgroundNome =
+        IMG_LoadTexture(renderer, "assets/background.png");
+
+    if (!backgroundNome)
+    {
+        SDL_Log("Erro ao carregar background do ranking: %s", SDL_GetError());
     }
 
     SDL_Texture* menu =
@@ -427,10 +462,40 @@ int main(int argc, char* argv[])
     {
         SDL_Log("Erro ao carregar textura de powerUp de vida: %s", SDL_GetError());
     }
+    SDL_Texture* texturaTrofeu =
+        IMG_LoadTexture(renderer, "assets/rankingaba.png");
+
+    if (!texturaTrofeu)
+    {
+        SDL_Log("Erro ao carregar textura de aba de ranking: %s", SDL_GetError());
+    }
+    SDL_Texture* texturaEngrenagem =
+        IMG_LoadTexture(renderer, "assets/configuracaoaba.png");
+
+    if (!texturaEngrenagem)
+    {
+        SDL_Log("Erro ao carregar textura de aba de configuracao: %s", SDL_GetError());
+    }
+    SDL_Texture* texturaControles =
+        IMG_LoadTexture(renderer, "assets/controlesaba.png");
+
+    if (!texturaControles)
+    {
+        SDL_Log("Erro ao carregar textura de aba de controles: %s", SDL_GetError());
+    }
+    SDL_Texture* texturaAjuda =
+        IMG_LoadTexture(renderer, "assets/interrogacaoaba.png");
+
+    if (!texturaAjuda)
+    {
+        SDL_Log("Erro ao carregar textura de aba de ajuda: %s", SDL_GetError());
+    }
+
+    SDL_Texture* base4 = IMG_LoadTexture(renderer, "assets/base4.png");
+    SDL_Texture* base3 = IMG_LoadTexture(renderer, "assets/base3.png");
+    SDL_Texture* base2 = IMG_LoadTexture(renderer, "assets/base2.png");
+    SDL_Texture* base1 = IMG_LoadTexture(renderer, "assets/base1.png");
     
-        
-
-
 
     // ----------------------------------------------------------
     // VARIÁVEIS DO JOGADOR
@@ -492,6 +557,7 @@ int main(int argc, char* argv[])
     Boss boss = { 0 };
     PowerupVida vidasPowerup[MAX_POWERUPS] = {0};
     PowerupAtq ataquePowerup[MAX_POWERUPSATQ] = { 0 };
+    Obstaculo obstaculos[MAX_OBSTACULOS] = { 0 };
 
     int  mapa[LINHAS][COLUNAS] = { 0 };
     int  pontos = 0;
@@ -503,6 +569,11 @@ int main(int argc, char* argv[])
     int  inimigosAtivos = 5;
     int spawnBoss = 1000;
     int bossAtivados = 0;
+    int frameBase = 0;
+
+    const int larguraFrameBase = 64;
+    const int alturaFrameBase = 384;
+    const int totalFramesBase = 4;
 
 
     const int larguraFrameTiro = 64;
@@ -576,9 +647,12 @@ int main(int argc, char* argv[])
     Uint64 intervaloSpawn = 2000 - (ondas * 150);
     Uint64 intervaloSpawnPowerUp = 20000 + (ondas * 150);
     Uint64 intervaloSpawnAtq = 40000;
+    Uint64 ultimoSpawnObstaculo = SDL_GetTicks();
+    Uint64 intervaloObstaculo = 15000;
     Uint64 tempoAtual = 0;
     Uint64 inicioOnda = SDL_GetTicks();
     Uint64 inicioSpam = SDL_GetTicks();
+    Uint64 ultimoFrameBase = 0;
 
     SDL_Event event;
 
@@ -638,7 +712,7 @@ int main(int argc, char* argv[])
                     mouseY >= abaConfig.y &&
                     mouseY <= abaConfig.y + abaConfig.h)
                 {
-                    // estado = CONFIG;
+                    estado = CONFIGURACOES;
                 }
 
                 // Controles
@@ -647,7 +721,7 @@ int main(int argc, char* argv[])
                     mouseY >= abaControles.y &&
                     mouseY <= abaControles.y + abaControles.h)
                 {
-                    // estado = Controles;
+                   estado = CONTROLES;
                 }
 
                 // Ajuda
@@ -656,7 +730,7 @@ int main(int argc, char* argv[])
                     mouseY >= abaAjuda.y &&
                     mouseY <= abaAjuda.y + abaAjuda.h)
                 {
-                    // estado = AJUDA;
+                    estado = AJUDA;
                 }
             }
 
@@ -711,8 +785,35 @@ int main(int argc, char* argv[])
                 }
             }
 
-            // Sair do ranking
+            // Sair das abas
             if (estado == RANKING &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    estado = MENU;
+                }
+            }
+
+            if (estado == CONFIGURACOES &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    estado = MENU;
+                }
+            }
+
+            if (estado == CONTROLES &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    estado = MENU;
+                }
+            }
+
+            if (estado == AJUDA &&
                 event.type == SDL_EVENT_KEY_DOWN)
             {
                 if (event.key.key == SDLK_ESCAPE)
@@ -837,6 +938,16 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Atualização da base
+        if (SDL_GetTicks() - ultimoFrameBase > 150)
+        {
+            frameBase++;
+
+            if (frameBase >= totalFramesBase)
+                frameBase = 0;
+
+            ultimoFrameBase = SDL_GetTicks();
+        }
         // ------------------------------------------------------
         // SISTEMA DE ONDAS
         // ------------------------------------------------------
@@ -906,12 +1017,10 @@ int main(int argc, char* argv[])
             };
 
             SDL_RenderTexture(renderer, menu, NULL, &menuRect);
-            /*
             SDL_RenderTexture(renderer, texturaEngrenagem, NULL, &abaConfig);
-            SDL_RenderTexture(renderer, texturaCoracao, NULL, &abaCreditos);
+            SDL_RenderTexture(renderer, texturaControles, NULL, &abaControles);
             SDL_RenderTexture(renderer, texturaTrofeu, NULL, &abaRanking);
             SDL_RenderTexture(renderer, texturaAjuda, NULL, &abaAjuda);
-            */
 
             //Desenhar logo e botões
 
@@ -927,8 +1036,9 @@ int main(int argc, char* argv[])
 
         if (estado == RANKING)
         {
-            SDL_SetRenderDrawColor(renderer, 20, 20, 80, 255);
             SDL_RenderClear(renderer);
+
+            SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
 
             SDL_Surface* surface;
             SDL_Texture* texture;
@@ -941,7 +1051,7 @@ int main(int argc, char* argv[])
                 font,
                 "RANKING",
                 0,
-                branco
+                preto
             );
 
             texture =
@@ -986,7 +1096,7 @@ int main(int argc, char* argv[])
                         font,
                         texto,
                         0,
-                        branco
+                        preto
                     );
 
                 texture =
@@ -1025,7 +1135,7 @@ int main(int argc, char* argv[])
                 fontHud,
                 "ESC - Voltar",
                 0,
-                branco
+                preto
             );
 
             texture =
@@ -1062,15 +1172,14 @@ int main(int argc, char* argv[])
 
         if (estado == DIGITAR_NOME)
         {
-            SDL_SetRenderDrawColor(
-                renderer,
-                0,
-                0,
-                0,
-                255
-            );
+            SDL_FRect fundo = {
+            0,
+            0,
+            (float)larguraTela,
+            (float)alturaTela
+            };
 
-            SDL_RenderClear(renderer);
+            SDL_RenderTexture(renderer, backgroundNome, NULL, &fundo);
 
             //desenha os textos aqui
 
@@ -1082,7 +1191,7 @@ int main(int argc, char* argv[])
                 font,
                 "NOVO RECORDE!",
                 0,
-                branco
+                preto
             );
 
             texture =
@@ -1115,7 +1224,7 @@ int main(int argc, char* argv[])
                 fontHud,
                 "Digite seu nome:",
                 0,
-                branco
+                preto
             );
 
             texture =
@@ -1148,7 +1257,7 @@ int main(int argc, char* argv[])
                 font,
                 nomeJogador,
                 0,
-                branco
+                preto
             );
 
             texture =
@@ -1166,6 +1275,258 @@ int main(int argc, char* argv[])
             rect.x =
                 larguraTela / 2 - rect.w / 2;
             rect.y = 260;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+        }
+
+        if (estado == CONFIGURACOES)
+        {
+            SDL_RenderClear(renderer);
+
+            SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+            
+            // textos
+
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[50];
+
+            surface = TTF_RenderText_Blended(
+                font,
+                "CONFIGURAÇÕES",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            // Voltar
+
+            surface = TTF_RenderText_Blended(
+                fontHud,
+                "ESC - Voltar",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x = 20;
+            rect.y = alturaTela - 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+        }
+        if (estado == CONTROLES)
+        {
+            SDL_RenderClear(renderer);
+
+            SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+            
+            // textos
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[50];
+
+            surface = TTF_RenderText_Blended(
+                font,
+                "CONTROLES",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            // Voltar
+
+            surface = TTF_RenderText_Blended(
+                fontHud,
+                "ESC - Voltar",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x = 20;
+            rect.y = alturaTela - 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+        }
+        if (estado == AJUDA)
+        {
+            SDL_RenderClear(renderer);
+
+            SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+            
+            // textos
+
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[50];
+
+            surface = TTF_RenderText_Blended(
+                font,
+                "AJUDA",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x =
+                larguraTela / 2 - rect.w / 2;
+            rect.y = 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            // Voltar
+
+            surface = TTF_RenderText_Blended(
+                fontHud,
+                "ESC - Voltar",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x = 20;
+            rect.y = alturaTela - 50;
 
             SDL_RenderTexture(
                 renderer,
@@ -1330,6 +1691,42 @@ int main(int argc, char* argv[])
             }
         }
 
+        // SPAWN DOS OBSTÁCULOS
+
+        if (ondas >= 3 &&
+            !boss.ativo &&
+            SDL_GetTicks() - ultimoSpawnObstaculo >= intervaloObstaculo)
+        {
+            ultimoSpawnObstaculo = SDL_GetTicks();
+
+            for (int i = 0; i < MAX_OBSTACULOS; i++)
+            {
+                if (!obstaculos[i].ativo)
+                {
+                    obstaculos[i].ativo = true;
+
+                    obstaculos[i].estado = OBSTACULO_SOMBRA;
+
+                    obstaculos[i].frame = 0;
+                    obstaculos[i].ultimoFrame = SDL_GetTicks();
+                    obstaculos[i].inicioEstado = SDL_GetTicks();
+
+                    obstaculos[i].velocidadeY = 4.0f;
+
+                    obstaculos[i].rect.w = 64.0f;
+                    obstaculos[i].rect.h = 64.0f;
+
+                    // posição aleatória
+                    obstaculos[i].rect.x = (float)(rand() % (larguraTela - (int)obstaculos[i].rect.w));
+
+                    // começa acima da tela
+                    obstaculos[i].rect.y = -obstaculos[i].rect.h;
+
+                    break;
+                }
+            }
+        }
+
         int buffsAtivos = 0;
 
         for (int i = 0; i < MAX_POWERUPSATQ; i++)
@@ -1471,6 +1868,71 @@ int main(int argc, char* argv[])
         // ATUALIZAÇÃO DO BOSS
         if (boss.ativo){
             boss.rect.x -= boss.speed;
+        }
+
+        for (int i = 0; i < MAX_OBSTACULOS; i++)
+        {
+            if (!obstaculos[i].ativo)
+                continue;
+
+            switch (obstaculos[i].estado)
+            {
+            case OBSTACULO_SOMBRA:
+
+                if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 1000)
+                {
+                    obstaculos[i].estado = OBSTACULO_CAINDO;
+                    obstaculos[i].inicioEstado = SDL_GetTicks();
+                }
+
+                break;
+
+            case OBSTACULO_CAINDO:
+
+                obstaculos[i].rect.y += obstaculos[i].velocidadeY;
+
+                // Colisão com o player enquanto cai
+                if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
+                {
+                    vidas--;
+
+                    if (player.x + player.w / 2 < obstaculos[i].rect.x + obstaculos[i].rect.w / 2)
+                        player.x = obstaculos[i].rect.x - player.w;
+                    else
+                        player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
+
+                    stun = true;
+                    stunStart = SDL_GetTicks();
+
+                    dano = true;
+                    danoStart = SDL_GetTicks();
+                    framePlayer = 13;
+
+                    obstaculos[i].rect.y = alturaChao;
+                    obstaculos[i].estado = OBSTACULO_CHAO;
+                    obstaculos[i].inicioEstado = SDL_GetTicks();
+                }
+
+                if (obstaculos[i].rect.y >= alturaChao)
+                {
+                    obstaculos[i].rect.y = alturaChao;
+
+                    obstaculos[i].estado = OBSTACULO_CHAO;
+                    obstaculos[i].inicioEstado = SDL_GetTicks();
+                }
+
+                break;
+
+
+            case OBSTACULO_CHAO:
+
+                if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 7000)
+                {
+                    obstaculos[i].ativo = false;
+                }
+
+                break;
+            }
         }
 
         // ------------------------------------------------------
@@ -1655,6 +2117,32 @@ int main(int argc, char* argv[])
             }
         }
 
+        
+        // PROJÉTEIS E OBSTÁCULOS
+
+        for (int i = 0; i < MAX_OBSTACULOS; i++)
+        {
+            if (!obstaculos[i].ativo)
+                continue;
+
+            for (int j = 0; j < MAX_PROJETEIS; j++)
+            {
+                if (!projeteis[j].ativo || projeteis[j].explodindo)
+                    continue;
+
+                if (SDL_HasRectIntersectionFloat(
+                    &projeteis[j].rect,
+                    &obstaculos[i].rect))
+                {
+                    projeteis[j].explodindo = true;
+                    projeteis[j].frame = 3;
+                    projeteis[j].velX = 0;
+                    projeteis[j].velY = 0;
+                    projeteis[j].ultimoFrame = SDL_GetTicks();
+                }
+            }
+        }
+
         // ------------------------------------------------------
         // COLISÃO: PROJETEIS E INIMIGOS
         // ------------------------------------------------------
@@ -1697,6 +2185,8 @@ int main(int argc, char* argv[])
             running = false;
         }
 
+        float playerXAnterior = player.x;
+        float playerYAnterior = player.y;
         // Movimentação e efeito de stun
         if (!stun && !dano){
 
@@ -1800,6 +2290,53 @@ int main(int argc, char* argv[])
                 inicioAterrissagem = SDL_GetTicks();
 
                 framePlayer = 12;
+            }
+        }
+
+        // Obstaculos
+
+        for (int i = 0; i < MAX_OBSTACULOS; i++)
+        {
+            if (!obstaculos[i].ativo)
+                continue;
+
+            if (obstaculos[i].estado != OBSTACULO_CHAO)
+                continue;
+
+            if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
+            {
+                // Veio pela esquerda
+                if (playerXAnterior + player.w <= obstaculos[i].rect.x)
+                {
+                    player.x = obstaculos[i].rect.x - player.w;
+                }
+                // Veio pela direita
+                else if (playerXAnterior >= obstaculos[i].rect.x + obstaculos[i].rect.w)
+                {
+                    player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
+                }
+            }
+        }
+
+        for (int i = 0; i < MAX_OBSTACULOS; i++)
+        {
+            if (!obstaculos[i].ativo)
+                continue;
+
+            if (obstaculos[i].estado != OBSTACULO_CHAO)
+                continue;
+
+            if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
+            {
+                // Caiu em cima do obstáculo
+                if (velocidadeY > 0 &&
+                    player.y + player.h - velocidadeY <= obstaculos[i].rect.y)
+                {
+                    player.y = obstaculos[i].rect.y - player.h;
+                    velocidadeY = 0;
+                    noChao = true;
+                    pulando = false;
+                }
             }
         }
 
@@ -1927,8 +2464,37 @@ int main(int argc, char* argv[])
             }
         }
         // Base
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-        SDL_RenderFillRect(renderer, &base);
+        SDL_Texture* texturaBase = NULL;
+
+        switch (vidas)
+        {
+        case 4:
+            texturaBase = base4;
+            break;
+        case 3:
+            texturaBase = base3;
+            break;
+        case 2:
+            texturaBase = base2;
+            break;
+        default:
+            texturaBase = base1;
+            break;
+        }
+
+        SDL_FRect srcBase = {
+        frameBase * larguraFrameBase,
+        0,
+        larguraFrameBase,
+        alturaFrameBase
+            };
+
+        SDL_RenderTexture(
+            renderer,
+            texturaBase,
+            &srcBase,
+            &base
+        );
 
         // Desenho da direção do player
         static Uint64 ultimoFrameAndar = 0;
@@ -2019,6 +2585,31 @@ int main(int argc, char* argv[])
                     &inimigos[i].rect
                 );
             }
+        }
+
+        // Obstáculos
+        for (int i = 0; i < MAX_OBSTACULOS; i++)
+        {
+            if (!obstaculos[i].ativo)
+                continue;
+
+            if (obstaculos[i].estado == OBSTACULO_SOMBRA)
+            {
+                // Sombra
+                SDL_SetRenderDrawColor(renderer, 50, 50, 50, 180);
+            }
+            else if (obstaculos[i].estado == OBSTACULO_CAINDO)
+            {
+                // Caindo
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            }
+            else
+            {
+                // No chão
+                SDL_SetRenderDrawColor(renderer, 120, 70, 20, 255);
+            }
+
+            SDL_RenderFillRect(renderer, &obstaculos[i].rect);
         }
 
         // Desenhar boss
@@ -2160,14 +2751,14 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(projetil);
     SDL_DestroyTexture(coracao);
     SDL_DestroyTexture(gameover);
-
-    /*
-    SDL_DestroyTexture(texturaTrofeu);
     SDL_DestroyTexture(texturaEngrenagem);
-    SDL_DestroyTexture(texturaCoracao);
+    SDL_DestroyTexture(texturaTrofeu);
+    SDL_DestroyTexture(texturaControles);
     SDL_DestroyTexture(texturaAjuda);
-    */
-
+    SDL_DestroyTexture(base4);
+    SDL_DestroyTexture(base3);
+    SDL_DestroyTexture(base2);
+    SDL_DestroyTexture(base1);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

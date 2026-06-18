@@ -111,13 +111,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\SDL\SDL3_ttf-3.1.0\include;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\include;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SDL\SDL3_mixer-3.2.4\include;C:\SDL\SDL3_ttf-3.1.0\include;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\include;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\SDL\SDL3_ttf-3.1.0\lib\x64;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\lib\x64;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib;SDL3_image.lib;SDL3_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\SDL\SDL3_ttf-3.1.0\lib\x64;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\lib\x64;C:\SDL\SDL3_mixer-3.2.4\lib\x64;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL3.lib;SDL3_image.lib;SDL3_ttf.lib;SDL3_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -132,13 +132,13 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\SDL\SDL3_ttf-3.1.0\include;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\include;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SDL\SDL3_mixer-3.2.4\include;C:\SDL\SDL3_ttf-3.1.0\include;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\include;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\SDL\SDL3_ttf-3.1.0\lib\x64;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\lib\x64;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib;SDL3_image.lib;SDL3_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\SDL\SDL3_ttf-3.1.0\lib\x64;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\lib\x64;C:\SDL\SDL3_mixer-3.2.4\lib\x64;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL3.lib;SDL3_image.lib;SDL3_ttf.lib;SDL3_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
