@@ -570,6 +570,9 @@ int main(int argc, char* argv[])
     int spawnBoss = 1000;
     int bossAtivados = 0;
     int frameBase = 0;
+    int opcaoConfig = 0; // 0 = Tela cheia, 1 = Música, 2 = Efeitos
+
+
 
     const int larguraFrameBase = 64;
     const int alturaFrameBase = 384;
@@ -587,6 +590,9 @@ int main(int argc, char* argv[])
     SDL_Texture* TexturaOndas = NULL;
     SDL_Texture* texturaBuff = NULL;
 
+    bool telaCheia = false;
+    bool musicaLigada = true;
+    bool efeitosLigados = true;
     bool running = true;
     bool spam = false;
 
@@ -798,9 +804,44 @@ int main(int argc, char* argv[])
             if (estado == CONFIGURACOES &&
                 event.type == SDL_EVENT_KEY_DOWN)
             {
-                if (event.key.key == SDLK_ESCAPE)
+                switch (event.key.key)
                 {
+                case SDLK_ESCAPE:
                     estado = MENU;
+                    break;
+
+                case SDLK_UP:
+                    if (opcaoConfig > 0)
+                        opcaoConfig--;
+                    break;
+
+                case SDLK_DOWN:
+                    if (opcaoConfig < 2)
+                        opcaoConfig++;
+                    break;
+
+                case SDLK_RETURN:
+                case SDLK_KP_ENTER:
+
+                    if (opcaoConfig == 0)
+                    {
+                        telaCheia = !telaCheia;
+
+                        SDL_SetWindowFullscreen(
+                            window,
+                            telaCheia
+                        );
+                    }
+                    else if (opcaoConfig == 1)
+                    {
+                        musicaLigada = !musicaLigada;
+                    }
+                    else if (opcaoConfig == 2)
+                    {
+                        efeitosLigados = !efeitosLigados;
+                    }
+
+                    break;
                 }
             }
 
@@ -1337,6 +1378,74 @@ int main(int argc, char* argv[])
             SDL_DestroySurface(surface);
             SDL_DestroyTexture(texture);
 
+            // Tela cheia
+
+            sprintf_s(
+                texto,
+                sizeof(texto),
+                "%s Tela cheia: %s",
+                opcaoConfig == 0 ? ">" : " ",
+                telaCheia ? "ON" : "OFF"
+            );
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = alturaTela * 0.30f;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            // Musica
+            sprintf_s(
+                texto,
+                sizeof(texto),
+                "%s Musica: %s",
+                opcaoConfig == 1 ? ">" : " ",
+                musicaLigada ? "ON" : "OFF"
+            );
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = alturaTela * 0.40f;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            // EFeitos Sonoros
+
+            sprintf_s(
+                texto,
+                sizeof(texto),
+                "%s Efeitos sonoros: %s",
+                opcaoConfig == 2 ? ">" : " ",
+                efeitosLigados ? "ON" : "OFF"
+            );
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = alturaTela * 0.50f;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
             // Voltar
 
             surface = TTF_RenderText_Blended(
@@ -1416,6 +1525,71 @@ int main(int argc, char* argv[])
                 NULL,
                 &rect
             );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            float yInicial = alturaTela * 0.25f;
+            float espacamento = alturaTela * 0.07f;
+
+            sprintf_s(texto, sizeof(texto), "W A S D - Movimentar");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            //Controles
+
+            sprintf_s(texto, sizeof(texto), "ESPACO - Pular");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "BOTAO ESQUERDO DO MOUSE - Atirar");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 2;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "ESC - Pausar / Voltar");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 3;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
 
             SDL_DestroySurface(surface);
             SDL_DestroyTexture(texture);
@@ -1500,6 +1674,136 @@ int main(int argc, char* argv[])
                 NULL,
                 &rect
             );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            float yInicial = alturaTela * 0.20f;
+            float espacamento = alturaTela * 0.055f;
+
+            // Explicação
+            sprintf_s(texto, sizeof(texto), "OBJETIVO:");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "Proteja a base dos inimigos.");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "Elimine inimigos para ganhar pontos.");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 2;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "BOSS:");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 4;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "Surge a cada 1000 pontos.");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 5;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "Enquanto estiver vivo, nenhum inimigo aparece.");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 6;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "POWER-UPS:");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 8;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "Colete-os para facilitar a sobrevivencia.");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 9;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            sprintf_s(texto, sizeof(texto), "Se a base perder todas as vidas, o jogo termina.");
+
+            surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = yInicial + espacamento * 11;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
 
             SDL_DestroySurface(surface);
             SDL_DestroyTexture(texture);
