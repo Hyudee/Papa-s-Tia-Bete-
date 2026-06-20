@@ -133,7 +133,8 @@ typedef enum
 {
     OBSTACULO_SOMBRA,
     OBSTACULO_CAINDO,
-    OBSTACULO_CHAO
+    OBSTACULO_CHAO,
+    OBSTACULO_QUEBRANDO
 } EstadoObstaculo;
 
 typedef struct
@@ -153,6 +154,12 @@ typedef struct
 
 } Obstaculo;
 
+enum FlashBase
+{
+    FLASH_NENHUM,
+    FLASH_DANO,
+    FLASH_CURA
+};
 
 // Funções do ranking
 
@@ -381,7 +388,7 @@ int main(int argc, char* argv[])
     }
 
     SDL_Texture* menu =
-        IMG_LoadTexture(renderer, "assets/menu.jpeg");
+        IMG_LoadTexture(renderer, "assets/menu.png");
 
     if (!menu)
     {
@@ -399,7 +406,7 @@ int main(int argc, char* argv[])
         SDL_Log("Erro ao carregar Botão de jogar: %s", SDL_GetError());
     }
     SDL_Texture* creditos =
-        IMG_LoadTexture(renderer, "assets/acucar.png");
+        IMG_LoadTexture(renderer, "assets/creditos.png");
 
     if (!creditos)
     {
@@ -422,6 +429,9 @@ int main(int argc, char* argv[])
     
     SDL_Texture* texturaPlayer =
             IMG_LoadTexture(renderer, "assets/player.png");
+
+    SDL_Texture* texturaPlayerSujo =
+            IMG_LoadTexture(renderer, "assets/playerSujo.png");
 
     if (!texturaPlayer) {
             SDL_Log("Erro ao carregar player: %s", SDL_GetError());
@@ -449,14 +459,14 @@ int main(int argc, char* argv[])
         SDL_Log("Erro ao carregar corações de vida: %s", SDL_GetError());
     }
     SDL_Texture* powerUpAtq =
-        IMG_LoadTexture(renderer, "assets/powerup_atk.png");
+        IMG_LoadTexture(renderer, "assets/powerupatq.png");
 
     if (!powerUpAtq)
     {
         SDL_Log("Erro ao carregar textura de powerUp de ataque: %s", SDL_GetError());
     }
     SDL_Texture* powerUpVida =
-        IMG_LoadTexture(renderer, "assets/powerup_vida.png");
+        IMG_LoadTexture(renderer, "assets/powerupvida.png");
 
     if (!powerUpVida)
     {
@@ -491,6 +501,20 @@ int main(int argc, char* argv[])
         SDL_Log("Erro ao carregar textura de aba de ajuda: %s", SDL_GetError());
     }
 
+    SDL_Texture* texturaBoss =
+        IMG_LoadTexture(renderer, "assets/boss.png");
+
+    SDL_Texture* texturaObstaculo =
+        IMG_LoadTexture(renderer, "assets/obstaculo.png");
+
+    if (!texturaObstaculo)
+    {
+        SDL_Log("Erro ao carregar obstáculo: %s", SDL_GetError());
+    }
+
+    SDL_Texture* texturaSombra =
+        IMG_LoadTexture(renderer, "assets/sombra.png");
+
     SDL_Texture* base4 = IMG_LoadTexture(renderer, "assets/base4.png");
     SDL_Texture* base3 = IMG_LoadTexture(renderer, "assets/base3.png");
     SDL_Texture* base2 = IMG_LoadTexture(renderer, "assets/base2.png");
@@ -508,26 +532,38 @@ int main(int argc, char* argv[])
         64.0f
     };
 
-    float speed = 5.0f;
+    const float SPEED_NORMAL = 5.0f;
+    const float SPEED_SUJO = 2.5f;
+    float speed = SPEED_NORMAL;
     float velocidadeY = 0.0f;
     float gravidade = 0.5f;
-    bool  noChao = true;
     float alturaChao = alturaTela - player.h;
+    int framePowerUp = 0;
     int framePlayer = 0;
     int framePulo = 0;
     int danoTiro = 1;
+    const int totalFramesPowerUp = 5;
+    const int larguraFramePowerUp = 64;
+    const int alturaFramePowerUp = 64;
+    bool  noChao = true;
     bool atirando = false;
     bool pulando = false;
     bool aterrissando = false;
     bool olhandoDireita = true;
     bool dano = false;
     bool stun = false;
-    bool ataqueBuff = false;
+    bool ataqueBuff = false;    
+    bool sujo = false;
+
+
+    Uint64 ultimoFramePowerUp = 0;
+    Uint64 sujoInicio = 0;
     Uint64 stunStart = 0;
     Uint64 danoStart = 0;
     Uint64 ultimoFramePlayer = 0;
     Uint64 inicioAterrissagem = 0;
     Uint64 ataqueBuffInicio = 0;
+    const Uint64 DURACAO_SUJO = 5000;
     const Uint64 STUN_DURACAO = 1250;
     const Uint64 DURACAO_BUFF = 10000;
 
@@ -540,6 +576,9 @@ int main(int argc, char* argv[])
     80.0f,
     (float)alturaTela
     };
+
+    float tempoFlashBase = 0.0f;
+    FlashBase flashBase = FLASH_NENHUM;
 
     //Inimigos
     SDL_FRect srcInimigo = {
@@ -989,6 +1028,52 @@ int main(int argc, char* argv[])
 
             ultimoFrameBase = SDL_GetTicks();
         }
+
+        // Atualização do flash da base
+        if (tempoFlashBase > 0.0f)
+        {
+            tempoFlashBase -= 1.0f / 60.0f;
+
+            if (tempoFlashBase <= 0.0f)
+            {
+                tempoFlashBase = 0.0f;
+                flashBase = FLASH_NENHUM;
+            }
+        }
+
+        // Atualização da animação do PowerUp de Vida
+        for (int i = 0; i < MAX_POWERUPS; i++)
+        {
+            if (!vidasPowerup[i].ativo)
+                continue;
+
+            if (SDL_GetTicks() - vidasPowerup[i].ultimoFrame > 120)
+            {
+                vidasPowerup[i].frame++;
+
+                if (vidasPowerup[i].frame >= totalFramesPowerUp)
+                    vidasPowerup[i].frame = 0;
+
+                vidasPowerup[i].ultimoFrame = SDL_GetTicks();
+            }
+        }
+
+        // Atualização da animação do PowerUp de Ataque
+        for (int i = 0; i < MAX_POWERUPSATQ; i++)
+        {
+            if (!ataquePowerup[i].ativo)
+                continue;
+
+            if (SDL_GetTicks() - ataquePowerup[i].ultimoFrame > 120)
+            {
+                ataquePowerup[i].frame++;
+
+                if (ataquePowerup[i].frame >= totalFramesPowerUp)
+                    ataquePowerup[i].frame = 0;
+
+                ataquePowerup[i].ultimoFrame = SDL_GetTicks();
+            }
+        }
         // ------------------------------------------------------
         // SISTEMA DE ONDAS
         // ------------------------------------------------------
@@ -1038,6 +1123,13 @@ int main(int argc, char* argv[])
         {
             ataqueBuff = false;
             danoTiro = 1;
+        }
+
+        if (sujo &&
+            SDL_GetTicks() - sujoInicio >= DURACAO_SUJO)
+        {
+            sujo = false;
+            speed = SPEED_NORMAL;
         }
 
         // ------------------------------------------------------
@@ -1973,12 +2065,14 @@ int main(int argc, char* argv[])
 
         // Spawn de powerups
 
-        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < 3)) {
+        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < MAX_VIDAS)) {
             ultimoSpawnPowerUp = tempoAtual;
 
             for (int i = 0; i < MAX_POWERUPS; i++) {
                 if (!vidasPowerup[i].ativo) {
                     vidasPowerup[i].ativo = true;
+                    vidasPowerup[i].frame = 0;
+                    vidasPowerup[i].ultimoFrame = SDL_GetTicks();
 
                     vidasPowerup[i].rect.w = 32;
                     vidasPowerup[i].rect.h = 32;
@@ -2048,6 +2142,8 @@ int main(int argc, char* argv[])
                 20000 + rand() % 30000;
 
             ataquePowerup[0].ativo = true;
+            ataquePowerup[0].frame = 0;
+            ataquePowerup[0].ultimoFrame = SDL_GetTicks();
 
             ataquePowerup[0].rect.w = 32;
             ataquePowerup[0].rect.h = 32;
@@ -2170,8 +2266,19 @@ int main(int argc, char* argv[])
         }
 
         // ATUALIZAÇÃO DO BOSS
-        if (boss.ativo){
+        if (boss.ativo)
+        {
             boss.rect.x -= boss.speed;
+
+            if (SDL_GetTicks() - boss.ultimoFrame > 120)
+            {
+                boss.frame++;
+
+                if (boss.frame >= 6)
+                    boss.frame = 0;
+
+                boss.ultimoFrame = SDL_GetTicks();
+            }
         }
 
         for (int i = 0; i < MAX_OBSTACULOS; i++)
@@ -2195,12 +2302,21 @@ int main(int argc, char* argv[])
 
                 obstaculos[i].rect.y += obstaculos[i].velocidadeY;
 
-                // Colisão com o player enquanto cai
+                // Animação
+                if (SDL_GetTicks() - obstaculos[i].ultimoFrame > 120)
+                {
+                    if (obstaculos[i].frame < 2)
+                        obstaculos[i].frame++;
+
+                    obstaculos[i].ultimoFrame = SDL_GetTicks();
+                }
+
+                // Colisão com o player
                 if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
                 {
-                    vidas--;
 
-                    if (player.x + player.w / 2 < obstaculos[i].rect.x + obstaculos[i].rect.w / 2)
+                    if (player.x + player.w / 2 <
+                        obstaculos[i].rect.x + obstaculos[i].rect.w / 2)
                         player.x = obstaculos[i].rect.x - player.w;
                     else
                         player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
@@ -2213,24 +2329,39 @@ int main(int argc, char* argv[])
                     framePlayer = 13;
 
                     obstaculos[i].rect.y = alturaChao;
+
                     obstaculos[i].estado = OBSTACULO_CHAO;
+
+                    obstaculos[i].frame = 3;              // primeiro frame da colisão
+                    obstaculos[i].ultimoFrame = SDL_GetTicks();
                     obstaculos[i].inicioEstado = SDL_GetTicks();
                 }
 
+                // Tocou no chão
                 if (obstaculos[i].rect.y >= alturaChao)
                 {
                     obstaculos[i].rect.y = alturaChao;
 
                     obstaculos[i].estado = OBSTACULO_CHAO;
+
+                    obstaculos[i].frame = 3;
+                    obstaculos[i].ultimoFrame = SDL_GetTicks();
                     obstaculos[i].inicioEstado = SDL_GetTicks();
                 }
 
                 break;
 
-
             case OBSTACULO_CHAO:
 
-                if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 7000)
+                // Fica parado no chão
+                obstaculos[i].frame = 4;
+                break;
+
+            case OBSTACULO_QUEBRANDO:
+
+                obstaculos[i].frame = 3;
+
+                if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 300)
                 {
                     obstaculos[i].ativo = false;
                 }
@@ -2291,8 +2422,11 @@ int main(int argc, char* argv[])
                     &projeteis[j].rect,
                     &vidasPowerup[i].rect))
                 {
-                    if (vidas < MAX_VIDAS)
+                    if (vidas < MAX_VIDAS){
                         vidas++;
+                        flashBase = FLASH_CURA;
+                        tempoFlashBase = 0.2f;
+                    }
 
                     vidasPowerup[i].ativo = false;
                     projeteis[j].ativo = false;
@@ -2363,7 +2497,8 @@ int main(int argc, char* argv[])
                     &inimigos[i].rect))
                 {
                     vidas--;
-
+                    flashBase = FLASH_DANO;
+                    tempoFlashBase = 0.2f; // 200 ms
                     inimigos[i].ativo = false;
 
                     SDL_Log("Vidas restantes: %d", vidas);
@@ -2399,6 +2534,8 @@ int main(int argc, char* argv[])
             ))
             {
                 vidas -= 3;
+                flashBase = FLASH_DANO;
+                tempoFlashBase = 0.2f; // 200 ms
                 boss.ativo = false;
 
                 if (vidas <= 0)
@@ -2633,13 +2770,20 @@ int main(int argc, char* argv[])
             if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
             {
                 // Caiu em cima do obstáculo
+                // Caiu em cima do obstáculo
                 if (velocidadeY > 0 &&
                     player.y + player.h - velocidadeY <= obstaculos[i].rect.y)
                 {
-                    player.y = obstaculos[i].rect.y - player.h;
-                    velocidadeY = 0;
-                    noChao = true;
-                    pulando = false;
+                    sujo = true;
+                    sujoInicio = SDL_GetTicks();
+                    speed = SPEED_SUJO;
+
+                    // Quebra o obstáculo
+                    obstaculos[i].frame = 3;
+                    obstaculos[i].estado = OBSTACULO_QUEBRANDO;
+                    obstaculos[i].inicioEstado = SDL_GetTicks();
+
+                    noChao = false;
                 }
             }
         }
@@ -2782,7 +2926,7 @@ int main(int argc, char* argv[])
             texturaBase = base2;
             break;
         default:
-            texturaBase = base1;
+            texturaBase = base1;    
             break;
         }
 
@@ -2793,12 +2937,27 @@ int main(int argc, char* argv[])
         alturaFrameBase
             };
 
+        if (tempoFlashBase > 0.0f)
+        {
+            if (flashBase == FLASH_DANO)
+                SDL_SetTextureColorMod(texturaBase, 255, 80, 80);
+            else if (flashBase == FLASH_CURA)
+                SDL_SetTextureColorMod(texturaBase, 80, 255, 80);
+        }
+        else
+        {
+            SDL_SetTextureColorMod(texturaBase, 255, 255, 255);
+        }
+
         SDL_RenderTexture(
             renderer,
             texturaBase,
             &srcBase,
             &base
         );
+
+        // Volta a textura ao normal
+        SDL_SetTextureColorMod(texturaBase, 255, 255, 255);
 
         // Desenho da direção do player
         static Uint64 ultimoFrameAndar = 0;
@@ -2842,9 +3001,16 @@ int main(int argc, char* argv[])
         64
         };
 
+        SDL_Texture* texturaAtualPlayer;
+
+        if (sujo)
+            texturaAtualPlayer = texturaPlayerSujo;
+        else
+            texturaAtualPlayer = texturaPlayer;
+
         SDL_RenderTexture(
             renderer,
-            texturaPlayer,
+            texturaAtualPlayer,
             &srcPlayer,
             &player
         );
@@ -2897,32 +3063,92 @@ int main(int argc, char* argv[])
             if (!obstaculos[i].ativo)
                 continue;
 
+                SDL_FRect srcSombra =
+                {
+                    obstaculos[i].frame * 64,
+                    0,
+                    64,
+                    64
+                };
+
+                SDL_FRect sombraRect =
+                {
+                    obstaculos[i].rect.x,
+                    alturaChao,
+                    64,
+                    64
+                };
+
             if (obstaculos[i].estado == OBSTACULO_SOMBRA)
             {
-                // Sombra
-                SDL_SetRenderDrawColor(renderer, 50, 50, 50, 180);
+
+                SDL_RenderTexture(
+                    renderer,
+                    texturaSombra,
+                    &srcSombra,
+                    &sombraRect
+                );
             }
             else if (obstaculos[i].estado == OBSTACULO_CAINDO)
             {
-                // Caindo
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+                // sombra
+                SDL_RenderTexture(
+                    renderer,
+                    texturaSombra,
+                    &srcSombra,
+                    &sombraRect
+                );
+
+                // obstáculo
+                SDL_FRect srcObstaculo =
+                {
+                    obstaculos[i].frame * 64,
+                    0,
+                    64,
+                    64
+                };
+
+                SDL_RenderTexture(
+                    renderer,
+                    texturaObstaculo,
+                    &srcObstaculo,
+                    &obstaculos[i].rect
+                );
             }
             else
             {
-                // No chão
-                SDL_SetRenderDrawColor(renderer, 120, 70, 20, 255);
-            }
+                SDL_FRect srcObstaculo =
+                {
+                    obstaculos[i].frame * 64,
+                    0,
+                    64,
+                    64
+                };
 
-            SDL_RenderFillRect(renderer, &obstaculos[i].rect);
+                SDL_RenderTexture(
+                    renderer,
+                    texturaObstaculo,
+                    &srcObstaculo,
+                    &obstaculos[i].rect
+                );
+            }
         }
 
         // Desenhar boss
 
         if (boss.ativo){
+            SDL_FRect srcBoss =
+            {
+                boss.frame * 128,
+                0,
+                128,
+                128
+            };
+
             SDL_RenderTexture(
                 renderer,
-                texturaInimigo, // trocar pra do boss dps
-                NULL,
+                texturaBoss,
+                &srcBoss,
                 &boss.rect
             );
         }
@@ -2975,17 +3201,45 @@ int main(int argc, char* argv[])
             if (!vidasPowerup[i].ativo)
                 continue;
 
-            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-            SDL_RenderFillRect(renderer, &vidasPowerup[i].rect);
+            SDL_FRect src = {
+                vidasPowerup[i].frame * larguraFramePowerUp,
+                0,
+                larguraFramePowerUp,
+                alturaFramePowerUp
+            };
+
+            SDL_FRect dest = vidasPowerup[i].rect;
+            dest.y += SDL_sinf(SDL_GetTicks() * 0.005f) * 4;
+
+            SDL_RenderTexture(
+                renderer,
+                powerUpVida,
+                &src,
+                &dest
+            );
         }
 
-        for (int i = 0; i < MAX_POWERUPSATQ; i++) 
+        for (int i = 0; i < MAX_POWERUPSATQ; i++)
         {
             if (!ataquePowerup[i].ativo)
                 continue;
 
-            SDL_SetRenderDrawColor(renderer, 255, 150, 0, 255);
-            SDL_RenderFillRect(renderer, &ataquePowerup[i].rect);
+            SDL_FRect src = {
+                ataquePowerup[i].frame * larguraFramePowerUp,
+                0,
+                larguraFramePowerUp,
+                alturaFramePowerUp
+            };
+
+            SDL_FRect dest = ataquePowerup[i].rect;
+            dest.y += SDL_sinf(SDL_GetTicks() * 0.005f) * 4;
+
+            SDL_RenderTexture(
+                renderer,
+                powerUpAtq,
+                &src,
+                &dest
+            );
         }
 
         // Pontuação
