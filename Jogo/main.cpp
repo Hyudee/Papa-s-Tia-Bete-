@@ -2326,7 +2326,11 @@ int main(int argc, char* argv[])
 
                     dano = true;
                     danoStart = SDL_GetTicks();
-                    framePlayer = 13;
+                    
+                    if (olhandoDireita)
+                        framePlayer = 13;
+                    else
+                        framePlayer = 27;
 
                     obstaculos[i].rect.y = alturaChao;
 
@@ -2396,7 +2400,11 @@ int main(int argc, char* argv[])
 
                     dano = true;
                     danoStart = SDL_GetTicks();
-                    framePlayer = 13;
+                    
+                    if (olhandoDireita)
+                        framePlayer = 13;
+                    else
+                        framePlayer = 27;
                         
                     inimigos[i].ativo = false;
                 }
@@ -2620,12 +2628,6 @@ int main(int argc, char* argv[])
 
         const bool* key = SDL_GetKeyboardState(NULL);
 
-        // Fechar o jogo
-        if (key[SDL_SCANCODE_ESCAPE])
-        {
-            running = false;
-        }
-
         float playerXAnterior = player.x;
         float playerYAnterior = player.y;
         // Movimentação e efeito de stun
@@ -2649,7 +2651,10 @@ int main(int argc, char* argv[])
                 noChao = false;
                 pulando = true;
 
-                framePlayer = 11;
+                if (olhandoDireita)
+                    framePlayer = 11;
+                else
+                    framePlayer = 24;
             }
 
         }
@@ -2687,14 +2692,28 @@ int main(int argc, char* argv[])
         {
             Uint64 tempo = SDL_GetTicks() - danoStart;
 
-            if (tempo < 300)
-                framePlayer = 13;
-            else if (tempo < 600)
-                framePlayer = 14;
-            else if (tempo < 900)
-                framePlayer = 15;
+            if (olhandoDireita)
+            {
+                if (tempo < 300)
+                    framePlayer = 13;
+                else if (tempo < 600)
+                    framePlayer = 14;
+                else if (tempo < 900)
+                    framePlayer = 15;
+                else
+                    dano = false;
+            }
             else
-                dano = false;
+            {
+                if (tempo < 300)
+                    framePlayer = 27;
+                else if (tempo < 600)
+                    framePlayer = 28;
+                else if (tempo < 900)
+                    framePlayer = 29;
+                else
+                    dano = false;
+            }
         }
 
         //------------------------------------------------------
@@ -2730,7 +2749,10 @@ int main(int argc, char* argv[])
                 aterrissando = true;
                 inicioAterrissagem = SDL_GetTicks();
 
-                framePlayer = 12;
+                if (olhandoDireita)
+                    framePlayer = 12;
+                else
+                    framePlayer = 26;
             }
         }
 
@@ -2770,7 +2792,6 @@ int main(int argc, char* argv[])
             if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
             {
                 // Caiu em cima do obstáculo
-                // Caiu em cima do obstáculo
                 if (velocidadeY > 0 &&
                     player.y + player.h - velocidadeY <= obstaculos[i].rect.y)
                 {
@@ -2783,7 +2804,20 @@ int main(int argc, char* argv[])
                     obstaculos[i].estado = OBSTACULO_QUEBRANDO;
                     obstaculos[i].inicioEstado = SDL_GetTicks();
 
+                    // Aplica knockback
+                    if (olhandoDireita)
+                    {
+                        player.x -= 35.0f;
+                        velocidadeY = -3.5f;
+                    }
+                    else
+                    {
+                        player.x += 35.0f;
+                        velocidadeY = -3.5f;
+                    }
+
                     noChao = false;
+                    pulando = true;
                 }
             }
         }
@@ -2791,7 +2825,10 @@ int main(int argc, char* argv[])
         // Animação de pulo
         if (aterrissando)
         {
-            framePlayer = 12;
+            if (olhandoDireita)
+                framePlayer = 12;
+            else
+                framePlayer = 26;
 
             if (SDL_GetTicks() - inicioAterrissagem > 200)
             {
@@ -2803,7 +2840,10 @@ int main(int argc, char* argv[])
         {
             if (velocidadeY < -2)
             {
-                framePlayer = 11; // subindo
+                if (olhandoDireita)
+                    framePlayer = 11;
+                else
+                    framePlayer = 24;
             }
 
         }
