@@ -60,6 +60,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 typedef enum {
     MENU,
     JOGAR,
+    CREDITOS,
     CONFIGURACOES,
     CONTROLES,
     RANKING,
@@ -311,7 +312,7 @@ int main(int argc, char* argv[])
     Sistema estado = MENU;
 
     SDL_FRect botaoJogar;
-    SDL_FRect botaoRanking;
+    SDL_FRect botaoCreditos;
     SDL_FRect botaoSair;
     SDL_FRect logoRect;
 
@@ -334,15 +335,15 @@ int main(int argc, char* argv[])
     botaoJogar.x = larguraTela * 0.12f;
     botaoJogar.y = alturaTela * 0.45f;
 
-    botaoRanking.w = botaoJogar.w;
-    botaoRanking.h = botaoJogar.h;
-    botaoRanking.x = botaoJogar.x;
-    botaoRanking.y = botaoJogar.y + botaoJogar.h + 20;
+    botaoCreditos.w = botaoJogar.w;
+    botaoCreditos.h = botaoJogar.h;
+    botaoCreditos.x = botaoJogar.x;
+    botaoCreditos.y = botaoJogar.y + botaoJogar.h + 20;
 
     botaoSair.w = botaoJogar.w;
     botaoSair.h = botaoJogar.h;
     botaoSair.x = botaoJogar.x;
-    botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
+    botaoSair.y = botaoCreditos.y + botaoCreditos.h + 20;
 
     float larguraAba = larguraTela * 0.03f;
     float alturaAba = alturaTela * 0.18f;
@@ -611,6 +612,8 @@ int main(int argc, char* argv[])
     int frameBase = 0;
     int opcaoConfig = 0; // 0 = Tela cheia, 1 = Música, 2 = Efeitos
 
+    float yCreditos = 0.0f;
+
 
 
     const int larguraFrameBase = 64;
@@ -733,6 +736,14 @@ int main(int argc, char* argv[])
                     ultimoSpawnAtq = SDL_GetTicks();
                 }
 
+                if (mouseX >= botaoCreditos.x &&
+                    mouseX <= botaoCreditos.x + botaoCreditos.w &&
+                    mouseY >= botaoCreditos.y &&
+                    mouseY <= botaoCreditos.y + botaoCreditos.h)
+                {
+                    estado = CREDITOS;
+                    yCreditos = alturaTela;
+                }
 
                 if (mouseX >= botaoSair.x &&
                     mouseX <= botaoSair.x + botaoSair.w &&
@@ -741,6 +752,7 @@ int main(int argc, char* argv[])
                 {
                     running = false;
                 }
+
 
                 // Troféu
                 if (mouseX >= abaRanking.x &&
@@ -901,6 +913,14 @@ int main(int argc, char* argv[])
                     estado = MENU;
                 }
             }
+            if (estado == CREDITOS &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    estado = MENU;
+                }
+            }
 
             // Redimensionamento da janela
             if (event.type == SDL_EVENT_WINDOW_RESIZED)
@@ -923,15 +943,15 @@ int main(int argc, char* argv[])
                 botaoJogar.x = larguraTela * 0.12f;
                 botaoJogar.y = alturaTela * 0.45f;
 
-                botaoRanking.w = botaoJogar.w;
-                botaoRanking.h = botaoJogar.h;
-                botaoRanking.x = botaoJogar.x;
-                botaoRanking.y = botaoJogar.y + botaoJogar.h + 20;
+                botaoCreditos.w = botaoJogar.w;
+                botaoCreditos.h = botaoJogar.h;
+                botaoCreditos.x = botaoJogar.x;
+                botaoCreditos.y = botaoJogar.y + botaoJogar.h + 20;
 
                 botaoSair.w = botaoJogar.w;
                 botaoSair.h = botaoJogar.h;
                 botaoSair.x = botaoJogar.x;
-                botaoSair.y = botaoRanking.y + botaoRanking.h + 20;
+                botaoSair.y = botaoCreditos.y + botaoCreditos.h + 20;
 
                 float larguraAba = larguraTela * 0.03f;
                 float alturaAba = alturaTela * 0.18f;
@@ -1159,12 +1179,185 @@ int main(int argc, char* argv[])
 
             SDL_RenderTexture(renderer, logo, NULL, &logoRect);
             SDL_RenderTexture(renderer, jogar, NULL, &botaoJogar);
-            SDL_RenderTexture(renderer, creditos, NULL, &botaoRanking);
+            SDL_RenderTexture(renderer, creditos, NULL, &botaoCreditos);
             SDL_RenderTexture(renderer, sair, NULL, &botaoSair);
 
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
             continue;
+        }
+
+        if (estado == CREDITOS) {
+            SDL_RenderClear(renderer);
+
+            SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+
+            yCreditos -= 1.0f;
+
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[50];
+
+
+            // Textos
+
+            float espacamento = alturaTela * 0.07f;
+
+            const char* creditos[] =
+            {
+                "Desenvolvido por:",
+                "",
+
+
+                "Direcao",
+                "Davi Hyude Nunes de Almeida",
+                "",
+
+                "Programacao",
+                "Davi Hyude Nunes de Almeida",
+                "",
+
+                "Game Design",
+                "Davi Hyude Nunes de Almeida,",
+                "Danah Bezerra de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Direcao de Arte",
+                "Danah Bezerra de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Arte 2D",
+                "Danah Bezerra de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Animacao",
+                "Danah Bezerra de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Design de Interface (UI)",
+                "Davi Hyude Nunes de Almeida,",
+                "Danah Bezerra de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Efeitos Sonoros",
+                "Davi Hyude Nunes de Almeida e",
+                "Danah Bezerra de Almeida",
+                "",
+
+                "Testes e Balanceamento",
+                "Davi Hyude Nunes de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Suporte Moral",
+                "Agatha Marisa Jales Soares e", 
+                "Lucas Natanael de Oliveira Costa",
+                "",
+
+                "Apoio Psicologico",
+                "Agatha Marisa Jales Soares e",
+                "Lucas Natanael de Oliveira Costa",
+                "",
+
+                "Responsaveis por Impedir",
+                "os Desenvolvedores de Desistir",
+                "Agatha Marisa Jales Soares e",
+                "Lucas Natanael de Oliveira Costa"
+                "",
+
+
+                "Ferramentas Utilizadas",
+                "C++",
+                "SDL3",
+                "SDL_image",
+                "SDL_ttf",
+                "SDL_mixer",
+                "Microsoft Visual Studio 2026",
+                "",
+
+                "© 2026",
+                "Davi Hyude Nunes de Almeida,",
+                "Danah Bezerra de Almeida e",
+                "Joao Pedro de Souza de Oliveira",
+                "",
+
+                "Obrigado por jogar!"
+            };
+
+            int quantidadeLinhas = sizeof(creditos) / sizeof(creditos[0]);
+
+            for (int i = 0; i < quantidadeLinhas; i++)
+            {
+                if (strlen(creditos[i]) == 0)
+                    continue;
+
+                SDL_Surface* surface = TTF_RenderText_Blended(
+                    fontHud,
+                    creditos[i],
+                    0,
+                    preto
+                );
+
+                SDL_Texture* texture =
+                    SDL_CreateTextureFromSurface(renderer, surface);
+
+                SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+                rect.x = larguraTela / 2 - rect.w / 2;
+                rect.y = yCreditos + i * espacamento;
+
+                SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+                SDL_DestroySurface(surface);
+                SDL_DestroyTexture(texture);
+            }
+
+
+
+
+
+            surface = TTF_RenderText_Blended(
+                fontHud,
+                "ESC - Voltar",
+                0,
+                preto
+            );
+
+            texture =
+                SDL_CreateTextureFromSurface(
+                    renderer,
+                    surface
+                );
+
+            SDL_GetTextureSize(
+                texture,
+                &rect.w,
+                &rect.h
+            );
+
+            rect.x = 20;
+            rect.y = alturaTela - 50;
+
+            SDL_RenderTexture(
+                renderer,
+                texture,
+                NULL,
+                &rect
+            );
+
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+            
         }
 
         if (estado == RANKING)
