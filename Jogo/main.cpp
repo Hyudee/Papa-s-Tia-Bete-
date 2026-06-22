@@ -60,6 +60,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 typedef enum {
     MENU,
     JOGAR,
+    PAUSE,
     CREDITOS,
     CONFIGURACOES,
     CONTROLES,
@@ -242,6 +243,9 @@ int main(int argc, char* argv[])
     // INICIALIZAÇÃO DO SDL
     // ----------------------------------------------------------
 
+    //Icon
+    SDL_Surface* icon = IMG_Load("assets/icon.png");
+
     SDL_Log("Inicializando o jogo...");
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
@@ -251,11 +255,17 @@ int main(int argc, char* argv[])
     }
 
     SDL_Window* window = SDL_CreateWindow(
-        "Jogo",
+        "Papa's Tia Bete",
         840,
         480,
         SDL_WINDOW_RESIZABLE
     );
+
+    if (icon)
+    {
+        SDL_SetWindowIcon(window, icon);
+        SDL_DestroySurface(icon);
+    }
 
     if (!window)
     {
@@ -283,7 +293,7 @@ int main(int argc, char* argv[])
 
     TTF_Font* font = TTF_OpenFont("assets/PixelifySans.ttf", 32);
     TTF_Font* fontHud = TTF_OpenFont("assets/PixelifySans.ttf", 18);
-
+        
     if (!font)
     {
         SDL_Log("Erro ao carregar fonte");
@@ -370,7 +380,7 @@ int main(int argc, char* argv[])
     CarregarRanking(ranking);
 
     // ----------------------------------------------------------
-    // CARREGAMENTO DOS TILESETS
+    // CARREGAMENTO DOS SPRITES
     // ----------------------------------------------------------
 
     SDL_Texture* background =
@@ -611,6 +621,13 @@ int main(int argc, char* argv[])
     int bossAtivados = 0;
     int frameBase = 0;
     int opcaoConfig = 0; // 0 = Tela cheia, 1 = Música, 2 = Efeitos
+    int opcaoPause = 0; // 0 = Continuar, 2 = Menu
+
+    const char* opcoesPause[] =
+    {
+        "Continuar",
+        "Menu Principal"
+    };
 
     float yCreditos = 0.0f;
 
@@ -734,6 +751,23 @@ int main(int argc, char* argv[])
                     ultimoSpawn = SDL_GetTicks();
                     ultimoSpawnPowerUp = SDL_GetTicks();
                     ultimoSpawnAtq = SDL_GetTicks();
+                    pontos = 0;
+                    ondas = 1;
+                    vidas = MAX_VIDAS;
+
+                    player.x = 320.0f;
+                    player.y = 240.0f;
+
+                    speed = SPEED_NORMAL;
+                    velocidadeY = 0.0f;
+
+                    boss = { 0 };
+
+                    memset(inimigos, 0, sizeof(inimigos));
+                    memset(projeteis, 0, sizeof(projeteis));
+                    memset(vidasPowerup, 0, sizeof(vidasPowerup));
+                    memset(ataquePowerup, 0, sizeof(ataquePowerup));
+                    memset(obstaculos, 0, sizeof(obstaculos));
                 }
 
                 if (mouseX >= botaoCreditos.x &&
@@ -842,7 +876,17 @@ int main(int argc, char* argv[])
                 }
             }
 
-            // Sair das abas
+            // Funcionamento do esc
+
+            if (estado == JOGAR &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    estado = PAUSE;
+                }
+            }
+
             if (estado == RANKING &&
                 event.type == SDL_EVENT_KEY_DOWN)
             {
@@ -861,12 +905,12 @@ int main(int argc, char* argv[])
                     estado = MENU;
                     break;
 
-                case SDLK_UP:
+                case SDLK_W:
                     if (opcaoConfig > 0)
                         opcaoConfig--;
                     break;
 
-                case SDLK_DOWN:
+                case SDLK_S:
                     if (opcaoConfig < 2)
                         opcaoConfig++;
                     break;
@@ -890,6 +934,38 @@ int main(int argc, char* argv[])
                     else if (opcaoConfig == 2)
                     {
                         efeitosLigados = !efeitosLigados;
+                    }
+
+                    break;
+                }
+            }
+
+            if (estado == PAUSE &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                switch (event.key.key)
+                {
+                case SDLK_W:
+                    if (opcaoPause > 0)
+                        opcaoPause--;
+                    break;
+
+                case SDLK_S:
+                    if (opcaoPause < 1)
+                        opcaoPause++;
+                    break;
+
+                case SDLK_RETURN:
+
+                    switch (opcaoPause)
+                    {
+                    case 0: // Continuar
+                        estado = JOGAR;
+                        break;
+
+                    case 1: // Menu Principal
+                        estado = MENU;
+                        break;
                     }
 
                     break;
@@ -1039,59 +1115,69 @@ int main(int argc, char* argv[])
         }
 
         // Atualização da base
-        if (SDL_GetTicks() - ultimoFrameBase > 150)
-        {
-            frameBase++;
+        if (estado == JOGAR) {
 
-            if (frameBase >= totalFramesBase)
-                frameBase = 0;
+            if (SDL_GetTicks() - ultimoFrameBase > 150)
+            {
+                frameBase++;
 
-            ultimoFrameBase = SDL_GetTicks();
+                if (frameBase >= totalFramesBase)
+                    frameBase = 0;
+
+                ultimoFrameBase = SDL_GetTicks();
+            }
         }
 
         // Atualização do flash da base
-        if (tempoFlashBase > 0.0f)
-        {
-            tempoFlashBase -= 1.0f / 60.0f;
+        if (estado == JOGAR) {
 
-            if (tempoFlashBase <= 0.0f)
+            if (tempoFlashBase > 0.0f)
             {
-                tempoFlashBase = 0.0f;
-                flashBase = FLASH_NENHUM;
+                tempoFlashBase -= 1.0f / 60.0f;
+
+                if (tempoFlashBase <= 0.0f)
+                {
+                    tempoFlashBase = 0.0f;
+                    flashBase = FLASH_NENHUM;
+                }
             }
         }
 
         // Atualização da animação do PowerUp de Vida
-        for (int i = 0; i < MAX_POWERUPS; i++)
-        {
-            if (!vidasPowerup[i].ativo)
-                continue;
-
-            if (SDL_GetTicks() - vidasPowerup[i].ultimoFrame > 120)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_POWERUPS; i++)
             {
-                vidasPowerup[i].frame++;
+                if (!vidasPowerup[i].ativo)
+                    continue;
 
-                if (vidasPowerup[i].frame >= totalFramesPowerUp)
-                    vidasPowerup[i].frame = 0;
+                if (SDL_GetTicks() - vidasPowerup[i].ultimoFrame > 120)
+                {
+                    vidasPowerup[i].frame++;
 
-                vidasPowerup[i].ultimoFrame = SDL_GetTicks();
+                    if (vidasPowerup[i].frame >= totalFramesPowerUp)
+                        vidasPowerup[i].frame = 0;
+
+                    vidasPowerup[i].ultimoFrame = SDL_GetTicks();
+                }
             }
         }
-
         // Atualização da animação do PowerUp de Ataque
-        for (int i = 0; i < MAX_POWERUPSATQ; i++)
-        {
-            if (!ataquePowerup[i].ativo)
-                continue;
-
-            if (SDL_GetTicks() - ataquePowerup[i].ultimoFrame > 120)
+        
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_POWERUPSATQ; i++)
             {
-                ataquePowerup[i].frame++;
+                if (!ataquePowerup[i].ativo)
+                    continue;
 
-                if (ataquePowerup[i].frame >= totalFramesPowerUp)
-                    ataquePowerup[i].frame = 0;
+                if (SDL_GetTicks() - ataquePowerup[i].ultimoFrame > 120)
+                {
+                    ataquePowerup[i].frame++;
 
-                ataquePowerup[i].ultimoFrame = SDL_GetTicks();
+                    if (ataquePowerup[i].frame >= totalFramesPowerUp)
+                        ataquePowerup[i].frame = 0;
+
+                    ataquePowerup[i].ultimoFrame = SDL_GetTicks();
+                }
             }
         }
         // ------------------------------------------------------
@@ -1138,20 +1224,21 @@ int main(int argc, char* argv[])
         }
 
         // Acabar buffs
-        if (ataqueBuff &&
-            SDL_GetTicks() - ataqueBuffInicio >= DURACAO_BUFF)
-        {
-            ataqueBuff = false;
-            danoTiro = 1;
-        }
+        if (estado == JOGAR) {
+            if (ataqueBuff &&
+                SDL_GetTicks() - ataqueBuffInicio >= DURACAO_BUFF)
+            {
+                ataqueBuff = false;
+                danoTiro = 1;
+            }
 
-        if (sujo &&
-            SDL_GetTicks() - sujoInicio >= DURACAO_SUJO)
-        {
-            sujo = false;
-            speed = SPEED_NORMAL;
+            if (sujo &&
+                SDL_GetTicks() - sujoInicio >= DURACAO_SUJO)
+            {
+                sujo = false;
+                speed = SPEED_NORMAL;
+            }
         }
-
         // ------------------------------------------------------
         // TELAS DE ESTADO (MENU / RANKING / GAMEOVER)
         // ------------------------------------------------------
@@ -1221,28 +1308,28 @@ int main(int argc, char* argv[])
                 "Game Design",
                 "Davi Hyude Nunes de Almeida,",
                 "Danah Bezerra de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Direcao de Arte",
                 "Danah Bezerra de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Arte 2D",
                 "Danah Bezerra de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Animacao",
                 "Danah Bezerra de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Design de Interface (UI)",
                 "Davi Hyude Nunes de Almeida,",
                 "Danah Bezerra de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Efeitos Sonoros",
@@ -1252,7 +1339,7 @@ int main(int argc, char* argv[])
 
                 "Testes e Balanceamento",
                 "Davi Hyude Nunes de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Suporte Moral",
@@ -1284,7 +1371,7 @@ int main(int argc, char* argv[])
                 "© 2026",
                 "Davi Hyude Nunes de Almeida,",
                 "Danah Bezerra de Almeida e",
-                "Joao Pedro de Souza de Oliveira",
+                "Joao Pedro Souza de Oliveira",
                 "",
 
                 "Obrigado por jogar!"
@@ -2130,7 +2217,7 @@ int main(int argc, char* argv[])
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
             continue;
-        }
+        }        
 
         // Tela de game over
         if (estado == GAMEOVER)
@@ -2211,499 +2298,546 @@ int main(int argc, char* argv[])
         // CONTROLE DE SPAWN
         // ------------------------------------------------------
 
-        int vivos = 0;
-
-        for (int i = 0; i < MAX_INIMIGOS; i++)
-        {
-            if (inimigos[i].ativo)
-            {
-                vivos++;
-            }
-        }
-
-        // Spawn automático
-        tempoAtual = SDL_GetTicks();
-
-        if (!boss.ativo && tempoAtual - ultimoSpawn >= intervaloSpawn && vivos < inimigosAtivos)
-        {
-            ultimoSpawn = tempoAtual;
+        if (estado == JOGAR) {
+            int vivos = 0;
 
             for (int i = 0; i < MAX_INIMIGOS; i++)
             {
-                if (!inimigos[i].ativo)
+                if (inimigos[i].ativo)
                 {
-                    inimigos[i].ativo = true;
-                    inimigos[i].frame = 0;
-                    inimigos[i].ultimoFrame = SDL_GetTicks();
-
-                    inimigos[i].rect.w = 64;
-                    inimigos[i].rect.h = 64;
-
-                    inimigos[i].rect.x = larguraTela;
-                    inimigos[i].rect.x -= inimigos[i].speed;
-                    inimigos[i].rect.y =
-                        (float)(rand() % (alturaTela - 32));
-
-                    inimigos[i].speed = 2.0f + (ondas * 0.5f);
-
-                    if (spam)
-                    {
-                        inimigos[i].speed += 2.0f;
-                    }
-
-                    break;
+                    vivos++;
                 }
             }
-        }
 
-        // Spawn de powerups
+            // Spawn automático
+            tempoAtual = SDL_GetTicks();
 
-        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < MAX_VIDAS)) {
-            ultimoSpawnPowerUp = tempoAtual;
-
-            for (int i = 0; i < MAX_POWERUPS; i++) {
-                if (!vidasPowerup[i].ativo) {
-                    vidasPowerup[i].ativo = true;
-                    vidasPowerup[i].frame = 0;
-                    vidasPowerup[i].ultimoFrame = SDL_GetTicks();
-
-                    vidasPowerup[i].rect.w = 32;
-                    vidasPowerup[i].rect.h = 32;
-
-                    vidasPowerup[i].rect.x = larguraTela;
-
-                    vidasPowerup[i].rect.y =
-                        rand() % (alturaTela - 32);
-
-                    vidasPowerup[i].speed = 7.0f;
-
-                    break;
-                }
-            }
-        }
-
-        // SPAWN DOS OBSTÁCULOS
-
-        if (ondas >= 3 &&
-            !boss.ativo &&
-            SDL_GetTicks() - ultimoSpawnObstaculo >= intervaloObstaculo)
-        {
-            ultimoSpawnObstaculo = SDL_GetTicks();
-
-            for (int i = 0; i < MAX_OBSTACULOS; i++)
+            if (!boss.ativo && tempoAtual - ultimoSpawn >= intervaloSpawn && vivos < inimigosAtivos)
             {
-                if (!obstaculos[i].ativo)
+                ultimoSpawn = tempoAtual;
+
+                for (int i = 0; i < MAX_INIMIGOS; i++)
                 {
-                    obstaculos[i].ativo = true;
+                    if (!inimigos[i].ativo)
+                    {
+                        inimigos[i].ativo = true;
+                        inimigos[i].frame = 0;
+                        inimigos[i].ultimoFrame = SDL_GetTicks();
 
-                    obstaculos[i].estado = OBSTACULO_SOMBRA;
+                        inimigos[i].rect.w = 64;
+                        inimigos[i].rect.h = 64;
 
-                    obstaculos[i].frame = 0;
-                    obstaculos[i].ultimoFrame = SDL_GetTicks();
-                    obstaculos[i].inicioEstado = SDL_GetTicks();
+                        inimigos[i].rect.x = larguraTela;
+                        inimigos[i].rect.x -= inimigos[i].speed;
+                        inimigos[i].rect.y =
+                            (float)(rand() % (alturaTela - 32));
 
-                    obstaculos[i].velocidadeY = 4.0f;
+                        inimigos[i].speed = 2.0f + (ondas * 0.5f);
 
-                    obstaculos[i].rect.w = 64.0f;
-                    obstaculos[i].rect.h = 64.0f;
+                        if (spam)
+                        {
+                            inimigos[i].speed += 2.0f;
+                        }
 
-                    // posição aleatória
-                    obstaculos[i].rect.x = (float)(rand() % (larguraTela - (int)obstaculos[i].rect.w));
-
-                    // começa acima da tela
-                    obstaculos[i].rect.y = -obstaculos[i].rect.h;
-
-                    break;
+                        break;
+                    }
                 }
             }
+
+            // Spawn de powerups
+
+            if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < MAX_VIDAS)) {
+                ultimoSpawnPowerUp = tempoAtual;
+
+                for (int i = 0; i < MAX_POWERUPS; i++) {
+                    if (!vidasPowerup[i].ativo) {
+                        vidasPowerup[i].ativo = true;
+                        vidasPowerup[i].frame = 0;
+                        vidasPowerup[i].ultimoFrame = SDL_GetTicks();
+
+                        vidasPowerup[i].rect.w = 32;
+                        vidasPowerup[i].rect.h = 32;
+
+                        vidasPowerup[i].rect.x = larguraTela;
+
+                        vidasPowerup[i].rect.y =
+                            rand() % (alturaTela - 32);
+
+                        vidasPowerup[i].speed = 7.0f;
+
+                        break;
+                    }
+                }
+            }
+
+            // SPAWN DOS OBSTÁCULOS
+
+            if (ondas >= 3 &&
+                !boss.ativo &&
+                SDL_GetTicks() - ultimoSpawnObstaculo >= intervaloObstaculo)
+            {
+                ultimoSpawnObstaculo = SDL_GetTicks();
+
+                for (int i = 0; i < MAX_OBSTACULOS; i++)
+                {
+                    if (!obstaculos[i].ativo)
+                    {
+                        obstaculos[i].ativo = true;
+
+                        obstaculos[i].estado = OBSTACULO_SOMBRA;
+
+                        obstaculos[i].frame = 0;
+                        obstaculos[i].ultimoFrame = SDL_GetTicks();
+                        obstaculos[i].inicioEstado = SDL_GetTicks();
+
+                        obstaculos[i].velocidadeY = 4.0f;
+
+                        obstaculos[i].rect.w = 64.0f;
+                        obstaculos[i].rect.h = 64.0f;
+
+                        // posição aleatória
+                        obstaculos[i].rect.x = (float)(rand() % (larguraTela - (int)obstaculos[i].rect.w));
+
+                        // começa acima da tela
+                        obstaculos[i].rect.y = -obstaculos[i].rect.h;
+
+                        break;
+                    }
+                }
+            }
+
+            int buffsAtivos = 0;
+
+            for (int i = 0; i < MAX_POWERUPSATQ; i++)
+            {
+                if (ataquePowerup[i].ativo)
+                    buffsAtivos++;
+            }
+
+            if (tempoAtual - ultimoSpawnAtq >= intervaloSpawnAtq &&
+                buffsAtivos == 0)
+            {
+                ultimoSpawnAtq = tempoAtual;
+
+                intervaloSpawnAtq =
+                    20000 + rand() % 30000;
+
+                ataquePowerup[0].ativo = true;
+                ataquePowerup[0].frame = 0;
+                ataquePowerup[0].ultimoFrame = SDL_GetTicks();
+
+                ataquePowerup[0].rect.w = 32;
+                ataquePowerup[0].rect.h = 32;
+
+                ataquePowerup[0].rect.x = larguraTela;
+                ataquePowerup[0].rect.y =
+                    rand() % (alturaTela - 32);
+
+                ataquePowerup[0].speed = 7.0f;
+            }
         }
-
-        int buffsAtivos = 0;
-
-        for (int i = 0; i < MAX_POWERUPSATQ; i++)
-        {
-            if (ataquePowerup[i].ativo)
-                buffsAtivos++;
-        }
-
-        if (tempoAtual - ultimoSpawnAtq >= intervaloSpawnAtq &&
-            buffsAtivos == 0)
-        {
-            ultimoSpawnAtq = tempoAtual;
-
-            intervaloSpawnAtq =
-                20000 + rand() % 30000;
-
-            ataquePowerup[0].ativo = true;
-            ataquePowerup[0].frame = 0;
-            ataquePowerup[0].ultimoFrame = SDL_GetTicks();
-
-            ataquePowerup[0].rect.w = 32;
-            ataquePowerup[0].rect.h = 32;
-
-            ataquePowerup[0].rect.x = larguraTela;
-            ataquePowerup[0].rect.y =
-                rand() % (alturaTela - 32);
-
-            ataquePowerup[0].speed = 7.0f;
-        }
-
         // ------------------------------------------------------
         // ATUALIZAÇÃO DE PROJETEIS
         // ------------------------------------------------------
         
-        for (int i = 0; i < MAX_PROJETEIS; i++)
-        {
-            if (!projeteis[i].ativo)
-                continue;
-
-            // Se não estiver explodindo, movimenta
-            if (!projeteis[i].explodindo)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_PROJETEIS; i++)
             {
-                projeteis[i].rect.x += projeteis[i].velX;
-                projeteis[i].rect.y += projeteis[i].velY;
+                if (!projeteis[i].ativo)
+                    continue;
 
-                // Frames de voo (0,1,2)
-                if (SDL_GetTicks() - projeteis[i].ultimoFrame > 80)
+                // Se não estiver explodindo, movimenta
+                if (!projeteis[i].explodindo)
                 {
-                    projeteis[i].frame++;
+                    projeteis[i].rect.x += projeteis[i].velX;
+                    projeteis[i].rect.y += projeteis[i].velY;
 
-                    if (projeteis[i].frame > 2)
-                        projeteis[i].frame = 0;
-
-                    projeteis[i].ultimoFrame = SDL_GetTicks();
-                }
-            }
-            else
-            {
-                // Frames de explosão (3,4)
-                if (SDL_GetTicks() - projeteis[i].ultimoFrame > 100)
-                {
-                    projeteis[i].frame++;
-
-                    if (projeteis[i].frame > 4)
+                    // Frames de voo (0,1,2)
+                    if (SDL_GetTicks() - projeteis[i].ultimoFrame > 80)
                     {
-                        projeteis[i].ativo = false;
+                        projeteis[i].frame++;
+
+                        if (projeteis[i].frame > 2)
+                            projeteis[i].frame = 0;
+
+                        projeteis[i].ultimoFrame = SDL_GetTicks();
                     }
-
-                    projeteis[i].ultimoFrame = SDL_GetTicks();
                 }
-            }
+                else
+                {
+                    // Frames de explosão (3,4)
+                    if (SDL_GetTicks() - projeteis[i].ultimoFrame > 100)
+                    {
+                        projeteis[i].frame++;
 
-            if (projeteis[i].rect.x < 0 ||
-                projeteis[i].rect.x > larguraTela ||
-                projeteis[i].rect.y < 0 ||
-                projeteis[i].rect.y > alturaTela)
-            {
-                projeteis[i].ativo = false;
+                        if (projeteis[i].frame > 4)
+                        {
+                            projeteis[i].ativo = false;
+                        }
+
+                        projeteis[i].ultimoFrame = SDL_GetTicks();
+                    }
+                }
+
+                if (projeteis[i].rect.x < 0 ||
+                    projeteis[i].rect.x > larguraTela ||
+                    projeteis[i].rect.y < 0 ||
+                    projeteis[i].rect.y > alturaTela)
+                {
+                    projeteis[i].ativo = false;
+                }
             }
         }
-
 
         // ------------------------------------------------------
         // ATUALIZAÇÃO DE INIMIGOS
         // ------------------------------------------------------
-
-        for (int i = 0; i < MAX_INIMIGOS; i++)
-        {
-            if (inimigos[i].ativo)
-            {   
-                if (SDL_GetTicks() - inimigos[i].ultimoFrame > 150)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_INIMIGOS; i++)
+            {
+                if (inimigos[i].ativo)
                 {
-                    inimigos[i].frame++;
-
-                    if (inimigos[i].frame >= totalFramesInimigo)
+                    if (SDL_GetTicks() - inimigos[i].ultimoFrame > 150)
                     {
-                        inimigos[i].frame = 0;
+                        inimigos[i].frame++;
+
+                        if (inimigos[i].frame >= totalFramesInimigo)
+                        {
+                            inimigos[i].frame = 0;
+                        }
+
+                        inimigos[i].ultimoFrame = SDL_GetTicks();
+                    }
+                    inimigos[i].rect.x -= inimigos[i].speed;
+
+                    if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
+                    {
+                        inimigos[i].ativo = false;
+                    }
+                }
+            }
+        }
+        // Atualização dos powerups
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (!vidasPowerup[i].ativo)
+                    continue;
+
+                vidasPowerup[i].rect.x -= vidasPowerup[i].speed;
+
+                if (vidasPowerup[i].rect.x +
+                    vidasPowerup[i].rect.w < 0)
+                {
+                    vidasPowerup[i].ativo = false;
+                }
+            }
+        }
+
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_POWERUPSATQ; i++)
+            {
+                if (!ataquePowerup[i].ativo)
+                    continue;
+
+                ataquePowerup[i].rect.x -= ataquePowerup[i].speed;
+
+                if (ataquePowerup[i].rect.x +
+                    ataquePowerup[i].rect.w < 0)
+                {
+                    ataquePowerup[i].ativo = false;
+                }
+            }
+        }
+        // ATUALIZAÇÃO DO BOSS
+        if (estado == JOGAR) {
+            if (boss.ativo)
+            {
+                boss.rect.x -= boss.speed;
+
+                if (SDL_GetTicks() - boss.ultimoFrame > 120)
+                {
+                    boss.frame++;
+
+                    if (boss.frame >= 6)
+                        boss.frame = 0;
+
+                    boss.ultimoFrame = SDL_GetTicks();
+                }
+            }
+        }
+
+        if (estado == JOGAR) {
+
+            for (int i = 0; i < MAX_OBSTACULOS; i++)
+            {
+                if (!obstaculos[i].ativo)
+                    continue;
+
+                switch (obstaculos[i].estado)
+                {
+                case OBSTACULO_SOMBRA:
+
+                    if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 1000)
+                    {
+                        obstaculos[i].estado = OBSTACULO_CAINDO;
+                        obstaculos[i].inicioEstado = SDL_GetTicks();
                     }
 
-                    inimigos[i].ultimoFrame = SDL_GetTicks();
-                }
-                inimigos[i].rect.x -= inimigos[i].speed;
+                    break;
 
-                if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
-                {
-                    inimigos[i].ativo = false;
-                }
-            }
-        }
+                case OBSTACULO_CAINDO:
 
-        // Atualização dos powerups
+                    obstaculos[i].rect.y += obstaculos[i].velocidadeY;
 
-        for (int i = 0; i < MAX_POWERUPS; i++)
-        {
-            if (!vidasPowerup[i].ativo)
-                continue;
+                    // Animação
+                    if (SDL_GetTicks() - obstaculos[i].ultimoFrame > 120)
+                    {
+                        if (obstaculos[i].frame < 2)
+                            obstaculos[i].frame++;
 
-            vidasPowerup[i].rect.x -= vidasPowerup[i].speed;
+                        obstaculos[i].ultimoFrame = SDL_GetTicks();
+                    }
 
-            if (vidasPowerup[i].rect.x +
-                vidasPowerup[i].rect.w < 0)
-            {
-                vidasPowerup[i].ativo = false;
-            }
-        }
+                    // Colisão com o player
+                    if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
+                    {
 
-        for (int i = 0; i < MAX_POWERUPSATQ; i++)
-        {
-            if (!ataquePowerup[i].ativo)
-                continue;
+                        if (player.x + player.w / 2 <
+                            obstaculos[i].rect.x + obstaculos[i].rect.w / 2)
+                            player.x = obstaculos[i].rect.x - player.w;
+                        else
+                            player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
 
-            ataquePowerup[i].rect.x -= ataquePowerup[i].speed;
+                        stun = true;
+                        stunStart = SDL_GetTicks();
 
-            if (ataquePowerup[i].rect.x +
-                ataquePowerup[i].rect.w < 0)
-            {
-                ataquePowerup[i].ativo = false;
-            }
-        }
+                        dano = true;
+                        danoStart = SDL_GetTicks();
 
-        // ATUALIZAÇÃO DO BOSS
-        if (boss.ativo)
-        {
-            boss.rect.x -= boss.speed;
+                        if (olhandoDireita)
+                            framePlayer = 13;
+                        else
+                            framePlayer = 27;
 
-            if (SDL_GetTicks() - boss.ultimoFrame > 120)
-            {
-                boss.frame++;
+                        obstaculos[i].rect.y = alturaChao;
 
-                if (boss.frame >= 6)
-                    boss.frame = 0;
+                        obstaculos[i].estado = OBSTACULO_CHAO;
 
-                boss.ultimoFrame = SDL_GetTicks();
-            }
-        }
+                        obstaculos[i].frame = 3;              // primeiro frame da colisão
+                        obstaculos[i].ultimoFrame = SDL_GetTicks();
+                        obstaculos[i].inicioEstado = SDL_GetTicks();
+                    }
 
-        for (int i = 0; i < MAX_OBSTACULOS; i++)
-        {
-            if (!obstaculos[i].ativo)
-                continue;
+                    // Tocou no chão
+                    if (obstaculos[i].rect.y >= alturaChao)
+                    {
+                        obstaculos[i].rect.y = alturaChao;
 
-            switch (obstaculos[i].estado)
-            {
-            case OBSTACULO_SOMBRA:
+                        obstaculos[i].estado = OBSTACULO_CHAO;
 
-                if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 1000)
-                {
-                    obstaculos[i].estado = OBSTACULO_CAINDO;
-                    obstaculos[i].inicioEstado = SDL_GetTicks();
-                }
+                        obstaculos[i].frame = 3;
+                        obstaculos[i].ultimoFrame = SDL_GetTicks();
+                        obstaculos[i].inicioEstado = SDL_GetTicks();
+                    }
 
-                break;
+                    break;
 
-            case OBSTACULO_CAINDO:
+                case OBSTACULO_CHAO:
 
-                obstaculos[i].rect.y += obstaculos[i].velocidadeY;
+                    // Fica parado no chão
+                    obstaculos[i].frame = 4;
+                    break;
 
-                // Animação
-                if (SDL_GetTicks() - obstaculos[i].ultimoFrame > 120)
-                {
-                    if (obstaculos[i].frame < 2)
-                        obstaculos[i].frame++;
-
-                    obstaculos[i].ultimoFrame = SDL_GetTicks();
-                }
-
-                // Colisão com o player
-                if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
-                {
-
-                    if (player.x + player.w / 2 <
-                        obstaculos[i].rect.x + obstaculos[i].rect.w / 2)
-                        player.x = obstaculos[i].rect.x - player.w;
-                    else
-                        player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
-
-                    stun = true;
-                    stunStart = SDL_GetTicks();
-
-                    dano = true;
-                    danoStart = SDL_GetTicks();
-                    
-                    if (olhandoDireita)
-                        framePlayer = 13;
-                    else
-                        framePlayer = 27;
-
-                    obstaculos[i].rect.y = alturaChao;
-
-                    obstaculos[i].estado = OBSTACULO_CHAO;
-
-                    obstaculos[i].frame = 3;              // primeiro frame da colisão
-                    obstaculos[i].ultimoFrame = SDL_GetTicks();
-                    obstaculos[i].inicioEstado = SDL_GetTicks();
-                }
-
-                // Tocou no chão
-                if (obstaculos[i].rect.y >= alturaChao)
-                {
-                    obstaculos[i].rect.y = alturaChao;
-
-                    obstaculos[i].estado = OBSTACULO_CHAO;
+                case OBSTACULO_QUEBRANDO:
 
                     obstaculos[i].frame = 3;
-                    obstaculos[i].ultimoFrame = SDL_GetTicks();
-                    obstaculos[i].inicioEstado = SDL_GetTicks();
+
+                    if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 300)
+                    {
+                        obstaculos[i].ativo = false;
+                    }
+
+                    break;
                 }
-
-                break;
-
-            case OBSTACULO_CHAO:
-
-                // Fica parado no chão
-                obstaculos[i].frame = 4;
-                break;
-
-            case OBSTACULO_QUEBRANDO:
-
-                obstaculos[i].frame = 3;
-
-                if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 300)
-                {
-                    obstaculos[i].ativo = false;
-                }
-
-                break;
             }
         }
-
         // ------------------------------------------------------
         // COLISÃO: PLAYER E INIMIGOS
         // ------------------------------------------------------
-
-        for (int i = 0; i < MAX_INIMIGOS; i++)
-        {
-            if (inimigos[i].ativo)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_INIMIGOS; i++)
             {
-                if (SDL_HasRectIntersectionFloat(
-                    &player,
-                    &inimigos[i].rect))
+                if (inimigos[i].ativo)
                 {
-                    pontos -= 50;
+                    if (SDL_HasRectIntersectionFloat(
+                        &player,
+                        &inimigos[i].rect))
+                    {
+                        pontos -= 50;
 
-                    // Empurrão
-                    player.x -= 100.0f;
-                    player.y -= 50.0f;
+                        // Empurrão
+                        player.x -= 100.0f;
+                        player.y -= 50.0f;
 
-                    // Stun
-                    stun = true;
-                    stunStart = SDL_GetTicks();
+                        // Stun
+                        stun = true;
+                        stunStart = SDL_GetTicks();
 
-                    // animação de dano
+                        // animação de dano
 
-                    dano = true;
-                    danoStart = SDL_GetTicks();
-                    
-                    if (olhandoDireita)
-                        framePlayer = 13;
-                    else
-                        framePlayer = 27;
-                        
-                    inimigos[i].ativo = false;
-                }
+                        dano = true;
+                        danoStart = SDL_GetTicks();
 
-                if (stun && SDL_GetTicks() - stunStart >= STUN_DURACAO) {
-                    stun = false;
-                }
-            }
-        }
+                        if (olhandoDireita)
+                            framePlayer = 13;
+                        else
+                            framePlayer = 27;
 
-        // Colisão do tiro com o powerup
-        for (int i = 0; i < MAX_POWERUPS; i++)
-        {
-            if (!vidasPowerup[i].ativo)
-                continue;
-
-            for (int j = 0; j < MAX_PROJETEIS; j++)
-            {
-                if (!projeteis[j].ativo)
-                    continue;
-
-                if (SDL_HasRectIntersectionFloat(
-                    &projeteis[j].rect,
-                    &vidasPowerup[i].rect))
-                {
-                    if (vidas < MAX_VIDAS){
-                        vidas++;
-                        flashBase = FLASH_CURA;
-                        tempoFlashBase = 0.2f;
+                        inimigos[i].ativo = false;
                     }
 
-                    vidasPowerup[i].ativo = false;
-                    projeteis[j].ativo = false;
+                    if (stun && SDL_GetTicks() - stunStart >= STUN_DURACAO) {
+                        stun = false;
+                    }
+                }
+            }
+        }
+        // Colisão do tiro com o powerup
+
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (!vidasPowerup[i].ativo)
+                    continue;
+
+                for (int j = 0; j < MAX_PROJETEIS; j++)
+                {
+                    if (!projeteis[j].ativo)
+                        continue;
+
+                    if (SDL_HasRectIntersectionFloat(
+                        &projeteis[j].rect,
+                        &vidasPowerup[i].rect))
+                    {
+                        if (vidas < MAX_VIDAS) {
+                            vidas++;
+                            flashBase = FLASH_CURA;
+                            tempoFlashBase = 0.2f;
+                        }
+
+                        vidasPowerup[i].ativo = false;
+                        projeteis[j].ativo = false;
+                    }
                 }
             }
         }
 
-        for (int i = 0; i < MAX_POWERUPSATQ; i++)
-        {
-            if (!ataquePowerup[i].ativo)
-                continue;
-
-            for (int j = 0; j < MAX_PROJETEIS; j++)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_POWERUPSATQ; i++)
             {
+                if (!ataquePowerup[i].ativo)
+                    continue;
+
+                for (int j = 0; j < MAX_PROJETEIS; j++)
+                {
+                    if (!projeteis[j].ativo)
+                        continue;
+
+                    if (SDL_HasRectIntersectionFloat(
+                        &projeteis[j].rect,
+                        &ataquePowerup[i].rect))
+                    {
+                        ataqueBuff = true;
+                        ataqueBuffInicio = SDL_GetTicks();
+                        danoTiro = 2;
+
+                        ataquePowerup[i].ativo = false;
+                        projeteis[j].ativo = false;
+                    }
+                }
+            }
+        }
+        // Colisão do tiro com o boss
+        if (estado == JOGAR) {
+            for (int j = 0; j < MAX_PROJETEIS; j++) {
                 if (!projeteis[j].ativo)
                     continue;
 
-                if (SDL_HasRectIntersectionFloat(
-                    &projeteis[j].rect,
-                    &ataquePowerup[i].rect))
+                if (boss.ativo && SDL_HasRectIntersectionFloat(
+                    &boss.rect,
+                    &projeteis[j].rect
+                ))
                 {
-                    ataqueBuff = true;
-                    ataqueBuffInicio = SDL_GetTicks();
-                    danoTiro = 2;
+                    projeteis[j].explodindo = true;
+                    projeteis[j].frame = 3;
+                    projeteis[j].velX = 0;
+                    projeteis[j].velY = 0;
+                    projeteis[j].ultimoFrame = SDL_GetTicks();
 
-                    ataquePowerup[i].ativo = false;
+                    boss.vida -= danoTiro;
                     projeteis[j].ativo = false;
+
+                    if (boss.vida <= 0)
+                    {
+                        boss.ativo = false;
+                        pontos += 100;
+                        bossAtivados++;
+                    }
                 }
             }
         }
-
-        // Colisão do tiro com o boss
-        for (int j = 0; j < MAX_PROJETEIS; j++) {
-            if (!projeteis[j].ativo)
-                continue;
-
-            if (boss.ativo && SDL_HasRectIntersectionFloat(
-                &boss.rect,
-                &projeteis[j].rect
-            ))
-            {
-                projeteis[j].explodindo = true;
-                projeteis[j].frame = 3;
-                projeteis[j].velX = 0;
-                projeteis[j].velY = 0;
-                projeteis[j].ultimoFrame = SDL_GetTicks();
-
-                boss.vida -= danoTiro;
-                projeteis[j].ativo = false;
-
-                if (boss.vida <= 0)
-                {
-                    boss.ativo = false;
-                    pontos += 100;
-                    bossAtivados++;
-                }
-            }
-        }
-        
         // Colisão base e inimigos
-
-        for (int i = 0; i < MAX_INIMIGOS; i++)
-        {
-            if (inimigos[i].ativo)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_INIMIGOS; i++)
             {
+                if (inimigos[i].ativo)
+                {
+                    if (SDL_HasRectIntersectionFloat(
+                        &base,
+                        &inimigos[i].rect))
+                    {
+                        vidas--;
+                        flashBase = FLASH_DANO;
+                        tempoFlashBase = 0.2f; // 200 ms
+                        inimigos[i].ativo = false;
+
+                        SDL_Log("Vidas restantes: %d", vidas);
+
+
+                        if (vidas <= 0)
+                        {
+                            if (pontos > ranking[2].pontos)
+                            {
+                                estado = DIGITAR_NOME;
+
+                                nomeJogador[0] = '\0';
+                                tamanhoNome = 0;
+
+                                SDL_StartTextInput(window);
+                            }
+                            else
+                            {
+                                estado = GAMEOVER;
+                                tempoAtual = SDL_GetTicks();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Colisão do boss com a base
+        if (estado == JOGAR) {
+            if (boss.ativo) {
                 if (SDL_HasRectIntersectionFloat(
                     &base,
-                    &inimigos[i].rect))
+                    &boss.rect
+                ))
                 {
-                    vidas--;
+                    vidas -= 3;
                     flashBase = FLASH_DANO;
                     tempoFlashBase = 0.2f; // 200 ms
-                    inimigos[i].ativo = false;
-
-                    SDL_Log("Vidas restantes: %d", vidas);
-
+                    boss.ativo = false;
 
                     if (vidas <= 0)
                     {
@@ -2724,97 +2858,65 @@ int main(int argc, char* argv[])
                     }
                 }
             }
+
         }
-        
-        // Colisão do boss com a base
-
-        if (boss.ativo) {
-            if (SDL_HasRectIntersectionFloat(
-                &base,
-                &boss.rect
-            ))
-            {
-                vidas -= 3;
-                flashBase = FLASH_DANO;
-                tempoFlashBase = 0.2f; // 200 ms
-                boss.ativo = false;
-
-                if (vidas <= 0)
-                {
-                    if (pontos > ranking[2].pontos)
-                    {
-                        estado = DIGITAR_NOME;
-
-                        nomeJogador[0] = '\0';
-                        tamanhoNome = 0;
-
-                        SDL_StartTextInput(window);
-                    }
-                    else
-                    {
-                        estado = GAMEOVER;
-                        tempoAtual = SDL_GetTicks();
-                    }
-                }
-            }
-        }
-
-        
         // PROJÉTEIS E OBSTÁCULOS
 
-        for (int i = 0; i < MAX_OBSTACULOS; i++)
-        {
-            if (!obstaculos[i].ativo)
-                continue;
-
-            for (int j = 0; j < MAX_PROJETEIS; j++)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_OBSTACULOS; i++)
             {
-                if (!projeteis[j].ativo || projeteis[j].explodindo)
+                if (!obstaculos[i].ativo)
                     continue;
 
-                if (SDL_HasRectIntersectionFloat(
-                    &projeteis[j].rect,
-                    &obstaculos[i].rect))
+                for (int j = 0; j < MAX_PROJETEIS; j++)
                 {
-                    projeteis[j].explodindo = true;
-                    projeteis[j].frame = 3;
-                    projeteis[j].velX = 0;
-                    projeteis[j].velY = 0;
-                    projeteis[j].ultimoFrame = SDL_GetTicks();
+                    if (!projeteis[j].ativo || projeteis[j].explodindo)
+                        continue;
+
+                    if (SDL_HasRectIntersectionFloat(
+                        &projeteis[j].rect,
+                        &obstaculos[i].rect))
+                    {
+                        projeteis[j].explodindo = true;
+                        projeteis[j].frame = 3;
+                        projeteis[j].velX = 0;
+                        projeteis[j].velY = 0;
+                        projeteis[j].ultimoFrame = SDL_GetTicks();
+                    }
                 }
             }
         }
-
         // ------------------------------------------------------
         // COLISÃO: PROJETEIS E INIMIGOS
         // ------------------------------------------------------
 
-        for (int i = 0; i < MAX_INIMIGOS; i++)
-        {
-            if (!inimigos[i].ativo)
-                continue;
-
-            for (int j = 0; j < MAX_PROJETEIS; j++)
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_INIMIGOS; i++)
             {
-                if (!projeteis[j].ativo)
+                if (!inimigos[i].ativo)
                     continue;
 
-                if (SDL_HasRectIntersectionFloat(
-                    &inimigos[i].rect,
-                    &projeteis[j].rect))
+                for (int j = 0; j < MAX_PROJETEIS; j++)
                 {
-                    inimigos[i].ativo = false;
-                    projeteis[j].explodindo = true;
-                    projeteis[j].frame = 3;
-                    projeteis[j].velX = 0;
-                    projeteis[j].velY = 0;
-                    projeteis[j].ultimoFrame = SDL_GetTicks();
-                    pontos += 50;
-                    inimigosDerrotados++;
+                    if (!projeteis[j].ativo)
+                        continue;
+
+                    if (SDL_HasRectIntersectionFloat(
+                        &inimigos[i].rect,
+                        &projeteis[j].rect))
+                    {
+                        inimigos[i].ativo = false;
+                        projeteis[j].explodindo = true;
+                        projeteis[j].frame = 3;
+                        projeteis[j].velX = 0;
+                        projeteis[j].velY = 0;
+                        projeteis[j].ultimoFrame = SDL_GetTicks();
+                        pontos += 50;
+                        inimigosDerrotados++;
+                    }
                 }
             }
         }
-
         // ------------------------------------------------------
         // INPUT DO TECLADO
         // ------------------------------------------------------
@@ -2824,91 +2926,94 @@ int main(int argc, char* argv[])
         float playerXAnterior = player.x;
         float playerYAnterior = player.y;
         // Movimentação e efeito de stun
-        if (!stun && !dano){
+        if (estado == JOGAR) {
+            if (!stun && !dano) {
 
-            if (key[SDL_SCANCODE_A])
-            {
-                player.x -= speed;
-                olhandoDireita = false;
+                if (key[SDL_SCANCODE_A])
+                {
+                    player.x -= speed;
+                    olhandoDireita = false;
+                }
+
+                if (key[SDL_SCANCODE_D])
+                {
+                    player.x += speed;
+                    olhandoDireita = true;
+                }
+
+                if ((key[SDL_SCANCODE_W] || key[SDL_SCANCODE_SPACE]) && noChao)
+                {
+                    velocidadeY = -10.0f;
+                    noChao = false;
+                    pulando = true;
+
+                    if (olhandoDireita)
+                        framePlayer = 11;
+                    else
+                        framePlayer = 24;
+                }
+
             }
-
-            if (key[SDL_SCANCODE_D])
-            {
-                player.x += speed;
-                olhandoDireita = true;
-            }
-
-            if ((key[SDL_SCANCODE_W] || key[SDL_SCANCODE_SPACE]) && noChao)
-            {
-                velocidadeY = -10.0f;
-                noChao = false;
-                pulando = true;
-
-                if (olhandoDireita)
-                    framePlayer = 11;
-                else
-                    framePlayer = 24;
-            }
-
         }
         // Atualização da animação do player
 
-        if (atirando)
-        {
-            if (SDL_GetTicks() - ultimoFramePlayer > 80)
+        if (estado == JOGAR) {
+            if (atirando)
             {
-                framePlayer++;
+                if (SDL_GetTicks() - ultimoFramePlayer > 80)
+                {
+                    framePlayer++;
+
+                    if (olhandoDireita)
+                    {
+                        if (framePlayer > 5)
+                        {
+                            atirando = false;
+                            framePlayer = 0;
+                        }
+                    }
+                    else
+                    {
+                        if (framePlayer > 9)
+                        {
+                            atirando = false;
+                            framePlayer = 1;
+                        }
+                    }
+                    ultimoFramePlayer = SDL_GetTicks();
+                }
+            }
+        }
+        // Atualizando animação de dano
+        if (estado == JOGAR) {
+            if (dano)
+            {
+                Uint64 tempo = SDL_GetTicks() - danoStart;
 
                 if (olhandoDireita)
                 {
-                    if (framePlayer > 5)
-                    {
-                        atirando = false;
-                        framePlayer = 0;
-                    }
+                    if (tempo < 300)
+                        framePlayer = 13;
+                    else if (tempo < 600)
+                        framePlayer = 14;
+                    else if (tempo < 900)
+                        framePlayer = 15;
+                    else
+                        dano = false;
                 }
                 else
                 {
-                    if (framePlayer > 9)
-                    {
-                        atirando = false;
-                        framePlayer = 1;
-                    }
+                    if (tempo < 300)
+                        framePlayer = 27;
+                    else if (tempo < 600)
+                        framePlayer = 28;
+                    else if (tempo < 900)
+                        framePlayer = 29;
+                    else
+                        dano = false;
                 }
-                ultimoFramePlayer = SDL_GetTicks();
             }
         }
-
-        // Atualizando animação de dano
-        
-        if (dano)
-        {
-            Uint64 tempo = SDL_GetTicks() - danoStart;
-
-            if (olhandoDireita)
-            {
-                if (tempo < 300)
-                    framePlayer = 13;
-                else if (tempo < 600)
-                    framePlayer = 14;
-                else if (tempo < 900)
-                    framePlayer = 15;
-                else
-                    dano = false;
-            }
-            else
-            {
-                if (tempo < 300)
-                    framePlayer = 27;
-                else if (tempo < 600)
-                    framePlayer = 28;
-                else if (tempo < 900)
-                    framePlayer = 29;
-                else
-                    dano = false;
-            }
-        }
-
         //------------------------------------------------------
         // Colisões da tela
         //------------------------------------------------------
@@ -2924,129 +3029,133 @@ int main(int argc, char* argv[])
         // ------------------------------------------------------
         // FÍSICA: GRAVIDADE E CHÃO
         // ------------------------------------------------------
+        if (estado == JOGAR) {
+            // Gravidade
+            velocidadeY += gravidade;
+            player.y += velocidadeY;
 
-        // Gravidade
-        velocidadeY += gravidade;
-        player.y += velocidadeY;
-
-        // Chão
-        if (player.y >= alturaChao)
-        {
-            player.y = alturaChao;
-            velocidadeY = 0.0f;
-            noChao = true;
-
-            if (pulando)
+            // Chão
+            if (player.y >= alturaChao)
             {
-                pulando = false;
-                aterrissando = true;
-                inicioAterrissagem = SDL_GetTicks();
+                player.y = alturaChao;
+                velocidadeY = 0.0f;
+                noChao = true;
 
-                if (olhandoDireita)
-                    framePlayer = 12;
-                else
-                    framePlayer = 26;
+                if (pulando)
+                {
+                    pulando = false;
+                    aterrissando = true;
+                    inicioAterrissagem = SDL_GetTicks();
+
+                    if (olhandoDireita)
+                        framePlayer = 12;
+                    else
+                        framePlayer = 26;
+                }
             }
         }
 
         // Obstaculos
-
-        for (int i = 0; i < MAX_OBSTACULOS; i++)
-        {
-            if (!obstaculos[i].ativo)
-                continue;
-
-            if (obstaculos[i].estado != OBSTACULO_CHAO)
-                continue;
-
-            if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_OBSTACULOS; i++)
             {
-                // Veio pela esquerda
-                if (playerXAnterior + player.w <= obstaculos[i].rect.x)
+                if (!obstaculos[i].ativo)
+                    continue;
+
+                if (obstaculos[i].estado != OBSTACULO_CHAO)
+                    continue;
+
+                if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
                 {
-                    player.x = obstaculos[i].rect.x - player.w;
-                }
-                // Veio pela direita
-                else if (playerXAnterior >= obstaculos[i].rect.x + obstaculos[i].rect.w)
-                {
-                    player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
+                    // Veio pela esquerda
+                    if (playerXAnterior + player.w <= obstaculos[i].rect.x)
+                    {
+                        player.x = obstaculos[i].rect.x - player.w;
+                    }
+                    // Veio pela direita
+                    else if (playerXAnterior >= obstaculos[i].rect.x + obstaculos[i].rect.w)
+                    {
+                        player.x = obstaculos[i].rect.x + obstaculos[i].rect.w;
+                    }
                 }
             }
         }
-
-        for (int i = 0; i < MAX_OBSTACULOS; i++)
-        {
-            if (!obstaculos[i].ativo)
-                continue;
-
-            if (obstaculos[i].estado != OBSTACULO_CHAO)
-                continue;
-
-            if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
+        if (estado == JOGAR) {
+            for (int i = 0; i < MAX_OBSTACULOS; i++)
             {
-                // Caiu em cima do obstáculo
-                if (velocidadeY > 0 &&
-                    player.y + player.h - velocidadeY <= obstaculos[i].rect.y)
+                if (!obstaculos[i].ativo)
+                    continue;
+
+                if (obstaculos[i].estado != OBSTACULO_CHAO)
+                    continue;
+
+                if (SDL_HasRectIntersectionFloat(&player, &obstaculos[i].rect))
                 {
-                    sujo = true;
-                    sujoInicio = SDL_GetTicks();
-                    speed = SPEED_SUJO;
-
-                    // Quebra o obstáculo
-                    obstaculos[i].frame = 3;
-                    obstaculos[i].estado = OBSTACULO_QUEBRANDO;
-                    obstaculos[i].inicioEstado = SDL_GetTicks();
-
-                    // Aplica knockback
-                    if (olhandoDireita)
+                    // Caiu em cima do obstáculo
+                    if (velocidadeY > 0 &&
+                        player.y + player.h - velocidadeY <= obstaculos[i].rect.y)
                     {
-                        player.x -= 35.0f;
-                        velocidadeY = -3.5f;
-                    }
-                    else
-                    {
-                        player.x += 35.0f;
-                        velocidadeY = -3.5f;
-                    }
+                        sujo = true;
+                        sujoInicio = SDL_GetTicks();
+                        speed = SPEED_SUJO;
 
-                    noChao = false;
-                    pulando = true;
+                        // Quebra o obstáculo
+                        obstaculos[i].frame = 3;
+                        obstaculos[i].estado = OBSTACULO_QUEBRANDO;
+                        obstaculos[i].inicioEstado = SDL_GetTicks();
+
+                        // Aplica knockback
+                        if (olhandoDireita)
+                        {
+                            player.x -= 35.0f;
+                            velocidadeY = -3.5f;
+                        }
+                        else
+                        {
+                            player.x += 35.0f;
+                            velocidadeY = -3.5f;
+                        }
+
+                        noChao = false;
+                        pulando = true;
+                    }
                 }
             }
         }
 
         // Animação de pulo
-        if (aterrissando)
-        {
-            if (olhandoDireita)
-                framePlayer = 12;
-            else
-                framePlayer = 26;
-
-            if (SDL_GetTicks() - inicioAterrissagem > 200)
-            {
-                aterrissando = false;
-            }
-        }
-
-        if (pulando)
-        {
-            if (velocidadeY < -2)
+        if (estado == JOGAR) {
+            if (aterrissando)
             {
                 if (olhandoDireita)
-                    framePlayer = 11;
+                    framePlayer = 12;
                 else
-                    framePlayer = 24;
+                    framePlayer = 26;
+
+                if (SDL_GetTicks() - inicioAterrissagem > 200)
+                {
+                    aterrissando = false;
+                }
             }
 
-        }
-        // Teto
-        if (player.y <0){
-            player.y = 0;
-            velocidadeY = 0.0f;
+            if (pulando)
+            {
+                if (velocidadeY < -2)
+                {
+                    if (olhandoDireita)
+                        framePlayer = 11;
+                    else
+                        framePlayer = 24;
+                }
 
-        }
+            }
+            // Teto
+            if (player.y < 0) {
+                player.y = 0;
+                velocidadeY = 0.0f;
 
+            }
+        }
         // Atualizando textura de pontos
         if (pontos != pontosAntigos)
         {
@@ -3068,25 +3177,26 @@ int main(int argc, char* argv[])
         }
 
         // Spawn do boss
-        if (!boss.ativo && pontos >= spawnBoss) {
-            boss.ativo = true;
+        if (estado == JOGAR) {
+            if (!boss.ativo && pontos >= spawnBoss) {
+                boss.ativo = true;
 
-            boss.rect.w = 128;
-            boss.rect.h = 128;
+                boss.rect.w = 128;
+                boss.rect.h = 128;
 
-            boss.rect.x = larguraTela;
-            boss.rect.y = (float)(rand() % (alturaTela - 128));
+                boss.rect.x = larguraTela;
+                boss.rect.y = (float)(rand() % (alturaTela - 128));
 
-            boss.speed = 1.5f + (bossAtivados * 0.5f);
+                boss.speed = 1.5f + (bossAtivados * 0.5f);
 
-            boss.vidaMax = 30;
-            boss.vida = boss.vidaMax;
+                boss.vidaMax = 30;
+                boss.vida = boss.vidaMax;
 
-            boss.frame = 0;
-            boss.ultimoFrame = SDL_GetTicks();
-            spawnBoss += 1000;
+                boss.frame = 0;
+                boss.ultimoFrame = SDL_GetTicks();
+                spawnBoss += 1000;
+            }
         }
-        
         // Atualizando textura de onda
         if (ondas != ondaAntiga) {
 
@@ -3196,34 +3306,36 @@ int main(int argc, char* argv[])
         static Uint64 ultimoFrameAndar = 0;
 
         bool andando = key[SDL_SCANCODE_A] || key[SDL_SCANCODE_D];
+        if (estado == JOGAR) {
 
-        if (!dano && !atirando && !pulando && !aterrissando)
-        {
-            if (andando)
+            if (!dano && !atirando && !pulando && !aterrissando)
             {
-                if (SDL_GetTicks() - ultimoFrameAndar > 120)
+                if (andando)
                 {
-                    if (olhandoDireita)
+                    if (SDL_GetTicks() - ultimoFrameAndar > 120)
                     {
-                        framePlayer++;
+                        if (olhandoDireita)
+                        {
+                            framePlayer++;
 
-                        if (framePlayer < 16 || framePlayer > 19)
-                            framePlayer = 16;
+                            if (framePlayer < 16 || framePlayer > 19)
+                                framePlayer = 16;
+                        }
+                        else
+                        {
+                            framePlayer++;
+
+                            if (framePlayer < 20 || framePlayer > 23)
+                                framePlayer = 20;
+                        }
+
+                        ultimoFrameAndar = SDL_GetTicks();
                     }
-                    else
-                    {
-                        framePlayer++;
-
-                        if (framePlayer < 20 || framePlayer > 23)
-                            framePlayer = 20;
-                    }
-
-                    ultimoFrameAndar = SDL_GetTicks();
                 }
-            }
-            else
-            {
-                framePlayer = olhandoDireita ? 0 : 1;
+                else
+                {
+                    framePlayer = olhandoDireita ? 0 : 1;
+                }
             }
         }
         // Jogador
@@ -3514,7 +3626,79 @@ int main(int argc, char* argv[])
                 NULL,
                 &buffRect
             );
+
         }
+
+        //Pause
+
+        if (estado == PAUSE)
+        {
+            // Escurece a tela
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 120);
+
+            SDL_FRect fundo = {
+                0,
+                0,
+                (float)larguraTela,
+                (float)alturaTela
+            };
+
+            SDL_RenderFillRect(renderer, &fundo);
+
+            // Painel
+            SDL_FRect painel = {
+                larguraTela * 0.30f,
+                alturaTela * 0.18f,
+                larguraTela * 0.40f,
+                alturaTela * 0.60f
+            };
+
+            SDL_SetRenderDrawColor(renderer, 240, 220, 180, 160);
+            SDL_RenderFillRect(renderer, &painel);
+
+            SDL_SetRenderDrawColor(renderer, 90, 60, 30, 255);
+            SDL_RenderRect(renderer, &painel);
+
+            // textos
+
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[50];
+
+            surface = TTF_RenderText_Blended(font, "PAUSADO", 0, branco);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+            rect.x = painel.x + painel.w / 2 - rect.w / 2;
+            rect.y = painel.y + 30;
+
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+            SDL_DestroyTexture(texture);
+            SDL_DestroySurface(surface);
+
+            for (int i = 0; i < 2; i++)
+            {
+                SDL_Color cor = (i == opcaoPause) ? preto : branco;
+
+                surface = TTF_RenderText_Blended(font, opcoesPause[i], 0, cor);
+                texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+                SDL_GetTextureSize(texture, &rect.w, &rect.h);
+
+                rect.x = painel.x + painel.w / 2 - rect.w / 2;
+                rect.y = painel.y + 120 + i * 70;
+
+                SDL_RenderTexture(renderer, texture, NULL, &rect);
+
+                SDL_DestroyTexture(texture);
+                SDL_DestroySurface(surface);
+            }
+        }
+
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -3550,10 +3734,22 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(base3);
     SDL_DestroyTexture(base2);
     SDL_DestroyTexture(base1);
+    SDL_DestroyTexture(backgroundNome);
+    SDL_DestroyTexture(texturaPlayerSujo);
+    SDL_DestroyTexture(powerUpAtq);
+    SDL_DestroyTexture(powerUpVida);
+    SDL_DestroyTexture(texturaBoss);
+    SDL_DestroyTexture(texturaObstaculo);
+    SDL_DestroyTexture(texturaSombra);
+
+    TTF_CloseFont(font);
+    TTF_CloseFont(fontHud);
+
+    SDL_DestroySurface(icon);
+
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    TTF_CloseFont(font);
     TTF_Quit();
     SDL_Quit();
 
