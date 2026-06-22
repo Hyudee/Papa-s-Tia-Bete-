@@ -29,7 +29,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 // ============================================================
 // INCLUDES
 // ============================================================
-
+    
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -289,6 +289,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+
     // Fonte do jogo
 
     TTF_Font* font = TTF_OpenFont("assets/PixelifySans.ttf", 32);
@@ -530,7 +531,16 @@ int main(int argc, char* argv[])
     SDL_Texture* base3 = IMG_LoadTexture(renderer, "assets/base3.png");
     SDL_Texture* base2 = IMG_LoadTexture(renderer, "assets/base2.png");
     SDL_Texture* base1 = IMG_LoadTexture(renderer, "assets/base1.png");
-    
+
+    // Cursor
+
+    SDL_Surface* cursorSurface = IMG_Load("assets/cursor.png");
+
+    SDL_Cursor* cursor = SDL_CreateColorCursor(cursorSurface, 0, 0);
+
+    SDL_SetCursor(cursor);
+
+    SDL_DestroySurface(cursorSurface);
 
     // ----------------------------------------------------------
     // VARIÁVEIS DO JOGADOR
@@ -1087,7 +1097,12 @@ int main(int argc, char* argv[])
 
                     ultimoFramePlayer = SDL_GetTicks();
 
-                    for (int i = 0; i < MAX_PROJETEIS; i++)
+                    int limiteProjeteis = MAX_PROJETEIS;
+
+                    if (sujo)
+                        limiteProjeteis = 1;
+
+                    for (int i = 0; i < limiteProjeteis; i++)
                     {
                         if (!projeteis[i].ativo)
                         {
@@ -3741,6 +3756,7 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(texturaBoss);
     SDL_DestroyTexture(texturaObstaculo);
     SDL_DestroyTexture(texturaSombra);
+    SDL_DestroyCursor(cursor);
 
     TTF_CloseFont(font);
     TTF_CloseFont(fontHud);
