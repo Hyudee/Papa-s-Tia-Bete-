@@ -33,7 +33,6 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include <SDL3_mixer/SDL_mixer.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
@@ -289,6 +288,8 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    //Musicas
+    SDL_AudioStream* streamMenu = NULL;
 
     // Fonte do jogo
 
@@ -527,10 +528,7 @@ int main(int argc, char* argv[])
     SDL_Texture* texturaSombra =
         IMG_LoadTexture(renderer, "assets/sombra.png");
 
-    SDL_Texture* base4 = IMG_LoadTexture(renderer, "assets/base4.png");
-    SDL_Texture* base3 = IMG_LoadTexture(renderer, "assets/base3.png");
-    SDL_Texture* base2 = IMG_LoadTexture(renderer, "assets/base2.png");
-    SDL_Texture* base1 = IMG_LoadTexture(renderer, "assets/base1.png");
+    SDL_Texture* baseTexture = IMG_LoadTexture(renderer, "assets/base.png");
 
     // Cursor
 
@@ -641,7 +639,20 @@ int main(int argc, char* argv[])
 
     float yCreditos = 0.0f;
 
+    Uint8* audioBuf = NULL;
+    Uint32 audioLen = 0;
 
+    SDL_AudioStream* streamGameplay = NULL;
+    Uint8* audioBufGameplay = NULL;
+    Uint32 audioLenGameplay = 0;
+
+    SDL_AudioStream* streamBoss = NULL;
+    Uint8* audioBufBoss = NULL;
+    Uint32 audioLenBoss = 0;
+
+    SDL_AudioStream* streamGameOver = NULL;
+    Uint8* audioBufGameOver = NULL;
+    Uint32 audioLenGameOver = 0;
 
     const int larguraFrameBase = 64;
     const int alturaFrameBase = 384;
@@ -834,7 +845,6 @@ int main(int argc, char* argv[])
                     estado = AJUDA;
                 }
             }
-
 
             if (event.type == SDL_EVENT_QUIT)
             {
@@ -1129,6 +1139,151 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Musica do Menu
+        if (estado == MENU)
+        {
+            if (streamMenu == NULL)
+            {
+                SDL_AudioSpec spec;
+
+                SDL_LoadWAV("assets/menu.wav", &spec, &audioBuf, &audioLen);
+
+                streamMenu = SDL_OpenAudioDeviceStream(
+                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+                    &spec,
+                    NULL,
+                    NULL
+                );
+
+                SDL_SetAudioStreamGain(streamMenu, 0.2f);
+
+                SDL_PutAudioStreamData(streamMenu, audioBuf, audioLen);
+                SDL_ResumeAudioStreamDevice(streamMenu);
+            }
+            if (SDL_GetAudioStreamQueued(streamMenu) == 0)
+            {
+                SDL_PutAudioStreamData(streamMenu, audioBuf, audioLen);
+            }
+        }
+
+        if (estado != MENU && streamMenu != NULL)
+        {
+            SDL_DestroyAudioStream(streamMenu);
+            streamMenu = NULL;
+
+            SDL_free(audioBuf);
+            audioBuf = NULL;
+            audioLen = 0;
+        }
+
+        // Musica da gameplay
+        if (estado == JOGAR)
+        {
+            if (streamGameplay == NULL)
+            {
+                SDL_AudioSpec spec;
+
+                SDL_LoadWAV("assets/jogar.wav", &spec, &audioBufGameplay, &audioLenGameplay);
+
+                streamGameplay = SDL_OpenAudioDeviceStream(
+                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+                    &spec,
+                    NULL,
+                    NULL
+                );
+
+                SDL_SetAudioStreamGain(streamGameplay, 0.2f);
+
+                SDL_PutAudioStreamData(streamGameplay, audioBufGameplay, audioLenGameplay);
+                SDL_ResumeAudioStreamDevice(streamGameplay);
+            }
+
+            if (SDL_GetAudioStreamQueued(streamGameplay) == 0)
+            {
+                SDL_PutAudioStreamData(streamGameplay, audioBufGameplay, audioLenGameplay);
+            }
+        }
+
+        if (estado != JOGAR && streamGameplay)
+        {
+            SDL_DestroyAudioStream(streamGameplay);
+            streamGameplay = NULL;
+
+            SDL_free(audioBufGameplay);
+            audioBufGameplay = NULL;
+            audioLenGameplay = 0;
+        }
+
+        // Musica do boss
+        if (boss.ativo)
+        {
+            if (streamBoss == NULL)
+            {
+                SDL_AudioSpec spec;
+
+                SDL_LoadWAV("assets/boss.wav", &spec, &audioBufBoss, &audioLenBoss);
+
+                streamBoss = SDL_OpenAudioDeviceStream(
+                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+                    &spec,
+                    NULL,
+                    NULL
+                );
+
+                SDL_SetAudioStreamGain(streamBoss, 0.2f);
+
+                SDL_PutAudioStreamData(streamBoss, audioBufBoss, audioLenBoss);
+                SDL_ResumeAudioStreamDevice(streamBoss);
+            }
+
+            if (SDL_GetAudioStreamQueued(streamBoss) == 0)
+            {
+                SDL_PutAudioStreamData(streamBoss, audioBufBoss, audioLenBoss);
+            }
+        }
+
+        if (!boss.ativo && streamBoss)
+        {
+            SDL_DestroyAudioStream(streamBoss);
+            streamBoss = NULL;
+
+            SDL_free(audioBufBoss);
+            audioBufBoss = NULL;
+            audioLenBoss = 0;
+        }
+
+        // Musica da tela de gameover
+        if (estado == GAMEOVER)
+        {
+            if (streamGameOver == NULL)
+            {
+                SDL_AudioSpec spec;
+
+                SDL_LoadWAV("assets/gameover.wav", &spec, &audioBufGameOver, &audioLenGameOver);
+
+                streamGameOver = SDL_OpenAudioDeviceStream(
+                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+                    &spec,
+                    NULL,
+                    NULL
+                );
+
+                SDL_SetAudioStreamGain(streamGameOver, 0.2f);
+
+                SDL_PutAudioStreamData(streamGameOver, audioBufGameOver, audioLenGameOver);
+                SDL_ResumeAudioStreamDevice(streamGameOver);
+            }
+
+            if (estado != JOGAR && streamGameOver)
+            {
+                SDL_DestroyAudioStream(streamGameOver);
+                streamGameOver = NULL;
+
+                SDL_free(audioBufGameOver);
+                audioBufGameOver = NULL;
+                audioLenGameOver = 0;
+            }
+        }
         // Atualização da base
         if (estado == JOGAR) {
 
@@ -1419,10 +1574,6 @@ int main(int argc, char* argv[])
                 SDL_DestroySurface(surface);
                 SDL_DestroyTexture(texture);
             }
-
-
-
-
 
             surface = TTF_RenderText_Blended(
                 fontHud,
@@ -3250,50 +3401,16 @@ int main(int argc, char* argv[])
 
         SDL_RenderTexture(renderer, background, NULL, &fundo);
 
-        // Desenho do mapa
-        for (int y = 0; y < LINHAS; y++)
-        {
-            for (int x = 0; x < COLUNAS; x++)
-            {
-                SDL_FRect tile = {
-                    x * tileW,
-                    y * tileH,
-                    tileW,
-                    tileH
-                };
-
-                // AQUI VOCÊ DESENHARÁ OS PNGS
-                    
-                // Desenha apenas a grade, quando precisar, só descomentar
-                /*SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-                SDL_RenderRect(renderer, &tile);*/
-            }
-        }
         // Base
-        SDL_Texture* texturaBase = NULL;
-
-        switch (vidas)
-        {
-        case 4:
-            texturaBase = base4;
-            break;
-        case 3:
-            texturaBase = base3;
-            break;
-        case 2:
-            texturaBase = base2;
-            break;
-        default:
-            texturaBase = base1;    
-            break;
-        }
+        SDL_Texture* texturaBase = baseTexture;
+        int frameIndex = 4 - vidas;
 
         SDL_FRect srcBase = {
-        frameBase * larguraFrameBase,
-        0,
-        larguraFrameBase,
-        alturaFrameBase
-            };
+        frameIndex * larguraFrameBase,
+        0.0f,
+        (float)larguraFrameBase,
+        (float)alturaFrameBase
+        };
 
         if (tempoFlashBase > 0.0f)
         {
@@ -3745,10 +3862,7 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(texturaTrofeu);
     SDL_DestroyTexture(texturaControles);
     SDL_DestroyTexture(texturaAjuda);
-    SDL_DestroyTexture(base4);
-    SDL_DestroyTexture(base3);
-    SDL_DestroyTexture(base2);
-    SDL_DestroyTexture(base1);
+    SDL_DestroyTexture(baseTexture);
     SDL_DestroyTexture(backgroundNome);
     SDL_DestroyTexture(texturaPlayerSujo);
     SDL_DestroyTexture(powerUpAtq);
