@@ -38,6 +38,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <Windows.h>
 
 // ============================================================
 // DEFINES
@@ -385,6 +386,9 @@ bool MouseNoBotao(float x, float y, SDL_FRect botao)
 
 int main(int argc, char* argv[])
 {
+    #ifdef NDEBUG
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+    #endif
     // ----------------------------------------------------------
     // INICIALIZAÇÃO DO SDL
     // ----------------------------------------------------------
