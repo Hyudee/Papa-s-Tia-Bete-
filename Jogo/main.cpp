@@ -155,6 +155,14 @@ typedef struct
 
 } Obstaculo;
 
+struct Audio
+{
+    SDL_AudioSpec spec;
+    Uint8* buffer = nullptr;
+    Uint32 tamanho = 0;
+    SDL_AudioStream* stream = nullptr;
+};
+
 enum FlashBase
 {
     FLASH_NENHUM,
@@ -232,6 +240,145 @@ int AdicionarPontuacao(Ranking ranking[],
     return 1;
 }
 
+// Funções de musica
+bool musicaLigada = true;
+bool efeitosLigados = true;
+
+void TocarMusica(Audio& audio,
+    const char* arquivo,
+    float volume = 0.2f)
+{
+    if (!musicaLigada)
+        return;
+
+    if (audio.stream != nullptr)
+        return;
+
+    if (!SDL_LoadWAV(arquivo,
+        &audio.spec,
+        &audio.buffer,
+        &audio.tamanho))
+    {
+        return;
+    }
+
+    audio.stream = SDL_OpenAudioDeviceStream(
+        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+        &audio.spec,
+        NULL,
+        NULL
+    );
+
+    SDL_SetAudioStreamGain(audio.stream, volume);
+
+    SDL_PutAudioStreamData(
+        audio.stream,
+        audio.buffer,
+        audio.tamanho
+    );
+
+    SDL_ResumeAudioStreamDevice(audio.stream);
+}
+
+void AtualizarMusica(Audio& audio)
+{
+    if (!musicaLigada)
+        return;
+
+    if (audio.stream == nullptr)
+        return;
+
+    if (SDL_GetAudioStreamQueued(audio.stream) == 0)
+    {
+        SDL_PutAudioStreamData(
+            audio.stream,
+            audio.buffer,
+            audio.tamanho
+        );
+    }
+}
+
+void PararMusica(Audio& audio)
+{
+    if (audio.stream == nullptr)
+        return;
+
+    SDL_DestroyAudioStream(audio.stream);
+    audio.stream = nullptr;
+
+    SDL_free(audio.buffer);
+    audio.buffer = nullptr;
+
+    audio.tamanho = 0;
+}
+
+// Efeitos sonoros
+
+void CarregarEfeito(Audio& audio,
+    const char* arquivo,
+    float volume = 1.0f)
+{
+    if (!SDL_LoadWAV(arquivo,
+        &audio.spec,
+        &audio.buffer,
+        &audio.tamanho))
+    {
+        return;
+    }
+
+    audio.stream = SDL_OpenAudioDeviceStream(
+        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+        &audio.spec,
+        NULL,
+        NULL);
+
+    SDL_SetAudioStreamGain(audio.stream, volume);
+}
+
+void TocarEfeito(Audio& audio)
+{
+    if (!efeitosLigados)
+        return;
+
+    if (audio.stream == nullptr)
+        return;
+
+    SDL_ClearAudioStream(audio.stream);
+
+    SDL_PutAudioStreamData(
+        audio.stream,
+        audio.buffer,
+        audio.tamanho);
+
+    SDL_ResumeAudioStreamDevice(audio.stream);
+}
+
+void LiberarEfeito(Audio& audio)
+{
+    if (audio.stream)
+    {
+        SDL_DestroyAudioStream(audio.stream);
+        audio.stream = nullptr;
+    }
+
+    if (audio.buffer)
+    {
+        SDL_free(audio.buffer);
+        audio.buffer = nullptr;
+    }
+
+    audio.tamanho = 0;
+}
+
+// Botões
+bool MouseNoBotao(float x, float y, SDL_FRect botao)
+{
+    return x >= botao.x &&
+        x <= botao.x + botao.w &&
+        y >= botao.y &&
+        y <= botao.y + botao.h;
+}
+
 // ============================================================
 // MAIN
 // ============================================================
@@ -245,11 +392,8 @@ int main(int argc, char* argv[])
     //Icon
     SDL_Surface* icon = IMG_Load("assets/icon.png");
 
-    SDL_Log("Inicializando o jogo...");
-
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
     {
-        SDL_Log("Falha ao inicializar SDL: %s", SDL_GetError());
         return -1;
     }
 
@@ -268,7 +412,6 @@ int main(int argc, char* argv[])
 
     if (!window)
     {
-        SDL_Log("Falha ao criar a janela: %s", SDL_GetError());
         SDL_Quit();
         return -1;
     }
@@ -277,14 +420,12 @@ int main(int argc, char* argv[])
 
     if (!renderer)
     {
-        SDL_Log("Falha ao criar renderer: %s", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
         return -1;
     }
 
     if (!TTF_Init()) {
-        SDL_Log("Falha ao inicializar a ttf: %s", SDL_GetError());
         return -1;
     }
 
@@ -295,12 +436,6 @@ int main(int argc, char* argv[])
 
     TTF_Font* font = TTF_OpenFont("assets/PixelifySans.ttf", 32);
     TTF_Font* fontHud = TTF_OpenFont("assets/PixelifySans.ttf", 18);
-        
-    if (!font)
-    {
-        SDL_Log("Erro ao carregar fonte");
-    }
-
 
     // Textos da tela
 
@@ -388,25 +523,11 @@ int main(int argc, char* argv[])
     SDL_Texture* background =
         IMG_LoadTexture(renderer, "assets/cozinha.png");
 
-    if (!background)
-    {
-        SDL_Log("Erro ao carregar background: %s", SDL_GetError());
-    }
     SDL_Texture* backgroundNome =
         IMG_LoadTexture(renderer, "assets/background.png");
 
-    if (!backgroundNome)
-    {
-        SDL_Log("Erro ao carregar background do ranking: %s", SDL_GetError());
-    }
-
     SDL_Texture* menu =
         IMG_LoadTexture(renderer, "assets/menu.png");
-
-    if (!menu)
-    {
-        SDL_Log("Erro ao carregar menu: %s", SDL_GetError());
-    }
 
     SDL_Texture* logo =
         IMG_LoadTexture(renderer, "assets/logo.png");
@@ -414,116 +535,53 @@ int main(int argc, char* argv[])
     SDL_Texture* jogar =
         IMG_LoadTexture(renderer, "assets/jogar.png");
 
-    if (!jogar)
-    {
-        SDL_Log("Erro ao carregar Botão de jogar: %s", SDL_GetError());
-    }
     SDL_Texture* creditos =
         IMG_LoadTexture(renderer, "assets/creditos.png");
 
-    if (!creditos)
-    {
-        SDL_Log("Erro ao carregar Botão de creditos: %s", SDL_GetError());
-    }
     SDL_Texture* sair =
         IMG_LoadTexture(renderer, "assets/sair.png");
 
-    if (!sair)
-    {
-        SDL_Log("Erro ao carregar Botão de sair: %s", SDL_GetError());
-    }
     SDL_Texture* texturaInimigo =
         IMG_LoadTexture(renderer, "assets/acucar.png");
 
-    if (!texturaInimigo)
-    {
-        SDL_Log("Erro ao carregar inimigos: %s", SDL_GetError());
-    }
-    
     SDL_Texture* texturaPlayer =
             IMG_LoadTexture(renderer, "assets/player.png");
 
     SDL_Texture* texturaPlayerSujo =
             IMG_LoadTexture(renderer, "assets/playerSujo.png");
 
-    if (!texturaPlayer) {
-            SDL_Log("Erro ao carregar player: %s", SDL_GetError());
-        }
-
     SDL_Texture* projetil =
         IMG_LoadTexture(renderer, "assets/tiro.png");
 
-    if (!projetil)
-    {
-        SDL_Log("Erro ao carregar projeteis: %s", SDL_GetError());
-    }
     SDL_Texture* gameover =
         IMG_LoadTexture(renderer, "assets/gameover.png");
 
-    if (!gameover)
-    {
-        SDL_Log("Erro ao carregar tela de Game over: %s", SDL_GetError());
-    }
     SDL_Texture* coracao =
         IMG_LoadTexture(renderer, "assets/coracao.png");
 
-    if (!coracao)
-    {
-        SDL_Log("Erro ao carregar corações de vida: %s", SDL_GetError());
-    }
     SDL_Texture* powerUpAtq =
         IMG_LoadTexture(renderer, "assets/powerupatq.png");
 
-    if (!powerUpAtq)
-    {
-        SDL_Log("Erro ao carregar textura de powerUp de ataque: %s", SDL_GetError());
-    }
     SDL_Texture* powerUpVida =
         IMG_LoadTexture(renderer, "assets/powerupvida.png");
 
-    if (!powerUpVida)
-    {
-        SDL_Log("Erro ao carregar textura de powerUp de vida: %s", SDL_GetError());
-    }
     SDL_Texture* texturaTrofeu =
         IMG_LoadTexture(renderer, "assets/rankingaba.png");
 
-    if (!texturaTrofeu)
-    {
-        SDL_Log("Erro ao carregar textura de aba de ranking: %s", SDL_GetError());
-    }
     SDL_Texture* texturaEngrenagem =
         IMG_LoadTexture(renderer, "assets/configuracaoaba.png");
 
-    if (!texturaEngrenagem)
-    {
-        SDL_Log("Erro ao carregar textura de aba de configuracao: %s", SDL_GetError());
-    }
     SDL_Texture* texturaControles =
         IMG_LoadTexture(renderer, "assets/controlesaba.png");
 
-    if (!texturaControles)
-    {
-        SDL_Log("Erro ao carregar textura de aba de controles: %s", SDL_GetError());
-    }
     SDL_Texture* texturaAjuda =
         IMG_LoadTexture(renderer, "assets/interrogacaoaba.png");
-
-    if (!texturaAjuda)
-    {
-        SDL_Log("Erro ao carregar textura de aba de ajuda: %s", SDL_GetError());
-    }
 
     SDL_Texture* texturaBoss =
         IMG_LoadTexture(renderer, "assets/boss.png");
 
     SDL_Texture* texturaObstaculo =
         IMG_LoadTexture(renderer, "assets/obstaculo.png");
-
-    if (!texturaObstaculo)
-    {
-        SDL_Log("Erro ao carregar obstáculo: %s", SDL_GetError());
-    }
 
     SDL_Texture* texturaSombra =
         IMG_LoadTexture(renderer, "assets/sombra.png");
@@ -637,22 +695,22 @@ int main(int argc, char* argv[])
         "Menu Principal"
     };
 
-    float yCreditos = 0.0f;
+    float yCreditos = 0.0f; 
 
-    Uint8* audioBuf = NULL;
-    Uint32 audioLen = 0;
+    Audio musicaMenu;
+    Audio musicaGame;
+    Audio musicaBoss;
+    Audio musicaCreditos;
+    Audio musicaGameOver;
 
-    SDL_AudioStream* streamGameplay = NULL;
-    Uint8* audioBufGameplay = NULL;
-    Uint32 audioLenGameplay = 0;
-
-    SDL_AudioStream* streamBoss = NULL;
-    Uint8* audioBufBoss = NULL;
-    Uint32 audioLenBoss = 0;
-
-    SDL_AudioStream* streamGameOver = NULL;
-    Uint8* audioBufGameOver = NULL;
-    Uint32 audioLenGameOver = 0;
+    Audio somPulo;
+    Audio somTiro;
+    Audio somHoverBotao;
+    Audio somHoverAbas;
+    Audio somConfirm;
+    Audio somPowerup;
+    Audio somQuebra;
+    Audio somAterrissagem;
 
     const int larguraFrameBase = 64;
     const int alturaFrameBase = 384;
@@ -671,10 +729,11 @@ int main(int argc, char* argv[])
     SDL_Texture* texturaBuff = NULL;
 
     bool telaCheia = false;
-    bool musicaLigada = true;
-    bool efeitosLigados = true;
     bool running = true;
     bool spam = false;
+
+    int hoverBotaoAtual = -1;
+    int hoverAbaAtual = -1;
 
 
     // ----------------------------------------------------------
@@ -723,6 +782,16 @@ int main(int argc, char* argv[])
 
     SDL_DestroySurface(surfaceBuff);
 
+    // Efeitos Sonoros
+    CarregarEfeito(somPulo, "assets/pulo.wav");
+    CarregarEfeito(somTiro, "assets/tiro.wav");
+    CarregarEfeito(somHoverBotao, "assets/HoverBotao.wav");
+    CarregarEfeito(somHoverAbas, "assets/HoverAbas.wav");
+    CarregarEfeito(somConfirm, "assets/click.wav");
+    CarregarEfeito(somPowerup, "assets/powerup.wav");
+    CarregarEfeito(somQuebra, "assets/obstaculo.wav");
+    CarregarEfeito(somAterrissagem, "assets/aterrissar.wav");
+
     // ----------------------------------------------------------
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
     // ----------------------------------------------------------
@@ -761,11 +830,10 @@ int main(int argc, char* argv[])
                 float mouseX = event.button.x;
                 float mouseY = event.button.y;
 
-                if (mouseX >= botaoJogar.x &&
-                    mouseX <= botaoJogar.x + botaoJogar.w &&
-                    mouseY >= botaoJogar.y &&
-                    mouseY <= botaoJogar.y + botaoJogar.h)
+                if (MouseNoBotao(mouseX, mouseY, botaoJogar))
                 {
+
+                    TocarEfeito(somConfirm);
                     estado = JOGAR;
                     inicioOnda = SDL_GetTicks();
                     inicioSpam = SDL_GetTicks();
@@ -791,57 +859,45 @@ int main(int argc, char* argv[])
                     memset(obstaculos, 0, sizeof(obstaculos));
                 }
 
-                if (mouseX >= botaoCreditos.x &&
-                    mouseX <= botaoCreditos.x + botaoCreditos.w &&
-                    mouseY >= botaoCreditos.y &&
-                    mouseY <= botaoCreditos.y + botaoCreditos.h)
+                if (MouseNoBotao(mouseX, mouseY, botaoCreditos))
                 {
+                    TocarEfeito(somConfirm);
                     estado = CREDITOS;
                     yCreditos = alturaTela;
                 }
 
-                if (mouseX >= botaoSair.x &&
-                    mouseX <= botaoSair.x + botaoSair.w &&
-                    mouseY >= botaoSair.y &&
-                    mouseY <= botaoSair.y + botaoSair.h)
+                if (MouseNoBotao(mouseX, mouseY, botaoSair))
                 {
+                    TocarEfeito(somConfirm);
                     running = false;
                 }
 
 
                 // Troféu
-                if (mouseX >= abaRanking.x &&
-                    mouseX <= abaRanking.x + abaRanking.w &&
-                    mouseY >= abaRanking.y &&
-                    mouseY <= abaRanking.y + abaRanking.h)
+                if (MouseNoBotao(mouseX, mouseY, abaRanking))
                 {
+                    TocarEfeito(somConfirm);
                     estado = RANKING;
                 }
 
                 // Engrenagem
-                if (mouseX >= abaConfig.x &&
-                    mouseX <= abaConfig.x + abaConfig.w &&
-                    mouseY >= abaConfig.y &&
-                    mouseY <= abaConfig.y + abaConfig.h)
+                if (MouseNoBotao(mouseX, mouseY, abaConfig))
                 {
+                    TocarEfeito(somConfirm);
                     estado = CONFIGURACOES;
                 }
 
                 // Controles
-                if (mouseX >= abaControles.x &&
-                    mouseX <= abaControles.x + abaControles.w &&
-                    mouseY >= abaControles.y &&
-                    mouseY <= abaControles.y + abaControles.h)
+                if (MouseNoBotao(mouseX, mouseY, abaControles))
                 {
+                    TocarEfeito(somConfirm);
                    estado = CONTROLES;
                 }
 
                 // Ajuda
-                if (mouseX >= abaAjuda.x &&
-                    mouseX <= abaAjuda.x + abaAjuda.w &&
-                    mouseY >= abaAjuda.y &&
-                    mouseY <= abaAjuda.y + abaAjuda.h)
+                if (MouseNoBotao(mouseX, mouseY, abaAjuda))
                 {
+                    TocarEfeito(somConfirm);
                     estado = AJUDA;
                 }
             }
@@ -950,6 +1006,15 @@ int main(int argc, char* argv[])
                     else if (opcaoConfig == 1)
                     {
                         musicaLigada = !musicaLigada;
+
+                        if (!musicaLigada)
+                        {
+                            PararMusica(musicaMenu);
+                            PararMusica(musicaGame);
+                            PararMusica(musicaBoss);
+                            PararMusica(musicaCreditos);
+                            PararMusica(musicaGameOver);
+                        }
                     }
                     else if (opcaoConfig == 2)
                     {
@@ -1117,6 +1182,7 @@ int main(int argc, char* argv[])
                         if (!projeteis[i].ativo)
                         {
                             projeteis[i].ativo = true;
+                            TocarEfeito(somTiro);
                             projeteis[i].frame = 0;
                             projeteis[i].explodindo = false;
                             projeteis[i].ultimoFrame = SDL_GetTicks();
@@ -1139,151 +1205,115 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Hover
+        if (estado == MENU)
+        {
+            float mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+
+            int novoHoverBotao = -1;
+
+            if (MouseNoBotao(mouseX, mouseY, botaoJogar))
+                novoHoverBotao = 0;
+            else if (MouseNoBotao(mouseX, mouseY, botaoCreditos))
+                novoHoverBotao = 1;
+            else if (MouseNoBotao(mouseX, mouseY, botaoSair))
+                novoHoverBotao = 2;
+
+            if (novoHoverBotao != hoverBotaoAtual &&
+                novoHoverBotao != -1)
+            {
+                TocarEfeito(somHoverBotao);
+            }
+
+            hoverBotaoAtual = novoHoverBotao;
+
+            int novoHoverAba = -1;
+
+            if (MouseNoBotao(mouseX, mouseY, abaRanking))
+                novoHoverAba = 0;
+            else if (MouseNoBotao(mouseX, mouseY, abaConfig))
+                novoHoverAba = 1;
+            else if (MouseNoBotao(mouseX, mouseY, abaControles))
+                novoHoverAba = 2;
+            else if (MouseNoBotao(mouseX, mouseY, abaAjuda))
+                novoHoverAba = 3;
+
+            if (novoHoverAba != hoverAbaAtual &&
+                novoHoverAba != -1)
+            {
+                TocarEfeito(somHoverAbas);
+            }
+
+            hoverAbaAtual = novoHoverAba;
+        }
+
         // Musica do Menu
         if (estado == MENU)
         {
-            if (streamMenu == NULL)
-            {
-                SDL_AudioSpec spec;
+            TocarMusica(musicaMenu,
+                "assets/menu.wav");
 
-                SDL_LoadWAV("assets/menu.wav", &spec, &audioBuf, &audioLen);
-
-                streamMenu = SDL_OpenAudioDeviceStream(
-                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-                    &spec,
-                    NULL,
-                    NULL
-                );
-
-                SDL_SetAudioStreamGain(streamMenu, 0.2f);
-
-                SDL_PutAudioStreamData(streamMenu, audioBuf, audioLen);
-                SDL_ResumeAudioStreamDevice(streamMenu);
-            }
-            if (SDL_GetAudioStreamQueued(streamMenu) == 0)
-            {
-                SDL_PutAudioStreamData(streamMenu, audioBuf, audioLen);
-            }
+            AtualizarMusica(musicaMenu);
         }
-
-        if (estado != MENU && streamMenu != NULL)
-        {
-            SDL_DestroyAudioStream(streamMenu);
-            streamMenu = NULL;
-
-            SDL_free(audioBuf);
-            audioBuf = NULL;
-            audioLen = 0;
+        else
+        {   
+            PararMusica(musicaMenu);
         }
 
         // Musica da gameplay
         if (estado == JOGAR)
         {
-            if (streamGameplay == NULL)
-            {
-                SDL_AudioSpec spec;
+            TocarMusica(musicaGame,
+                "assets/jogar.wav");
 
-                SDL_LoadWAV("assets/jogar.wav", &spec, &audioBufGameplay, &audioLenGameplay);
-
-                streamGameplay = SDL_OpenAudioDeviceStream(
-                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-                    &spec,
-                    NULL,
-                    NULL
-                );
-
-                SDL_SetAudioStreamGain(streamGameplay, 0.2f);
-
-                SDL_PutAudioStreamData(streamGameplay, audioBufGameplay, audioLenGameplay);
-                SDL_ResumeAudioStreamDevice(streamGameplay);
-            }
-
-            if (SDL_GetAudioStreamQueued(streamGameplay) == 0)
-            {
-                SDL_PutAudioStreamData(streamGameplay, audioBufGameplay, audioLenGameplay);
-            }
+            AtualizarMusica(musicaGame);
         }
-
-        if (estado != JOGAR && streamGameplay)
+        else
         {
-            SDL_DestroyAudioStream(streamGameplay);
-            streamGameplay = NULL;
-
-            SDL_free(audioBufGameplay);
-            audioBufGameplay = NULL;
-            audioLenGameplay = 0;
+            PararMusica(musicaGame);
         }
 
         // Musica do boss
         if (boss.ativo)
         {
-            if (streamBoss == NULL)
-            {
-                SDL_AudioSpec spec;
+            TocarMusica(musicaBoss,
+                "assets/boss.wav");
 
-                SDL_LoadWAV("assets/boss.wav", &spec, &audioBufBoss, &audioLenBoss);
-
-                streamBoss = SDL_OpenAudioDeviceStream(
-                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-                    &spec,
-                    NULL,
-                    NULL
-                );
-
-                SDL_SetAudioStreamGain(streamBoss, 0.2f);
-
-                SDL_PutAudioStreamData(streamBoss, audioBufBoss, audioLenBoss);
-                SDL_ResumeAudioStreamDevice(streamBoss);
-            }
-
-            if (SDL_GetAudioStreamQueued(streamBoss) == 0)
-            {
-                SDL_PutAudioStreamData(streamBoss, audioBufBoss, audioLenBoss);
-            }
+            AtualizarMusica(musicaBoss);
         }
-
-        if (!boss.ativo && streamBoss)
+        else
         {
-            SDL_DestroyAudioStream(streamBoss);
-            streamBoss = NULL;
-
-            SDL_free(audioBufBoss);
-            audioBufBoss = NULL;
-            audioLenBoss = 0;
+            PararMusica(musicaBoss);
         }
 
         // Musica da tela de gameover
         if (estado == GAMEOVER)
         {
-            if (streamGameOver == NULL)
-            {
-                SDL_AudioSpec spec;
+            TocarMusica(musicaGameOver,
+                "assets/Gameover.wav");
 
-                SDL_LoadWAV("assets/gameover.wav", &spec, &audioBufGameOver, &audioLenGameOver);
-
-                streamGameOver = SDL_OpenAudioDeviceStream(
-                    SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-                    &spec,
-                    NULL,
-                    NULL
-                );
-
-                SDL_SetAudioStreamGain(streamGameOver, 0.2f);
-
-                SDL_PutAudioStreamData(streamGameOver, audioBufGameOver, audioLenGameOver);
-                SDL_ResumeAudioStreamDevice(streamGameOver);
-            }
-
-            if (estado != JOGAR && streamGameOver)
-            {
-                SDL_DestroyAudioStream(streamGameOver);
-                streamGameOver = NULL;
-
-                SDL_free(audioBufGameOver);
-                audioBufGameOver = NULL;
-                audioLenGameOver = 0;
-            }
+            AtualizarMusica(musicaGameOver);
         }
+        else
+        {
+            PararMusica(musicaGameOver);
+        }
+
+        // Musica dos creditos
+        if (estado == CREDITOS)
+        {
+            TocarMusica(musicaCreditos,
+                "assets/creditos.wav");
+
+            AtualizarMusica(musicaCreditos);
+        }
+        else
+        {
+            PararMusica(musicaCreditos);
+        }
+
+
         // Atualização da base
         if (estado == JOGAR) {
 
@@ -1365,14 +1395,10 @@ int main(int argc, char* argv[])
             inimigosAtivos += 10;
             intervaloSpawn -= 150;
 
-            SDL_Log("SPAM!!");
-
             if (inimigosAtivos > MAX_INIMIGOS)
             {
                 inimigosAtivos = MAX_INIMIGOS;
             }
-
-            SDL_Log("Onda %d", ondas);
         }
 
         if (estado == JOGAR && spam)
@@ -1388,8 +1414,6 @@ int main(int argc, char* argv[])
                 {
                     intervaloSpawn = 500;
                 }
-
-                SDL_Log("SPAM de inimigos terminou!");
             }
         }
 
@@ -1512,19 +1536,16 @@ int main(int argc, char* argv[])
                 "Joao Pedro Souza de Oliveira",
                 "",
 
-                "Suporte Moral",
-                "Agatha Marisa Jales Soares e", 
+                "Suporte Moral", 
                 "Lucas Natanael de Oliveira Costa",
                 "",
 
                 "Apoio Psicologico",
-                "Agatha Marisa Jales Soares e",
                 "Lucas Natanael de Oliveira Costa",
                 "",
 
                 "Responsaveis por Impedir",
                 "os Desenvolvedores de Desistir",
-                "Agatha Marisa Jales Soares e",
                 "Lucas Natanael de Oliveira Costa"
                 "",
 
@@ -1534,7 +1555,6 @@ int main(int argc, char* argv[])
                 "SDL3",
                 "SDL_image",
                 "SDL_ttf",
-                "SDL_mixer",
                 "Microsoft Visual Studio 2026",
                 "",
 
@@ -2822,6 +2842,7 @@ int main(int argc, char* argv[])
                     if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 300)
                     {
                         obstaculos[i].ativo = false;
+                        TocarEfeito(somQuebra);
                     }
 
                     break;
@@ -2894,6 +2915,7 @@ int main(int argc, char* argv[])
 
                         vidasPowerup[i].ativo = false;
                         projeteis[j].ativo = false;
+                        TocarEfeito(somPowerup);
                     }
                 }
             }
@@ -2920,6 +2942,7 @@ int main(int argc, char* argv[])
 
                         ataquePowerup[i].ativo = false;
                         projeteis[j].ativo = false;
+                        TocarEfeito(somPowerup);
                     }
                 }
             }
@@ -2967,9 +2990,6 @@ int main(int argc, char* argv[])
                         flashBase = FLASH_DANO;
                         tempoFlashBase = 0.2f; // 200 ms
                         inimigos[i].ativo = false;
-
-                        SDL_Log("Vidas restantes: %d", vidas);
-
 
                         if (vidas <= 0)
                         {
@@ -3109,9 +3129,10 @@ int main(int argc, char* argv[])
 
                 if ((key[SDL_SCANCODE_W] || key[SDL_SCANCODE_SPACE]) && noChao)
                 {
-                    velocidadeY = -10.0f;
+                    velocidadeY = -12.0f;
                     noChao = false;
                     pulando = true;
+                    TocarEfeito(somPulo);
 
                     if (olhandoDireita)
                         framePlayer = 11;
@@ -3211,6 +3232,7 @@ int main(int argc, char* argv[])
                 {
                     pulando = false;
                     aterrissando = true;
+                    TocarEfeito(somAterrissagem);
                     inicioAterrissagem = SDL_GetTicks();
 
                     if (olhandoDireita)
@@ -3871,6 +3893,15 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(texturaObstaculo);
     SDL_DestroyTexture(texturaSombra);
     SDL_DestroyCursor(cursor);
+
+    LiberarEfeito(somPulo);
+    LiberarEfeito(somTiro);
+    LiberarEfeito(somHoverBotao);
+    LiberarEfeito(somHoverAbas);
+    LiberarEfeito(somConfirm);
+    LiberarEfeito(somPowerup);
+    LiberarEfeito(somQuebra);
+    LiberarEfeito(somAterrissagem);
 
     TTF_CloseFont(font);
     TTF_CloseFont(fontHud);
