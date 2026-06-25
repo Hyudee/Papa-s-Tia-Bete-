@@ -46,7 +46,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 
 #define COLUNAS      25
 #define LINHAS       19
-#define MAX_PROJETEIS 5
+#define MAX_PROJETEIS 3
 #define MAX_INIMIGOS  50
 #define MAX_VIDAS     4
 #define MAX_POWERUPS  2
@@ -380,6 +380,49 @@ bool MouseNoBotao(float x, float y, SDL_FRect botao)
         y <= botao.y + botao.h;
 }
 
+// Escala
+const float LARGURA_BASE = 840.0f;
+const float ALTURA_BASE = 480.0f;
+
+float escalaJogo = 1.0f;
+
+float gravidade = 0.5f;
+float forcaPulo = -10.0f;
+
+float SPEED_NORMAL = 5.0f;
+float SPEED_SUJO = 2.5f;
+float speed= 5.0f;
+
+float tamanhoPlayer = 64.0f;
+float tamanhoBoss = 128.0f;
+float tamanhoInimigo = 64.0f;
+float tamanhoPowerup = 32.0f;
+float tamanhoProjetil = 32.0f;
+float tamanhoObstaculo = 64.0f;
+
+void AtualizarEscala(int larguraTela, int alturaTela)
+{
+    escalaJogo = SDL_min(
+        larguraTela / LARGURA_BASE,
+        alturaTela / ALTURA_BASE
+    );
+
+    tamanhoPlayer = 64.0f * escalaJogo;
+    tamanhoBoss = 128.0f * escalaJogo;
+    tamanhoInimigo = 64.0f * escalaJogo;
+    tamanhoPowerup = 32.0f * escalaJogo;    
+    tamanhoProjetil= 32.0f * escalaJogo;
+    tamanhoObstaculo = 64.0f * escalaJogo;
+
+    SPEED_NORMAL = 5.0f * escalaJogo;
+    SPEED_SUJO = 2.5f * escalaJogo;
+
+    speed = SPEED_NORMAL;
+
+    gravidade = 0.5f * escalaJogo;
+    forcaPulo = -16.0f * escalaJogo;
+}
+
 // ============================================================
 // MAIN
 // ============================================================
@@ -405,7 +448,7 @@ int main(int argc, char* argv[])
         "Papa's Tia Bete",
         840,
         480,
-        SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_FULLSCREEN
     );
 
     if (icon)
@@ -451,7 +494,10 @@ int main(int argc, char* argv[])
     // ----------------------------------------------------------
 
     int larguraTela, alturaTela;
+    
     SDL_GetWindowSize(window, &larguraTela, &alturaTela);
+
+    AtualizarEscala(larguraTela, alturaTela);
 
     float tileW = (float)larguraTela / COLUNAS;
     float tileH = (float)alturaTela / LINHAS;
@@ -609,15 +655,11 @@ int main(int argc, char* argv[])
     SDL_FRect player = {
         320.0f,
         240.0f,
-        64.0f,
-        64.0f
+        64,
+        64
     };
-
-    const float SPEED_NORMAL = 5.0f;
-    const float SPEED_SUJO = 2.5f;
-    float speed = SPEED_NORMAL;
-    float velocidadeY = 0.0f;
-    float gravidade = 0.5f;
+        
+    float velocidadeY = forcaPulo;
     float alturaChao = alturaTela - player.h;
     int framePowerUp = 0;
     int framePlayer = 0;
@@ -732,7 +774,7 @@ int main(int argc, char* argv[])
     SDL_Texture* TexturaOndas = NULL;
     SDL_Texture* texturaBuff = NULL;
 
-    bool telaCheia = false;
+    bool telaCheia = true;
     bool running = true;
     bool spam = false;
 
@@ -850,6 +892,9 @@ int main(int argc, char* argv[])
 
                     player.x = 320.0f;
                     player.y = 240.0f;
+
+                    player.w = tamanhoPlayer;
+                    player.h = tamanhoPlayer;
 
                     speed = SPEED_NORMAL;
                     velocidadeY = 0.0f;
@@ -1092,6 +1137,53 @@ int main(int argc, char* argv[])
             {
                 SDL_GetWindowSize(window, &larguraTela, &alturaTela);
 
+                AtualizarEscala(larguraTela, alturaTela);
+
+                // Chão
+
+                alturaChao = alturaTela - player.h;
+
+                // Player
+                player.w = tamanhoPlayer;
+                player.h = tamanhoPlayer;
+
+                // Boss
+                boss.rect.w = tamanhoBoss;
+                boss.rect.h = tamanhoBoss;
+                boss.speed = 1.5f + (bossAtivados * 0.5f) * escalaJogo;
+
+                // Obstáculos
+                for (int i = 0; i < MAX_OBSTACULOS; i++)
+                {
+                    if (obstaculos[i].ativo)
+                    {
+                        obstaculos[i].rect.w = tamanhoObstaculo;
+                        obstaculos[i].rect.h = tamanhoObstaculo;
+                    }
+                }
+
+                // Inimigos
+                for (int i = 0; i < MAX_INIMIGOS; i++)
+                {
+                    if (inimigos[i].ativo)
+                    {
+                        inimigos[i].rect.w = tamanhoInimigo;
+                        inimigos[i].rect.h = tamanhoInimigo;
+                        inimigos[i].rect.x -= inimigos[i].speed * escalaJogo;
+
+                    }
+                }
+
+                // Projéteis
+                for (int i = 0; i < MAX_PROJETEIS; i++)
+                {
+                    if (projeteis[i].ativo)
+                    {
+                        projeteis[i].rect.w = tamanhoProjetil;
+                        projeteis[i].rect.h = tamanhoProjetil;
+                    }
+                }
+
                 tileW = (float)larguraTela / COLUNAS;
                 tileH = (float)alturaTela / LINHAS;
 
@@ -1194,8 +1286,8 @@ int main(int argc, char* argv[])
                             projeteis[i].rect.x = centroPlayerX;
                             projeteis[i].rect.y = centroPlayerY;
 
-                            projeteis[i].rect.w = 32;
-                            projeteis[i].rect.h = 32;
+                            projeteis[i].rect.w = tamanhoProjetil;
+                            projeteis[i].rect.h = tamanhoProjetil;
 
                             float velocidade = 12.0f;
 
@@ -1279,7 +1371,7 @@ int main(int argc, char* argv[])
         }
 
         // Musica do boss
-        if (boss.ativo)
+        if (boss.ativo && estado == JOGAR)
         {
             TocarMusica(musicaBoss,
                 "assets/boss.wav");
@@ -1398,6 +1490,10 @@ int main(int argc, char* argv[])
             inicioSpam = SDL_GetTicks();
             inimigosAtivos += 10;
             intervaloSpawn -= 150;
+
+            if (intervaloSpawn == 0) {
+                intervaloSpawn = 0;
+            }
 
             if (inimigosAtivos > MAX_INIMIGOS)
             {
@@ -2514,15 +2610,15 @@ int main(int argc, char* argv[])
                         inimigos[i].frame = 0;
                         inimigos[i].ultimoFrame = SDL_GetTicks();
 
-                        inimigos[i].rect.w = 64;
-                        inimigos[i].rect.h = 64;
+                        inimigos[i].rect.w = tamanhoInimigo;
+                        inimigos[i].rect.h = tamanhoInimigo;
 
+                        inimigos[i].speed = 2.0f + (ondas * 0.5f);
                         inimigos[i].rect.x = larguraTela;
                         inimigos[i].rect.x -= inimigos[i].speed;
                         inimigos[i].rect.y =
-                            (float)(rand() % (alturaTela - 32));
+                            (float)(rand() % (alturaTela - (int)inimigos[i].rect.h));
 
-                        inimigos[i].speed = 2.0f + (ondas * 0.5f);
 
                         if (spam)
                         {
@@ -2545,13 +2641,14 @@ int main(int argc, char* argv[])
                         vidasPowerup[i].frame = 0;
                         vidasPowerup[i].ultimoFrame = SDL_GetTicks();
 
-                        vidasPowerup[i].rect.w = 32;
-                        vidasPowerup[i].rect.h = 32;
+                        vidasPowerup[i].rect.w = tamanhoPowerup;
+                        
+                        vidasPowerup[i].rect.h = tamanhoPowerup;
 
                         vidasPowerup[i].rect.x = larguraTela;
 
                         vidasPowerup[i].rect.y =
-                            rand() % (alturaTela - 32);
+                            rand() % (alturaTela - (int)vidasPowerup[i].rect.h);
 
                         vidasPowerup[i].speed = 7.0f;
 
@@ -2582,8 +2679,8 @@ int main(int argc, char* argv[])
 
                         obstaculos[i].velocidadeY = 4.0f;
 
-                        obstaculos[i].rect.w = 64.0f;
-                        obstaculos[i].rect.h = 64.0f;
+                        obstaculos[i].rect.w = tamanhoObstaculo;
+                        obstaculos[i].rect.h = tamanhoObstaculo;
 
                         // posição aleatória
                         obstaculos[i].rect.x = (float)(rand() % (larguraTela - (int)obstaculos[i].rect.w));
@@ -2616,12 +2713,12 @@ int main(int argc, char* argv[])
                 ataquePowerup[0].frame = 0;
                 ataquePowerup[0].ultimoFrame = SDL_GetTicks();
 
-                ataquePowerup[0].rect.w = 32;
-                ataquePowerup[0].rect.h = 32;
+                ataquePowerup[0].rect.w = tamanhoPowerup;
+                ataquePowerup[0].rect.h = tamanhoPowerup;
 
                 ataquePowerup[0].rect.x = larguraTela;
                 ataquePowerup[0].rect.y =
-                    rand() % (alturaTela - 32);
+                    rand() % (alturaTela - (int)ataquePowerup[0].rect.h);
 
                 ataquePowerup[0].speed = 7.0f;
             }
@@ -2639,8 +2736,8 @@ int main(int argc, char* argv[])
                 // Se não estiver explodindo, movimenta
                 if (!projeteis[i].explodindo)
                 {
-                    projeteis[i].rect.x += projeteis[i].velX;
-                    projeteis[i].rect.y += projeteis[i].velY;
+                    projeteis[i].rect.x += projeteis[i].velX * escalaJogo;
+                    projeteis[i].rect.y += projeteis[i].velY * escalaJogo;
 
                     // Frames de voo (0,1,2)
                     if (SDL_GetTicks() - projeteis[i].ultimoFrame > 80)
@@ -2698,7 +2795,7 @@ int main(int argc, char* argv[])
 
                         inimigos[i].ultimoFrame = SDL_GetTicks();
                     }
-                    inimigos[i].rect.x -= inimigos[i].speed;
+                    inimigos[i].rect.x -= inimigos[i].speed * escalaJogo;
 
                     if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
                     {
@@ -2714,7 +2811,7 @@ int main(int argc, char* argv[])
                 if (!vidasPowerup[i].ativo)
                     continue;
 
-                vidasPowerup[i].rect.x -= vidasPowerup[i].speed;
+                vidasPowerup[i].rect.x -= vidasPowerup[i].speed * escalaJogo;
 
                 if (vidasPowerup[i].rect.x +
                     vidasPowerup[i].rect.w < 0)
@@ -2730,7 +2827,7 @@ int main(int argc, char* argv[])
                 if (!ataquePowerup[i].ativo)
                     continue;
 
-                ataquePowerup[i].rect.x -= ataquePowerup[i].speed;
+                ataquePowerup[i].rect.x -= ataquePowerup[i].speed * escalaJogo;
 
                 if (ataquePowerup[i].rect.x +
                     ataquePowerup[i].rect.w < 0)
@@ -3373,16 +3470,16 @@ int main(int argc, char* argv[])
             if (!boss.ativo && pontos >= spawnBoss) {
                 boss.ativo = true;
 
-                boss.rect.w = 128;
-                boss.rect.h = 128;
+                boss.rect.w = tamanhoBoss;
+                boss.rect.h = tamanhoBoss;
 
                 boss.rect.x = larguraTela;
-                boss.rect.y = (float)(rand() % (alturaTela - 128));
+                boss.rect.y = (float)(rand() % (int)(alturaChao - boss.rect.h));
 
-                boss.speed = 1.5f + (bossAtivados * 0.5f);
+                boss.speed = 1.5f + (bossAtivados * 0.5f)* escalaJogo;
 
-                boss.vidaMax = 30;
-                boss.vida = boss.vidaMax;
+                boss.vidaMax = 60;
+                boss.vida = boss.vidaMax + (bossAtivados * 5);
 
                 boss.frame = 0;
                 boss.ultimoFrame = SDL_GetTicks();
