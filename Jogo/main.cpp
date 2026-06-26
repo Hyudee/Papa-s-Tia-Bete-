@@ -1,30 +1,3 @@
-// ============================================================
-// FUNCIONALIDADES
-// ============================================================
-// Movimentação do player com WASD e espaço para pular - ok
-// Combate a distancia com projeteis - ok
-// Menu de iniciar jogo, sair e acessar rankings - em dev
-// criação de mapa 2d com tiles
-// sistema de pontuação - ok
-// sistema de ordas - ok
-// spawn de inimigos - ok
-// sistema de vida - ok
-// animação de sprites - ok
-
-// ============================================================
-// PARA FAZER
-// ============================================================
-/*
-Desenhar e incluir:
-
-Coração de vida - ok
-Personagem com spritesheet - ok
-Inimigos com spritesheet - ok
-Base com spritesheet
-Boss com spritesheet
-Sons
-Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, ou um stun, sla)
-*/
 
 // ============================================================
 // INCLUDES
@@ -46,7 +19,7 @@ Efeitos de se bater nos inimigos (pensei em ele ser empurrado e perder pontos, o
 
 #define COLUNAS      25
 #define LINHAS       19
-#define MAX_PROJETEIS 3
+#define MAX_PROJETEIS 10
 #define MAX_INIMIGOS  50
 #define MAX_VIDAS     4
 #define MAX_POWERUPS  2
@@ -61,6 +34,7 @@ typedef enum {
     MENU,
     JOGAR,
     PAUSE,
+    UPGRADE,
     CREDITOS,
     CONFIGURACOES,
     CONTROLES,
@@ -420,7 +394,7 @@ void AtualizarEscala(int larguraTela, int alturaTela)
     speed = SPEED_NORMAL;
 
     gravidade = 0.5f * escalaJogo;
-    forcaPulo = -16.0f * escalaJogo;
+    forcaPulo = -10.0f * escalaJogo;
 }
 
 // ============================================================
@@ -661,14 +635,21 @@ int main(int argc, char* argv[])
         
     float velocidadeY = forcaPulo;
     float alturaChao = alturaTela - player.h;
+    float espacamento = 18.0f;
     int framePowerUp = 0;
     int framePlayer = 0;
     int framePulo = 0;
     int danoTiro = 1;
+    int danoTiroBase = 1;
+    int vidaMaxima = MAX_VIDAS;
+    int tirosExtras = 0;    
+    int quantidadeTiros = 3 + tirosExtras;
     const int totalFramesPowerUp = 5;
     const int larguraFramePowerUp = 64;
     const int alturaFramePowerUp = 64;
     bool  noChao = true;
+    bool tiroDuplo = false;
+    bool cacadorBoss = false;
     bool atirando = false;
     bool pulando = false;
     bool aterrissando = false;
@@ -734,6 +715,9 @@ int main(int argc, char* argv[])
     int frameBase = 0;
     int opcaoConfig = 0; // 0 = Tela cheia, 1 = Música, 2 = Efeitos
     int opcaoPause = 0; // 0 = Continuar, 2 = Menu
+    int opcaoUpgrade = 0;
+    bool upgradeTiroDuploDisponivel = false;
+    bool upgradeCacadordeBossDisponivel = false;
 
     const char* opcoesPause[] =
     {
@@ -890,6 +874,19 @@ int main(int argc, char* argv[])
                     ondas = 1;
                     vidas = MAX_VIDAS;
 
+                    // Upgrades
+                    tiroDuplo = false;
+                    cacadorBoss = false;
+                    danoTiro = 1;
+                    danoTiroBase = 1;
+                    tirosExtras = 0;
+                    quantidadeTiros = 3;
+                    ataqueBuff = false;
+                    upgradeTiroDuploDisponivel = false;
+                    upgradeCacadordeBossDisponivel = false;
+                    vidaMaxima = MAX_VIDAS;
+
+
                     player.x = 320.0f;
                     player.y = 240.0f;
 
@@ -940,7 +937,7 @@ int main(int argc, char* argv[])
                 if (MouseNoBotao(mouseX, mouseY, abaControles))
                 {
                     TocarEfeito(somConfirm);
-                   estado = CONTROLES;
+                    estado = CONTROLES;
                 }
 
                 // Ajuda
@@ -1106,6 +1103,72 @@ int main(int argc, char* argv[])
                 }
             }
 
+            if (estado == UPGRADE &&
+                event.type == SDL_EVENT_KEY_DOWN)
+            {
+                int maxOpcao = 2
+                    + (upgradeTiroDuploDisponivel ? 1 : 0)
+                    + (upgradeCacadordeBossDisponivel ? 1 : 0);
+
+                switch (event.key.key)
+                {
+                case SDLK_W:
+                    if (opcaoUpgrade > 0)
+                        opcaoUpgrade--;
+                    break;
+
+                case SDLK_S:
+                    if (opcaoUpgrade < maxOpcao)
+                        opcaoUpgrade++;
+                    break;
+
+                case SDLK_RETURN:
+                {
+                    int idxDano = 0;
+                    int idxVida = 1;
+                    int idxBalas = 2;
+                    int idxDuplo = upgradeTiroDuploDisponivel ? 3 : -1;
+                    int idxCacador = upgradeCacadordeBossDisponivel
+                        ? 3 + (upgradeTiroDuploDisponivel ? 1 : 0)
+                        : -1;
+
+                    if (opcaoUpgrade == idxDano)
+                    {
+                        danoTiroBase += 2;
+                        danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
+                    }
+                    else if (opcaoUpgrade == idxVida)
+                    {
+                        vidaMaxima++;
+                        vidas = vidaMaxima;
+                    }
+                    else if (opcaoUpgrade == idxBalas)
+                    {
+                        if (quantidadeTiros < MAX_PROJETEIS)
+                        {
+                            tirosExtras++;
+                            quantidadeTiros = 3 + tirosExtras;
+                            if (quantidadeTiros > MAX_PROJETEIS)
+                                quantidadeTiros = MAX_PROJETEIS;
+                        }
+                    }
+                    else if (idxDuplo != -1 && opcaoUpgrade == idxDuplo)
+                    {
+                        tiroDuplo = true;
+                    }
+                    else if (idxCacador != -1 && opcaoUpgrade == idxCacador)
+                    {
+                        cacadorBoss = true;
+                        danoTiroBase += 5;
+                        danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
+                    }
+
+                    estado = JOGAR;
+                    break;
+                }
+                }
+            }
+
             if (estado == CONTROLES &&
                 event.type == SDL_EVENT_KEY_DOWN)
             {
@@ -1268,39 +1331,49 @@ int main(int argc, char* argv[])
 
                     ultimoFramePlayer = SDL_GetTicks();
 
-                    int limiteProjeteis = MAX_PROJETEIS;
-
-                    if (sujo)
-                        limiteProjeteis = 1;
-
-                    for (int i = 0; i < limiteProjeteis; i++)
+                    int projeteisAtivos = 0;
+                    for (int i = 0; i < MAX_PROJETEIS; i++)
                     {
-                        if (!projeteis[i].ativo)
+                        if (projeteis[i].ativo)
+                            projeteisAtivos++;
+                    }
+
+                    // Quantos tiros este clique vai criar
+                    int tirosCriar = tiroDuplo ? 2 : 1;
+
+                    // Verifica se há espaço para pelo menos 1 projétil
+                    if (projeteisAtivos + tirosCriar <= quantidadeTiros)
+                    {
+                        int criados = 0;
+                        for (int i = 0; i < MAX_PROJETEIS && criados < tirosCriar; i++)
                         {
-                            projeteis[i].ativo = true;
-                            TocarEfeito(somTiro);
-                            projeteis[i].frame = 0;
-                            projeteis[i].explodindo = false;
-                            projeteis[i].ultimoFrame = SDL_GetTicks();
+                            if (!projeteis[i].ativo)
+                            {
+                                projeteis[i].ativo = true;
 
-                            projeteis[i].rect.x = centroPlayerX;
-                            projeteis[i].rect.y = centroPlayerY;
+                                if (criados == 0)
+                                    TocarEfeito(somTiro);
 
-                            projeteis[i].rect.w = tamanhoProjetil;
-                            projeteis[i].rect.h = tamanhoProjetil;
+                                projeteis[i].frame = 0;
+                                projeteis[i].explodindo = false;
+                                projeteis[i].ultimoFrame = SDL_GetTicks();
 
-                            float velocidade = 12.0f;
+                                projeteis[i].rect.x = player.x + player.w;
+                                projeteis[i].rect.y = player.y + (tiroDuplo ? (criados == 0 ? -20.0f : 20.0f) : 0.0f);
+                                projeteis[i].rect.w = tamanhoProjetil;
+                                projeteis[i].rect.h = tamanhoProjetil;
 
-                            projeteis[i].velX = dirX * velocidade;
-                            projeteis[i].velY = dirY * velocidade;
+                                float velocidade = 12.0f;
+                                projeteis[i].velX = dirX * velocidade;
+                                projeteis[i].velY = dirY * velocidade;
 
-                            break;
+                                criados++;
+                            }
                         }
                     }
                 }
             }
         }
-
         // Hover
         if (estado == MENU)
         {
@@ -1488,7 +1561,7 @@ int main(int argc, char* argv[])
                 
             spam = true;
             inicioSpam = SDL_GetTicks();
-            inimigosAtivos += 10;
+            inimigosAtivos += + + ondas * 2;
             intervaloSpawn -= 150;
 
             if (intervaloSpawn == 0) {
@@ -1523,7 +1596,7 @@ int main(int argc, char* argv[])
                 SDL_GetTicks() - ataqueBuffInicio >= DURACAO_BUFF)
             {
                 ataqueBuff = false;
-                danoTiro = 1;
+                danoTiro = danoTiroBase;
             }
 
             if (sujo &&
@@ -1628,7 +1701,7 @@ int main(int argc, char* argv[])
 
                 "Efeitos Sonoros",
                 "Davi Hyude Nunes de Almeida e",
-                "Danah Bezerra de Almeida",
+                "João Pedro Souza de Oliveira",
                 "",
 
                 "Testes e Balanceamento",
@@ -1647,6 +1720,7 @@ int main(int argc, char* argv[])
                 "Responsaveis por Impedir",
                 "os Desenvolvedores de Desistir",
                 "Lucas Natanael de Oliveira Costa"
+                ""
                 "",
 
 
@@ -2559,6 +2633,18 @@ int main(int argc, char* argv[])
                 spam = false;
                 intervaloSpawn = 2000 - (ondas * 150);
 
+                // Upgrades
+                tiroDuplo = false;
+                cacadorBoss = false;
+                danoTiro = 1;
+                danoTiroBase = 1;
+                tirosExtras = 0;
+                quantidadeTiros = 3;
+                ataqueBuff = false;
+                upgradeTiroDuploDisponivel = false;
+                upgradeCacadordeBossDisponivel = false;
+                vidaMaxima = MAX_VIDAS;
+
                 inicioOnda = SDL_GetTicks();
                 inicioSpam = SDL_GetTicks();
                 ultimoSpawn = SDL_GetTicks();
@@ -2602,34 +2688,48 @@ int main(int argc, char* argv[])
             {
                 ultimoSpawn = tempoAtual;
 
-                for (int i = 0; i < MAX_INIMIGOS; i++)
+                int quantidadeSpawn = 1;
+
+                if (ondas >= 5)
+                    quantidadeSpawn = 2;
+
+                if (ondas >= 10)
+                    quantidadeSpawn = 3;
+
+                if (ondas >= 15)
+                    quantidadeSpawn = 4;
+
+                for (int s = 0; s < quantidadeSpawn; s++)
                 {
-                    if (!inimigos[i].ativo)
+                    for (int i = 0; i < MAX_INIMIGOS; i++)
                     {
-                        inimigos[i].ativo = true;
-                        inimigos[i].frame = 0;
-                        inimigos[i].ultimoFrame = SDL_GetTicks();
-
-                        inimigos[i].rect.w = tamanhoInimigo;
-                        inimigos[i].rect.h = tamanhoInimigo;
-
-                        inimigos[i].speed = 2.0f + (ondas * 0.5f);
-                        inimigos[i].rect.x = larguraTela;
-                        inimigos[i].rect.x -= inimigos[i].speed;
-                        inimigos[i].rect.y =
-                            (float)(rand() % (alturaTela - (int)inimigos[i].rect.h));
-
-
-                        if (spam)
+                        if (!inimigos[i].ativo)
                         {
-                            inimigos[i].speed += 2.0f;
-                        }
+                            inimigos[i].ativo = true;
+                            inimigos[i].frame = 0;
+                            inimigos[i].ultimoFrame = SDL_GetTicks();
 
-                        break;
+                            inimigos[i].rect.w = tamanhoInimigo;
+                            inimigos[i].rect.h = tamanhoInimigo;
+
+                            inimigos[i].speed = 2.0f + (ondas * 0.5f);
+
+                            if (inimigos[i].speed > 6.0f)
+                                inimigos[i].speed = 6.0f;
+
+                            inimigos[i].rect.x = larguraTela + (s * 70) + (rand() % 20);
+
+                            inimigos[i].rect.y =
+                                (rand() % (alturaTela - (int)inimigos[i].rect.h));
+
+                            if (spam)
+                                inimigos[i].speed += 2.0f;
+
+                            break;
+                        }
                     }
                 }
             }
-
             // Spawn de powerups
 
             if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < MAX_VIDAS)) {
@@ -2677,7 +2777,7 @@ int main(int argc, char* argv[])
                         obstaculos[i].ultimoFrame = SDL_GetTicks();
                         obstaculos[i].inicioEstado = SDL_GetTicks();
 
-                        obstaculos[i].velocidadeY = 4.0f;
+                        obstaculos[i].velocidadeY = 4.0f * escalaJogo;
 
                         obstaculos[i].rect.w = tamanhoObstaculo;
                         obstaculos[i].rect.h = tamanhoObstaculo;
@@ -2911,7 +3011,7 @@ int main(int argc, char* argv[])
 
                         obstaculos[i].estado = OBSTACULO_CHAO;
 
-                        obstaculos[i].frame = 3;              // primeiro frame da colisão
+                        obstaculos[i].frame = 3;
                         obstaculos[i].ultimoFrame = SDL_GetTicks();
                         obstaculos[i].inicioEstado = SDL_GetTicks();
                     }
@@ -2934,6 +3034,13 @@ int main(int argc, char* argv[])
 
                     // Fica parado no chão
                     obstaculos[i].frame = 4;
+                    if (SDL_GetTicks() - obstaculos[i].inicioEstado >= 3000)
+                    {
+                        obstaculos[i].ativo = false;
+                        TocarEfeito(somQuebra);
+
+                        continue;
+                    }
                     break;
 
                 case OBSTACULO_QUEBRANDO:
@@ -3039,8 +3146,7 @@ int main(int argc, char* argv[])
                     {
                         ataqueBuff = true;
                         ataqueBuffInicio = SDL_GetTicks();
-                        danoTiro = 2;
-
+                        danoTiro = danoTiroBase * 2;
                         ataquePowerup[i].ativo = false;
                         projeteis[j].ativo = false;
                         TocarEfeito(somPowerup);
@@ -3071,6 +3177,13 @@ int main(int argc, char* argv[])
                     if (boss.vida <= 0)
                     {
                         boss.ativo = false;
+
+
+                        estado = UPGRADE;
+                        upgradeTiroDuploDisponivel = !tiroDuplo && (rand() % 100 < 40);
+                        upgradeCacadordeBossDisponivel =
+                            !cacadorBoss && (rand() % 100 < 25);
+                        opcaoUpgrade = 0;
                         pontos += 100;
                         bossAtivados++;
                     }
@@ -3230,7 +3343,7 @@ int main(int argc, char* argv[])
 
                 if ((key[SDL_SCANCODE_W] || key[SDL_SCANCODE_SPACE]) && noChao)
                 {
-                    velocidadeY = -12.0f;
+                    velocidadeY = forcaPulo;
                     noChao = false;
                     pulando = true;
                     TocarEfeito(somPulo);
@@ -3526,7 +3639,12 @@ int main(int argc, char* argv[])
 
         // Base
         SDL_Texture* texturaBase = baseTexture;
-        int frameIndex = 4 - vidas;
+        int frameIndex;
+
+        if (vidas >= 4)
+            frameIndex = 0;
+        else
+            frameIndex = 4 - vidas;
 
         SDL_FRect srcBase = {
         frameIndex * larguraFrameBase,
@@ -3884,6 +4002,94 @@ int main(int argc, char* argv[])
 
         }
 
+        //Upgrade
+        if (estado == UPGRADE)
+        {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 120);
+
+            SDL_Surface* surface;
+            SDL_Texture* texture;
+            SDL_FRect rect;
+            char texto[80];
+
+            // Título
+            surface = TTF_RenderText_Blended(font, "ESCOLHA UMA MELHORIA", 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = 60;
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            // Opções fixas
+            const char* labels[] = { "MAIS DANO (+2)", "MAIS VIDA (+1)", "MAIS BALAS (+1)" };
+
+            for (int i = 0; i < 3; i++)
+            {
+                sprintf_s(texto, sizeof(texto), "%s %s",
+                    opcaoUpgrade == i ? ">" : " ", labels[i]);
+
+                surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+                texture = SDL_CreateTextureFromSurface(renderer, surface);
+                SDL_GetTextureSize(texture, &rect.w, &rect.h);
+                rect.x = larguraTela / 2 - rect.w / 2;
+                rect.y = 160 + i * 70;
+                SDL_RenderTexture(renderer, texture, NULL, &rect);
+                SDL_DestroySurface(surface);
+                SDL_DestroyTexture(texture);
+            }
+
+            // Tiro duplo (sorteado)
+            if (upgradeTiroDuploDisponivel)
+            {
+                int idx = 3;
+                sprintf_s(texto, sizeof(texto), "%s TIRO DUPLO!",
+                    opcaoUpgrade == idx ? ">" : " ");
+
+                surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+                texture = SDL_CreateTextureFromSurface(renderer, surface);
+                SDL_GetTextureSize(texture, &rect.w, &rect.h);
+                rect.x = larguraTela / 2 - rect.w / 2;
+                rect.y = 160 + idx * 70;
+                SDL_RenderTexture(renderer, texture, NULL, &rect);
+                SDL_DestroySurface(surface);
+                SDL_DestroyTexture(texture);
+            }
+
+            // Caçador de Boss (sorteado)
+            if (upgradeCacadordeBossDisponivel)
+            {
+                int idx = 3 + (upgradeTiroDuploDisponivel ? 1 : 0);
+                sprintf_s(texto, sizeof(texto), "%s CACADOR DE BOSS (dano +5)",
+                    opcaoUpgrade == idx ? ">" : " ");
+
+                surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
+                texture = SDL_CreateTextureFromSurface(renderer, surface);
+                SDL_GetTextureSize(texture, &rect.w, &rect.h);
+                rect.x = larguraTela / 2 - rect.w / 2;
+                rect.y = 160 + idx * 70;
+                SDL_RenderTexture(renderer, texture, NULL, &rect);
+                SDL_DestroySurface(surface);
+                SDL_DestroyTexture(texture);
+            }
+
+            // Rodapé
+            surface = TTF_RenderText_Blended(fontHud,
+                "W/S - Selecionar    ENTER - Confirmar", 0, preto);
+            texture = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_GetTextureSize(texture, &rect.w, &rect.h);
+            rect.x = larguraTela / 2 - rect.w / 2;
+            rect.y = alturaTela - 60;
+            SDL_RenderTexture(renderer, texture, NULL, &rect);
+            SDL_DestroySurface(surface);
+            SDL_DestroyTexture(texture);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+        }
         //Pause
 
         if (estado == PAUSE)
