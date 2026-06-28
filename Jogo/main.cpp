@@ -2,7 +2,7 @@
 // ============================================================
 // INCLUDES
 // ============================================================
-    
+
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -41,6 +41,7 @@ typedef enum {
     RANKING,
     AJUDA,
     DIGITAR_NOME,
+    RESULTADO,
     GAMEOVER,
     SAIR
 } Sistema;
@@ -221,7 +222,7 @@ bool efeitosLigados = true;
 
 void TocarMusica(Audio& audio,
     const char* arquivo,
-    float volume = 0.2f)
+    float volume = 0.05f)
 {
     if (!musicaLigada)
         return;
@@ -291,7 +292,7 @@ void PararMusica(Audio& audio)
 
 void CarregarEfeito(Audio& audio,
     const char* arquivo,
-    float volume = 1.0f)
+    float volume = 0.05f)
 {
     if (!SDL_LoadWAV(arquivo,
         &audio.spec,
@@ -365,7 +366,7 @@ float forcaPulo = -10.0f;
 
 float SPEED_NORMAL = 5.0f;
 float SPEED_SUJO = 2.5f;
-float speed= 5.0f;
+float speed = 5.0f;
 
 float tamanhoPlayer = 64.0f;
 float tamanhoBoss = 128.0f;
@@ -384,8 +385,8 @@ void AtualizarEscala(int larguraTela, int alturaTela)
     tamanhoPlayer = 64.0f * escalaJogo;
     tamanhoBoss = 128.0f * escalaJogo;
     tamanhoInimigo = 64.0f * escalaJogo;
-    tamanhoPowerup = 32.0f * escalaJogo;    
-    tamanhoProjetil= 32.0f * escalaJogo;
+    tamanhoPowerup = 32.0f * escalaJogo;
+    tamanhoProjetil = 32.0f * escalaJogo;
     tamanhoObstaculo = 64.0f * escalaJogo;
 
     SPEED_NORMAL = 5.0f * escalaJogo;
@@ -403,15 +404,15 @@ void AtualizarEscala(int larguraTela, int alturaTela)
 
 int main(int argc, char* argv[])
 {
-    #ifdef NDEBUG
+#ifdef NDEBUG
     ShowWindow(GetConsoleWindow(), SW_HIDE);
-    #endif
+#endif
     // ----------------------------------------------------------
     // INICIALIZAÇÃO DO SDL
     // ----------------------------------------------------------
 
     //Icon
-    SDL_Surface* icon = IMG_Load("assets/icon.png");
+    SDL_Surface* icon = IMG_Load("assets/icon.ico");
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
     {
@@ -468,7 +469,7 @@ int main(int argc, char* argv[])
     // ----------------------------------------------------------
 
     int larguraTela, alturaTela;
-    
+
     SDL_GetWindowSize(window, &larguraTela, &alturaTela);
 
     AtualizarEscala(larguraTela, alturaTela);
@@ -495,8 +496,8 @@ int main(int argc, char* argv[])
     float textoW, textoH;
     SDL_FRect textoRect;
 
-    logoRect.w = larguraTela * 0.35f; 
-    logoRect.h = logoRect.w * 0.5f; 
+    logoRect.w = larguraTela * 0.35f;
+    logoRect.h = logoRect.w * 0.5f;
 
     logoRect.x = larguraTela * 0.07f;
     logoRect.y = alturaTela * 0.05f;
@@ -569,10 +570,10 @@ int main(int argc, char* argv[])
         IMG_LoadTexture(renderer, "assets/acucar.png");
 
     SDL_Texture* texturaPlayer =
-            IMG_LoadTexture(renderer, "assets/player.png");
+        IMG_LoadTexture(renderer, "assets/player.png");
 
     SDL_Texture* texturaPlayerSujo =
-            IMG_LoadTexture(renderer, "assets/playerSujo.png");
+        IMG_LoadTexture(renderer, "assets/playerSujo.png");
 
     SDL_Texture* projetil =
         IMG_LoadTexture(renderer, "assets/tiro.png");
@@ -612,6 +613,13 @@ int main(int argc, char* argv[])
 
     SDL_Texture* baseTexture = IMG_LoadTexture(renderer, "assets/base.png");
 
+    // Texturas das cartas de upgrade
+    SDL_Texture* upgradeImgDano = IMG_LoadTexture(renderer, "assets/mais_dano.png");
+    SDL_Texture* upgradeImgVida = IMG_LoadTexture(renderer, "assets/mais_vida.png");
+    SDL_Texture* upgradeImgBalas = IMG_LoadTexture(renderer, "assets/mais_balas.png");
+    SDL_Texture* upgradeImgDuplo = IMG_LoadTexture(renderer, "assets/tiro_duplo.png");
+    SDL_Texture* upgradeImgCacador = IMG_LoadTexture(renderer, "assets/matador_de_boss.png");
+
     // Cursor
 
     SDL_Surface* cursorSurface = IMG_Load("assets/cursor.png");
@@ -632,7 +640,7 @@ int main(int argc, char* argv[])
         64,
         64
     };
-        
+
     float velocidadeY = forcaPulo;
     float alturaChao = alturaTela - player.h;
     float espacamento = 18.0f;
@@ -642,7 +650,7 @@ int main(int argc, char* argv[])
     int danoTiro = 1;
     int danoTiroBase = 1;
     int vidaMaxima = MAX_VIDAS;
-    int tirosExtras = 0;    
+    int tirosExtras = 0;
     int quantidadeTiros = 3 + tirosExtras;
     const int totalFramesPowerUp = 5;
     const int larguraFramePowerUp = 64;
@@ -656,7 +664,7 @@ int main(int argc, char* argv[])
     bool olhandoDireita = true;
     bool dano = false;
     bool stun = false;
-    bool ataqueBuff = false;    
+    bool ataqueBuff = false;
     bool sujo = false;
 
 
@@ -698,7 +706,7 @@ int main(int argc, char* argv[])
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo  inimigos[MAX_INIMIGOS] = { 0 };
     Boss boss = { 0 };
-    PowerupVida vidasPowerup[MAX_POWERUPS] = {0};
+    PowerupVida vidasPowerup[MAX_POWERUPS] = { 0 };
     PowerupAtq ataquePowerup[MAX_POWERUPSATQ] = { 0 };
     Obstaculo obstaculos[MAX_OBSTACULOS] = { 0 };
 
@@ -725,7 +733,7 @@ int main(int argc, char* argv[])
         "Menu Principal"
     };
 
-    float yCreditos = 0.0f; 
+    float yCreditos = 0.0f;
 
     Audio musicaMenu;
     Audio musicaGame;
@@ -993,7 +1001,7 @@ int main(int argc, char* argv[])
 
                     SDL_StopTextInput(window);
 
-                    estado = GAMEOVER;
+                    estado = MENU;
                     tempoAtual = SDL_GetTicks();
                 }
             }
@@ -1112,15 +1120,8 @@ int main(int argc, char* argv[])
 
                 switch (event.key.key)
                 {
-                case SDLK_W:
-                    if (opcaoUpgrade > 0)
-                        opcaoUpgrade--;
-                    break;
-
-                case SDLK_S:
-                    if (opcaoUpgrade < maxOpcao)
-                        opcaoUpgrade++;
-                    break;
+                case SDLK_A: if (opcaoUpgrade > 0) { opcaoUpgrade--; } break;
+                case SDLK_D: if (opcaoUpgrade < maxOpcao) { opcaoUpgrade++; } break;
 
                 case SDLK_RETURN:
                 {
@@ -1134,7 +1135,7 @@ int main(int argc, char* argv[])
 
                     if (opcaoUpgrade == idxDano)
                     {
-                        danoTiroBase += 2;
+                        danoTiroBase += 1;
                         danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
                     }
                     else if (opcaoUpgrade == idxVida)
@@ -1194,6 +1195,54 @@ int main(int argc, char* argv[])
                     estado = MENU;
                 }
             }
+            if (estado == RESULTADO && event.type == SDL_EVENT_KEY_DOWN)
+            {
+                if (event.key.key == SDLK_RETURN)
+                {
+                    if (pontos > ranking[2].pontos)
+                    {
+                        estado = DIGITAR_NOME;
+                        nomeJogador[0] = '\0';
+                        tamanhoNome = 0;
+                        SDL_StartTextInput(window);
+                    }
+                    else
+                    {
+                        player.x = 320.0f;
+                        player.y = 240.0f;
+                        vidas = MAX_VIDAS;
+                        velocidadeY = 0.0f;
+                        noChao = true;
+                        pontos = 0;
+                        ondas = 1;
+                        inimigosAtivos = 5;
+                        boss.ativo = false;
+                        boss.vida = 0;
+                        spawnBoss = 1000;
+                        bossAtivados = 0;
+                        inimigosDerrotados = 0;
+                        spam = false;
+                        intervaloSpawn = 2000 - (ondas * 150);
+                        tiroDuplo = false;
+                        cacadorBoss = false;
+                        danoTiro = 1;
+                        danoTiroBase = 1;
+                        tirosExtras = 0;
+                        quantidadeTiros = 3;
+                        ataqueBuff = false;
+                        upgradeTiroDuploDisponivel = false;
+                        upgradeCacadordeBossDisponivel = false;
+                        vidaMaxima = MAX_VIDAS;
+                        inicioOnda = SDL_GetTicks();
+                        inicioSpam = SDL_GetTicks();
+                        ultimoSpawn = SDL_GetTicks();
+                        for (int i = 0; i < MAX_PROJETEIS; i++) projeteis[i].ativo = false;
+                        for (int i = 0; i < MAX_INIMIGOS; i++)  inimigos[i].ativo = false;
+
+                        estado = MENU;
+                    }
+                }
+            }
 
             // Redimensionamento da janela
             if (event.type == SDL_EVENT_WINDOW_RESIZED)
@@ -1213,7 +1262,7 @@ int main(int argc, char* argv[])
                 // Boss
                 boss.rect.w = tamanhoBoss;
                 boss.rect.h = tamanhoBoss;
-                boss.speed = 1.5f + (bossAtivados * 0.5f) * escalaJogo;
+                boss.speed = 1.5f + (bossAtivados * 0.25f) * escalaJogo;
 
                 // Obstáculos
                 for (int i = 0; i < MAX_OBSTACULOS; i++)
@@ -1341,8 +1390,12 @@ int main(int argc, char* argv[])
                     // Quantos tiros este clique vai criar
                     int tirosCriar = tiroDuplo ? 2 : 1;
 
-                    // Verifica se há espaço para pelo menos 1 projétil
-                    if (projeteisAtivos + tirosCriar <= quantidadeTiros)
+                    // Com tiro duplo, cada disparo usa 2 slots, compara em pares
+                    int slotsNecessarios = tiroDuplo ? 2 : 1;
+                    int disparosAtivos = tiroDuplo ? (projeteisAtivos / 2) : projeteisAtivos;
+                    int disparosMax = tiroDuplo ? (quantidadeTiros / 2) : quantidadeTiros;
+
+                    if (disparosAtivos < disparosMax)
                     {
                         int criados = 0;
                         for (int i = 0; i < MAX_PROJETEIS && criados < tirosCriar; i++)
@@ -1426,7 +1479,7 @@ int main(int argc, char* argv[])
             AtualizarMusica(musicaMenu);
         }
         else
-        {   
+        {
             PararMusica(musicaMenu);
         }
 
@@ -1531,7 +1584,7 @@ int main(int argc, char* argv[])
             }
         }
         // Atualização da animação do PowerUp de Ataque
-        
+
         if (estado == JOGAR) {
             for (int i = 0; i < MAX_POWERUPSATQ; i++)
             {
@@ -1558,10 +1611,10 @@ int main(int argc, char* argv[])
             ondas++;
 
             inicioOnda = SDL_GetTicks();
-                
+
             spam = true;
             inicioSpam = SDL_GetTicks();
-            inimigosAtivos += + + ondas * 2;
+            inimigosAtivos += ++ondas * 2;
             intervaloSpawn -= 150;
 
             if (intervaloSpawn == 0) {
@@ -1709,7 +1762,7 @@ int main(int argc, char* argv[])
                 "Joao Pedro Souza de Oliveira",
                 "",
 
-                "Suporte Moral", 
+                "Suporte Moral",
                 "Lucas Natanael de Oliveira Costa",
                 "",
 
@@ -1804,7 +1857,7 @@ int main(int argc, char* argv[])
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
             continue;
-            
+
         }
 
         if (estado == RANKING)
@@ -1939,7 +1992,7 @@ int main(int argc, char* argv[])
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
             continue;
-}
+        }
 
         //Nome
 
@@ -2069,7 +2122,7 @@ int main(int argc, char* argv[])
             SDL_RenderClear(renderer);
 
             SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
-            
+
             // textos
 
             SDL_Surface* surface;
@@ -2221,7 +2274,7 @@ int main(int argc, char* argv[])
             SDL_RenderClear(renderer);
 
             SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
-            
+
             // textos
             SDL_Surface* surface;
             SDL_Texture* texture;
@@ -2369,7 +2422,7 @@ int main(int argc, char* argv[])
             SDL_RenderClear(renderer);
 
             SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
-            
+
             // textos
 
             SDL_Surface* surface;
@@ -2577,7 +2630,7 @@ int main(int argc, char* argv[])
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
             continue;
-        }        
+        }
 
         // Tela de game over
         if (estado == GAMEOVER)
@@ -2611,61 +2664,57 @@ int main(int argc, char* argv[])
 
             if (SDL_GetTicks() - tempoAtual >= 3000)
             {
-                estado = MENU;
-
-                // Reiniciar jogador
-                player.x = 320.0f;
-                player.y = 240.0f;
-
-                vidas = MAX_VIDAS;
-                velocidadeY = 0.0f;
-                noChao = true;
-
-                // Reiniciar as variáveis de jogo
-                pontos = 0;
-                ondas = 1;
-                inimigosAtivos = 5;
-                boss.ativo = false;
-                boss.vida = 0;
-                spawnBoss = 1000;
-                bossAtivados = 0;
-                inimigosDerrotados = 0;
-                spam = false;
-                intervaloSpawn = 2000 - (ondas * 150);
-
-                // Upgrades
-                tiroDuplo = false;
-                cacadorBoss = false;
-                danoTiro = 1;
-                danoTiroBase = 1;
-                tirosExtras = 0;
-                quantidadeTiros = 3;
-                ataqueBuff = false;
-                upgradeTiroDuploDisponivel = false;
-                upgradeCacadordeBossDisponivel = false;
-                vidaMaxima = MAX_VIDAS;
-
-                inicioOnda = SDL_GetTicks();
-                inicioSpam = SDL_GetTicks();
-                ultimoSpawn = SDL_GetTicks();
-
-                // Limpar projéteis
-                for (int i = 0; i < MAX_PROJETEIS; i++)
-                {
-                    projeteis[i].ativo = false;
-                }
-
-                // Limpar inimigos
-                for (int i = 0; i < MAX_INIMIGOS; i++)
-                {
-                    inimigos[i].ativo = false;
-                }
+                estado = RESULTADO;
             }
 
             SDL_Delay(16);
             continue;
         }
 
+        if (estado == RESULTADO)
+        {
+            SDL_RenderClear(renderer);
+            SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
+
+            // Evento — Enter avança
+
+            auto DrawCentrado = [&](TTF_Font* f, const char* txt, SDL_Color cor, float y) {
+                SDL_Surface* s = TTF_RenderText_Blended(f, txt, 0, cor);
+                SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
+                SDL_FRect r; SDL_GetTextureSize(t, &r.w, &r.h);
+                r.x = larguraTela / 2.0f - r.w / 2.0f; r.y = y;
+                SDL_RenderTexture(renderer, t, NULL, &r);
+                SDL_DestroySurface(s); SDL_DestroyTexture(t);
+                };
+
+            SDL_Color amarelo = { 255, 220,  50, 255 };
+            SDL_Color cinza = { 180, 180, 180, 255 };
+
+            float cy = alturaTela * 0.15f;
+            float esp = alturaTela * 0.10f;
+
+            DrawCentrado(font, "RESULTADO", branco, cy);
+
+            char buf[64];
+
+            sprintf_s(buf, sizeof(buf), "Pontos:              %d", pontos);
+            DrawCentrado(fontHud, buf, amarelo, cy + esp * 1.5f);
+
+            sprintf_s(buf, sizeof(buf), "Onda alcancada:      %d", ondas);
+            DrawCentrado(fontHud, buf, cinza, cy + esp * 2.2f);
+
+            sprintf_s(buf, sizeof(buf), "Inimigos derrotados: %d", inimigosDerrotados);
+            DrawCentrado(fontHud, buf, cinza, cy + esp * 2.9f);
+
+            sprintf_s(buf, sizeof(buf), "Bosses derrotados:   %d", bossAtivados);
+            DrawCentrado(fontHud, buf, cinza, cy + esp * 3.6f);
+
+            DrawCentrado(fontHud, "ENTER - Continuar", branco, alturaTela * 0.82f);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(16);
+            continue;
+        }
         // ------------------------------------------------------
         // CONTROLE DE SPAWN
         // ------------------------------------------------------
@@ -2690,13 +2739,13 @@ int main(int argc, char* argv[])
 
                 int quantidadeSpawn = 1;
 
-                if (ondas >= 5)
+                if (ondas >= 10)
                     quantidadeSpawn = 2;
 
-                if (ondas >= 10)
+                if (ondas >= 15)
                     quantidadeSpawn = 3;
 
-                if (ondas >= 15)
+                if (ondas >= 30)
                     quantidadeSpawn = 4;
 
                 for (int s = 0; s < quantidadeSpawn; s++)
@@ -2712,7 +2761,7 @@ int main(int argc, char* argv[])
                             inimigos[i].rect.w = tamanhoInimigo;
                             inimigos[i].rect.h = tamanhoInimigo;
 
-                            inimigos[i].speed = 2.0f + (ondas * 0.5f);
+                            inimigos[i].speed = 2.0f + (ondas * 0.2f);
 
                             if (inimigos[i].speed > 6.0f)
                                 inimigos[i].speed = 6.0f;
@@ -2723,7 +2772,7 @@ int main(int argc, char* argv[])
                                 (rand() % (alturaTela - (int)inimigos[i].rect.h));
 
                             if (spam)
-                                inimigos[i].speed += 2.0f;
+                                inimigos[i].speed += 0.5f;
 
                             break;
                         }
@@ -2742,7 +2791,7 @@ int main(int argc, char* argv[])
                         vidasPowerup[i].ultimoFrame = SDL_GetTicks();
 
                         vidasPowerup[i].rect.w = tamanhoPowerup;
-                        
+
                         vidasPowerup[i].rect.h = tamanhoPowerup;
 
                         vidasPowerup[i].rect.x = larguraTela;
@@ -2826,7 +2875,7 @@ int main(int argc, char* argv[])
         // ------------------------------------------------------
         // ATUALIZAÇÃO DE PROJETEIS
         // ------------------------------------------------------
-        
+
         if (estado == JOGAR) {
             for (int i = 0; i < MAX_PROJETEIS; i++)
             {
@@ -3098,6 +3147,16 @@ int main(int argc, char* argv[])
                 }
             }
         }
+        //Colisão do player e a base
+        if (estado == JOGAR) {
+            if (SDL_HasRectIntersectionFloat(
+                &player,
+                &base)) 
+            {
+                player.x = base.x + base.w;
+
+            }
+        }
         // Colisão do tiro com o powerup
 
         if (estado == JOGAR) {
@@ -3180,9 +3239,9 @@ int main(int argc, char* argv[])
 
 
                         estado = UPGRADE;
-                        upgradeTiroDuploDisponivel = !tiroDuplo && (rand() % 100 < 40);
+                        upgradeTiroDuploDisponivel = !tiroDuplo && (rand() % 100 < 20);
                         upgradeCacadordeBossDisponivel =
-                            !cacadorBoss && (rand() % 100 < 25);
+                            !cacadorBoss && (rand() % 100 < 5);
                         opcaoUpgrade = 0;
                         pontos += 100;
                         bossAtivados++;
@@ -3207,20 +3266,8 @@ int main(int argc, char* argv[])
 
                         if (vidas <= 0)
                         {
-                            if (pontos > ranking[2].pontos)
-                            {
-                                estado = DIGITAR_NOME;
-
-                                nomeJogador[0] = '\0';
-                                tamanhoNome = 0;
-
-                                SDL_StartTextInput(window);
-                            }
-                            else
-                            {
-                                estado = GAMEOVER;
-                                tempoAtual = SDL_GetTicks();
-                            }
+                            estado = GAMEOVER;
+                            tempoAtual = SDL_GetTicks();
                         }
                     }
                 }
@@ -3241,20 +3288,8 @@ int main(int argc, char* argv[])
 
                     if (vidas <= 0)
                     {
-                        if (pontos > ranking[2].pontos)
-                        {
-                            estado = DIGITAR_NOME;
-
-                            nomeJogador[0] = '\0';
-                            tamanhoNome = 0;
-
-                            SDL_StartTextInput(window);
-                        }
-                        else
-                        {
-                            estado = GAMEOVER;
-                            tempoAtual = SDL_GetTicks();
-                        }
+                        estado = GAMEOVER;
+                        tempoAtual = SDL_GetTicks();
                     }
                 }
             }
@@ -3419,11 +3454,11 @@ int main(int argc, char* argv[])
         // Colisões da tela
         //------------------------------------------------------
 
-        if(player.x < 0){
+        if (player.x < 0) {
             player.x = 0;
         }
 
-        if (player.x + player.w > larguraTela){
+        if (player.x + player.w > larguraTela) {
             player.x = larguraTela - player.w;
         }
 
@@ -3589,7 +3624,7 @@ int main(int argc, char* argv[])
                 boss.rect.x = larguraTela;
                 boss.rect.y = (float)(rand() % (int)(alturaChao - boss.rect.h));
 
-                boss.speed = 1.5f + (bossAtivados * 0.5f)* escalaJogo;
+                boss.speed = 1.5f + (bossAtivados * 0.5f) * escalaJogo;
 
                 boss.vidaMax = 60;
                 boss.vida = boss.vidaMax + (bossAtivados * 5);
@@ -3781,21 +3816,21 @@ int main(int argc, char* argv[])
             if (!obstaculos[i].ativo)
                 continue;
 
-                SDL_FRect srcSombra =
-                {
-                    obstaculos[i].frame * 64,
-                    0,
-                    64,
-                    64
-                };
+            SDL_FRect srcSombra =
+            {
+                obstaculos[i].frame * 64,
+                0,
+                64,
+                64
+            };
 
-                SDL_FRect sombraRect =
-                {
-                    obstaculos[i].rect.x,
-                    alturaChao,
-                    64,
-                    64
-                };
+            SDL_FRect sombraRect =
+            {
+                obstaculos[i].rect.x,
+                alturaChao,
+                64,
+                64
+            };
 
             if (obstaculos[i].estado == OBSTACULO_SOMBRA)
             {
@@ -3854,7 +3889,7 @@ int main(int argc, char* argv[])
 
         // Desenhar boss
 
-        if (boss.ativo){
+        if (boss.ativo) {
             SDL_FRect srcBoss =
             {
                 boss.frame * 128,
@@ -3873,7 +3908,7 @@ int main(int argc, char* argv[])
 
         // Barra de vida do boss
 
-        if (boss.ativo){
+        if (boss.ativo) {
             SDL_FRect fundoVida = {
                 larguraTela / 2 - 200,
                 20,
@@ -4005,86 +4040,181 @@ int main(int argc, char* argv[])
         //Upgrade
         if (estado == UPGRADE)
         {
+            // Overlay escuro
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 120);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 170);
+            SDL_FRect telaInteira = { 0, 0, (float)larguraTela, (float)alturaTela };
+            SDL_RenderFillRect(renderer, &telaInteira);
 
-            SDL_Surface* surface;
-            SDL_Texture* texture;
-            SDL_FRect rect;
-            char texto[80];
+            // Monta lista de upgrades disponíveis
+            struct SlotUpgrade {
+                const char* label;
+                const char* desc;
+                SDL_Texture* img;
+            };
+
+            SlotUpgrade slots[5];
+            int totalSlots = 0;
+
+            slots[totalSlots++] = { "MAIS DANO",      "+1 de dano por tiro",       upgradeImgDano };
+            slots[totalSlots++] = { "MAIS VIDA",      "+1 de vida maxima",          upgradeImgVida };
+            slots[totalSlots++] = { "MAIS BALAS",     "+1 projetil simultaneo",     upgradeImgBalas };
+
+            if (upgradeTiroDuploDisponivel)
+                slots[totalSlots++] = { "TIRO DUPLO",     "Atira 2 projeteis por vez",  upgradeImgDuplo };
+
+            if (upgradeCacadordeBossDisponivel)
+                slots[totalSlots++] = { "CACADOR DE BOSS", "+5 de dano nos bosses",     upgradeImgCacador };
+
+            // Dimensões
+            const float CARTA_W = larguraTela * 0.14f;
+            const float CARTA_H = alturaTela * 0.62f;
+            const float CARTA_GAP = larguraTela * 0.025f;
+            const float IMG_H = CARTA_H * 0.42f;
+            const float BORDA = 4.0f;
+
+            float blocoW = totalSlots * CARTA_W + (totalSlots - 1) * CARTA_GAP;
+            float blocoX = larguraTela / 2.0f - blocoW / 2.0f;
+            float blocoY = alturaTela * 0.18f;
 
             // Título
-            surface = TTF_RenderText_Blended(font, "ESCOLHA UMA MELHORIA", 0, preto);
-            texture = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_GetTextureSize(texture, &rect.w, &rect.h);
-            rect.x = larguraTela / 2 - rect.w / 2;
-            rect.y = 60;
-            SDL_RenderTexture(renderer, texture, NULL, &rect);
-            SDL_DestroySurface(surface);
-            SDL_DestroyTexture(texture);
-
-            // Opções fixas
-            const char* labels[] = { "MAIS DANO (+2)", "MAIS VIDA (+1)", "MAIS BALAS (+1)" };
-
-            for (int i = 0; i < 3; i++)
             {
-                sprintf_s(texto, sizeof(texto), "%s %s",
-                    opcaoUpgrade == i ? ">" : " ", labels[i]);
+                float titleY = blocoY - alturaTela * 0.7f;
 
-                surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
-                texture = SDL_CreateTextureFromSurface(renderer, surface);
-                SDL_GetTextureSize(texture, &rect.w, &rect.h);
-                rect.x = larguraTela / 2 - rect.w / 2;
-                rect.y = 160 + i * 70;
-                SDL_RenderTexture(renderer, texture, NULL, &rect);
-                SDL_DestroySurface(surface);
-                SDL_DestroyTexture(texture);
+                if (opcaoUpgrade >= 0 && opcaoUpgrade < totalSlots)
+                    titleY -= alturaTela * 0.04f;
+
+                SDL_Surface* s = TTF_RenderText_Blended(font, "ESCOLHA UMA MELHORIA", 0, branco);
+                SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
+                SDL_FRect r;
+                SDL_GetTextureSize(t, &r.w, &r.h);
+                r.x = larguraTela / 2.0f - r.w / 2.0f;
+                r.y = titleY;
+                SDL_RenderTexture(renderer, t, NULL, &r);
+                SDL_DestroySurface(s);
+                SDL_DestroyTexture(t);
             }
 
-            // Tiro duplo (sorteado)
-            if (upgradeTiroDuploDisponivel)
+            // Cartas
+            for (int i = 0; i < totalSlots; i++)
             {
-                int idx = 3;
-                sprintf_s(texto, sizeof(texto), "%s TIRO DUPLO!",
-                    opcaoUpgrade == idx ? ">" : " ");
+                bool selecionada = (i == opcaoUpgrade);
 
-                surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
-                texture = SDL_CreateTextureFromSurface(renderer, surface);
-                SDL_GetTextureSize(texture, &rect.w, &rect.h);
-                rect.x = larguraTela / 2 - rect.w / 2;
-                rect.y = 160 + idx * 70;
-                SDL_RenderTexture(renderer, texture, NULL, &rect);
-                SDL_DestroySurface(surface);
-                SDL_DestroyTexture(texture);
-            }
+                float cx = blocoX + i * (CARTA_W + CARTA_GAP);
+                float cy = selecionada ? blocoY - alturaTela * 0.04f : blocoY;
 
-            // Caçador de Boss (sorteado)
-            if (upgradeCacadordeBossDisponivel)
-            {
-                int idx = 3 + (upgradeTiroDuploDisponivel ? 1 : 0);
-                sprintf_s(texto, sizeof(texto), "%s CACADOR DE BOSS (dano +5)",
-                    opcaoUpgrade == idx ? ">" : " ");
+                SDL_FRect cartaRect = { cx, cy, CARTA_W, CARTA_H };
 
-                surface = TTF_RenderText_Blended(fontHud, texto, 0, preto);
-                texture = SDL_CreateTextureFromSurface(renderer, surface);
-                SDL_GetTextureSize(texture, &rect.w, &rect.h);
-                rect.x = larguraTela / 2 - rect.w / 2;
-                rect.y = 160 + idx * 70;
-                SDL_RenderTexture(renderer, texture, NULL, &rect);
-                SDL_DestroySurface(surface);
-                SDL_DestroyTexture(texture);
+                // Sombra
+                SDL_FRect sombraRect = { cx + 6, cy + 6, CARTA_W, CARTA_H };
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 100);
+                SDL_RenderFillRect(renderer, &sombraRect);
+
+                // Fundo
+                SDL_Color corFundo = selecionada
+                    ? SDL_Color{ 255, 230, 160, 255 }
+                : SDL_Color{ 40,  35,  50, 255 };
+
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+                SDL_SetRenderDrawColor(renderer, corFundo.r, corFundo.g, corFundo.b, 255);
+                SDL_RenderFillRect(renderer, &cartaRect);
+
+                // Borda dupla
+                SDL_Color corBorda = selecionada
+                    ? SDL_Color{ 220, 160,  20, 255 }
+                : SDL_Color{ 100,  80, 130, 255 };
+
+                SDL_SetRenderDrawColor(renderer, corBorda.r, corBorda.g, corBorda.b, 255);
+                SDL_RenderRect(renderer, &cartaRect);
+                SDL_FRect bordaInterna = {
+                    cartaRect.x + BORDA, cartaRect.y + BORDA,
+                    cartaRect.w - BORDA * 2, cartaRect.h - BORDA * 2
+                };
+                SDL_RenderRect(renderer, &bordaInterna);
+
+                // Imagem
+                if (slots[i].img)
+                {
+                    float imgPad = CARTA_W * 0.08f;
+                    SDL_FRect imgRect = {
+                        cx + imgPad,
+                        cy + CARTA_H * 0.10f,
+                        CARTA_W - imgPad * 2,
+                        IMG_H
+                    };
+                    SDL_RenderTexture(renderer, slots[i].img, NULL, &imgRect);
+                }
+
+                // Nome
+                {
+                    SDL_Color corTxt = selecionada
+                        ? SDL_Color{ 20,  20,  20, 255 }
+                    : SDL_Color{ 255, 255, 255, 255 };
+
+                    SDL_Surface* s = TTF_RenderText_Blended(fontHud, slots[i].label, 0, corTxt);
+                    SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
+                    SDL_FRect r;
+                    SDL_GetTextureSize(t, &r.w, &r.h);
+
+                    float maxW = CARTA_W - 8.0f;
+                    if (r.w > maxW) { float f = maxW / r.w; r.w *= f; r.h *= f; }
+
+                    r.x = cx + CARTA_W / 2.0f - r.w / 2.0f;
+                    r.y = cy + CARTA_H * 0.10f + IMG_H + CARTA_H * 0.04f;
+
+                    SDL_RenderTexture(renderer, t, NULL, &r);
+                    SDL_DestroySurface(s);
+                    SDL_DestroyTexture(t);
+                }
+
+                // Descrição
+                {
+                    SDL_Color corDesc = selecionada
+                        ? SDL_Color{ 60,  40,  10, 255 }
+                    : SDL_Color{ 180, 160, 200, 255 };
+
+                    SDL_Surface* s = TTF_RenderText_Blended(fontHud, slots[i].desc, 0, corDesc);
+                    SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
+                    SDL_FRect r;
+                    SDL_GetTextureSize(t, &r.w, &r.h);
+
+                    float maxW = CARTA_W - 8.0f;
+                    if (r.w > maxW) { float f = maxW / r.w; r.w *= f; r.h *= f; }
+
+                    r.x = cx + CARTA_W / 2.0f - r.w / 2.0f;
+                    r.y = cy + CARTA_H * 0.10f + IMG_H + CARTA_H * 0.14f;
+
+                    SDL_RenderTexture(renderer, t, NULL, &r);
+                    SDL_DestroySurface(s);
+                    SDL_DestroyTexture(t);
+                }
+
+                // Seta indicadora
+                if (selecionada)
+                {
+                    SDL_SetRenderDrawColor(renderer, 220, 160, 20, 255);
+                    float ax = cx + CARTA_W / 2.0f;
+                    float ay = cy - 18.0f;
+                    SDL_RenderLine(renderer, ax - 10, ay, ax + 10, ay);
+                    SDL_RenderLine(renderer, ax - 6, ay + 6, ax, ay + 12);
+                    SDL_RenderLine(renderer, ax + 6, ay + 6, ax, ay + 12);
+                }
             }
 
             // Rodapé
-            surface = TTF_RenderText_Blended(fontHud,
-                "W/S - Selecionar    ENTER - Confirmar", 0, preto);
-            texture = SDL_CreateTextureFromSurface(renderer, surface);
-            SDL_GetTextureSize(texture, &rect.w, &rect.h);
-            rect.x = larguraTela / 2 - rect.w / 2;
-            rect.y = alturaTela - 60;
-            SDL_RenderTexture(renderer, texture, NULL, &rect);
-            SDL_DestroySurface(surface);
-            SDL_DestroyTexture(texture);
+            {
+                SDL_Surface* s = TTF_RenderText_Blended(fontHud,
+                    "A / D  —  Navegar          ENTER  —  Confirmar", 0, branco);
+                SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
+                SDL_FRect r;
+                SDL_GetTextureSize(t, &r.w, &r.h);
+                r.x = larguraTela / 2.0f - r.w / 2.0f;
+                r.y = (float)alturaTela - r.h - 18.0f;
+                SDL_RenderTexture(renderer, t, NULL, &r);
+                SDL_DestroySurface(s);
+                SDL_DestroyTexture(t);
+            }
 
             SDL_RenderPresent(renderer);
             SDL_Delay(16);
@@ -4163,7 +4293,7 @@ int main(int argc, char* argv[])
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
-    
+
     } // fim do loop principal
 
     // ==========================================================
@@ -4199,6 +4329,11 @@ int main(int argc, char* argv[])
     SDL_DestroyTexture(texturaBoss);
     SDL_DestroyTexture(texturaObstaculo);
     SDL_DestroyTexture(texturaSombra);
+    SDL_DestroyTexture(upgradeImgDano);
+    SDL_DestroyTexture(upgradeImgVida);
+    SDL_DestroyTexture(upgradeImgBalas);
+    SDL_DestroyTexture(upgradeImgDuplo);
+    SDL_DestroyTexture(upgradeImgCacador);
     SDL_DestroyCursor(cursor);
 
     LiberarEfeito(somPulo);
