@@ -19,7 +19,7 @@
 
 #define COLUNAS      25
 #define LINHAS       19
-#define MAX_PROJETEIS 10
+#define MAX_PROJETEIS 20
 #define MAX_INIMIGOS  50
 #define MAX_VIDAS     4
 #define MAX_POWERUPS  2
@@ -906,6 +906,9 @@ int main(int argc, char* argv[])
 
                     boss = { 0 };
 
+                    spawnBoss = 1000;
+                    bossAtivados = 0;
+
                     memset(inimigos, 0, sizeof(inimigos));
                     memset(projeteis, 0, sizeof(projeteis));
                     memset(vidasPowerup, 0, sizeof(vidasPowerup));
@@ -1393,7 +1396,7 @@ int main(int argc, char* argv[])
                     // Com tiro duplo, cada disparo usa 2 slots, compara em pares
                     int slotsNecessarios = tiroDuplo ? 2 : 1;
                     int disparosAtivos = tiroDuplo ? (projeteisAtivos / 2) : projeteisAtivos;
-                    int disparosMax = tiroDuplo ? (quantidadeTiros / 2) : quantidadeTiros;
+                    int disparosMax = tiroDuplo ? ((quantidadeTiros + 1)/2) : quantidadeTiros;
 
                     if (disparosAtivos < disparosMax)
                     {
@@ -1614,7 +1617,7 @@ int main(int argc, char* argv[])
 
             spam = true;
             inicioSpam = SDL_GetTicks();
-            inimigosAtivos += ++ondas * 2;
+            inimigosAtivos += ondas * 2;
             intervaloSpawn -= 150;
 
             if (intervaloSpawn == 0) {
@@ -3285,6 +3288,8 @@ int main(int argc, char* argv[])
                     flashBase = FLASH_DANO;
                     tempoFlashBase = 0.2f; // 200 ms
                     boss.ativo = false;
+                    bossAtivados++;
+                    spawnBoss += 1000;
 
                     if (vidas <= 0)
                     {
@@ -3828,8 +3833,8 @@ int main(int argc, char* argv[])
             {
                 obstaculos[i].rect.x,
                 alturaChao,
-                64,
-                64
+                tamanhoObstaculo,
+                tamanhoObstaculo
             };
 
             if (obstaculos[i].estado == OBSTACULO_SOMBRA)
