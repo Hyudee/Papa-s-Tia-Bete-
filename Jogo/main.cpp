@@ -54,6 +54,9 @@ typedef struct
 
     int frame;
     Uint64 ultimoFrame;
+
+    bool   morrendo;
+    Uint64 flashInicio;
 } Inimigo;
 
 typedef struct
@@ -643,7 +646,6 @@ int main(int argc, char* argv[])
 
     float velocidadeY = forcaPulo;
     float alturaChao = alturaTela - player.h;
-    float espacamento = 18.0f;
     int framePowerUp = 0;
     int framePlayer = 0;
     int framePulo = 0;
@@ -1226,6 +1228,8 @@ int main(int argc, char* argv[])
                         noChao = true;
                         pontos = 0;
                         ondas = 1;
+                        ondaAntiga = -1;
+                        pontosAntigos = -1;
                         inimigosAtivos = 5;
                         boss.ativo = false;
                         boss.vida = 0;
@@ -1250,8 +1254,9 @@ int main(int argc, char* argv[])
                         ultimoSpawnObstaculo = SDL_GetTicks();
                         ultimoSpawnPowerUp = SDL_GetTicks();
                         ultimoSpawnAtq = SDL_GetTicks();
+                        memset(obstaculos, 0, sizeof(obstaculos));
+                        memset(inimigos, 0, sizeof(inimigos));
                         for (int i = 0; i < MAX_PROJETEIS; i++) projeteis[i].ativo = false;
-                        for (int i = 0; i < MAX_INIMIGOS; i++)  inimigos[i].ativo = false;
 
                         estado = MENU;
                     }
@@ -1295,7 +1300,7 @@ int main(int argc, char* argv[])
                     {
                         inimigos[i].rect.w = tamanhoInimigo;
                         inimigos[i].rect.h = tamanhoInimigo;
-                        inimigos[i].rect.x -= inimigos[i].speed * escalaJogo;
+                        inimigos[i].rect.x -= inimigos[i].speed;
 
                     }
                 }
@@ -2798,7 +2803,7 @@ int main(int argc, char* argv[])
             }
             // Spawn de powerups
 
-            if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < MAX_VIDAS)) {
+            if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < vidaMaxima)) {
                 ultimoSpawnPowerUp = tempoAtual;
 
                 for (int i = 0; i < MAX_POWERUPS; i++) {
@@ -2816,7 +2821,7 @@ int main(int argc, char* argv[])
                         vidasPowerup[i].rect.y =
                             rand() % (alturaTela - (int)vidasPowerup[i].rect.h);
 
-                        vidasPowerup[i].speed = 7.0f;
+                        vidasPowerup[i].speed = 7.0f * escalaJogo;
 
                         break;
                     }
@@ -2825,7 +2830,7 @@ int main(int argc, char* argv[])
 
             // SPAWN DOS OBSTÁCULOS
 
-            if (ondas >= 3 &&
+            if (ondas >= 2 &&
                 !boss.ativo &&
                 SDL_GetTicks() - ultimoSpawnObstaculo >= intervaloObstaculo)
             {
@@ -2886,7 +2891,7 @@ int main(int argc, char* argv[])
                 ataquePowerup[0].rect.y =
                     rand() % (alturaTela - (int)ataquePowerup[0].rect.h);
 
-                ataquePowerup[0].speed = 7.0f;
+                ataquePowerup[0].speed = 7.0f * escalaJogo;
             }
         }
         // ------------------------------------------------------
@@ -2948,6 +2953,16 @@ int main(int argc, char* argv[])
         if (estado == JOGAR) {
             for (int i = 0; i < MAX_INIMIGOS; i++)
             {
+                if (inimigos[i].morrendo)
+                {
+                    if (SDL_GetTicks() - inimigos[i].flashInicio >= 120)
+                    {
+                        inimigos[i].morrendo = false;
+                        inimigos[i].ativo = false;
+                    }
+                    continue;
+                }
+
                 if (inimigos[i].ativo)
                 {
                     if (SDL_GetTicks() - inimigos[i].ultimoFrame > 150)
@@ -2961,7 +2976,7 @@ int main(int argc, char* argv[])
 
                         inimigos[i].ultimoFrame = SDL_GetTicks();
                     }
-                    inimigos[i].rect.x -= inimigos[i].speed * escalaJogo;
+                    inimigos[i].rect.x -= inimigos[i].speed;
 
                     if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
                     {
@@ -2977,7 +2992,7 @@ int main(int argc, char* argv[])
                 if (!vidasPowerup[i].ativo)
                     continue;
 
-                vidasPowerup[i].rect.x -= vidasPowerup[i].speed * escalaJogo;
+                vidasPowerup[i].rect.x -= vidasPowerup[i].speed;
 
                 if (vidasPowerup[i].rect.x +
                     vidasPowerup[i].rect.w < 0)
@@ -2993,7 +3008,7 @@ int main(int argc, char* argv[])
                 if (!ataquePowerup[i].ativo)
                     continue;
 
-                ataquePowerup[i].rect.x -= ataquePowerup[i].speed * escalaJogo;
+                ataquePowerup[i].rect.x -= ataquePowerup[i].speed;
 
                 if (ataquePowerup[i].rect.x +
                     ataquePowerup[i].rect.w < 0)
@@ -3100,11 +3115,11 @@ int main(int argc, char* argv[])
                 {
                     Uint64 tempoNoChao = SDL_GetTicks() - obstaculos[i].inicioEstado;
 
-                    if (tempoNoChao < 2000)
+                    if (tempoNoChao < 8000)
                     {
                         obstaculos[i].frame = 4; // parado normal
                     }
-                    else if (tempoNoChao < 2700)
+                    else if (tempoNoChao < 8700)
                     {
                         obstaculos[i].frame = 3; // frame quebrando
                     }
@@ -3137,7 +3152,7 @@ int main(int argc, char* argv[])
         if (estado == JOGAR) {
             for (int i = 0; i < MAX_INIMIGOS; i++)
             {
-                if (inimigos[i].ativo)
+                if (inimigos[i].ativo && !inimigos[i].morrendo)
                 {
                     if (SDL_HasRectIntersectionFloat(
                         &player,
@@ -3168,8 +3183,11 @@ int main(int argc, char* argv[])
                     }
                 }
             }
-            if (stun && SDL_GetTicks() - stunStart >= STUN_DURACAO)
-                stun = false;
+            if (stun && SDL_GetTicks() - stunStart >= STUN_DURACAO) {
+                stun = false;   
+                if (!dano)
+                    framePlayer = olhandoDireita ? 0 : 1;
+            }
         }
         //Colisão do player e a base
         if (estado == JOGAR) {
@@ -3274,7 +3292,7 @@ int main(int argc, char* argv[])
         if (estado == JOGAR) {
             for (int i = 0; i < MAX_INIMIGOS; i++)
             {
-                if (inimigos[i].ativo)
+                if (inimigos[i].ativo && !inimigos[i].morrendo)
                 {
                     if (SDL_HasRectIntersectionFloat(
                         &base,
@@ -3351,19 +3369,20 @@ int main(int argc, char* argv[])
         if (estado == JOGAR) {
             for (int i = 0; i < MAX_INIMIGOS; i++)
             {
-                if (!inimigos[i].ativo)
+                if (!inimigos[i].ativo || inimigos[i].morrendo)
                     continue;
 
                 for (int j = 0; j < MAX_PROJETEIS; j++)
                 {
-                    if (!projeteis[j].ativo)
+                    if (!projeteis[j].ativo || projeteis[j].explodindo)
                         continue;
 
                     if (SDL_HasRectIntersectionFloat(
                         &inimigos[i].rect,
                         &projeteis[j].rect))
                     {
-                        inimigos[i].ativo = false;
+                        inimigos[i].morrendo = true;
+                        inimigos[i].flashInicio = SDL_GetTicks();
                         projeteis[j].explodindo = true;
                         projeteis[j].frame = 3;
                         projeteis[j].velX = 0;
@@ -3859,8 +3878,11 @@ int main(int argc, char* argv[])
         // Inimigos
         for (int i = 0; i < MAX_INIMIGOS; i++)
         {
-            if (!inimigos[i].ativo)
+            if (!inimigos[i].ativo && !inimigos[i].morrendo)
                 continue;
+
+            if (inimigos[i].morrendo)
+                SDL_SetTextureColorMod(texturaInimigo, 255, 80, 80);
 
             SDL_FRect src = {
                 inimigos[i].frame * larguraFrameInimigo,
@@ -3870,6 +3892,9 @@ int main(int argc, char* argv[])
             };
 
             SDL_RenderTexture(renderer, texturaInimigo, &src, &inimigos[i].rect);
+
+            if (inimigos[i].morrendo)
+                SDL_SetTextureColorMod(texturaInimigo, 255, 255, 255);
         }
 
         // Obstáculos
