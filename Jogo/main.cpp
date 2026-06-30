@@ -429,6 +429,8 @@ int main(int argc, char* argv[])
         SDL_WINDOW_FULLSCREEN
     );
 
+    SDL_SetWindowMouseGrab(window, true);
+
     if (icon)
     {
         SDL_SetWindowIcon(window, icon);
@@ -877,6 +879,7 @@ int main(int argc, char* argv[])
             {
                 float mouseX = event.button.x;
                 float mouseY = event.button.y;
+
 
                 if (MouseNoBotao(mouseX, mouseY, botaoJogar))
                 {
@@ -3535,6 +3538,8 @@ int main(int argc, char* argv[])
                 naBordaDir = false;
             }
         }
+
+        
         // ------------------------------------------------------
         // FÍSICA: GRAVIDADE E CHÃO
         // ------------------------------------------------------
