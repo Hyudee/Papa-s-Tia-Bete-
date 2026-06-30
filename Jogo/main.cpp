@@ -692,7 +692,7 @@ int main(int argc, char* argv[])
     SDL_FRect base = {
     0.0f,
     0.0f,
-    140.0f,
+    180.0f * escalaJogo,
     (float)alturaTela
     };
 
