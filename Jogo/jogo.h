@@ -144,6 +144,12 @@ private:
     // Eventos
     void ProcessarEventos();
 
+    // Menu principal (Enter e clique esquerdo usam a mesma confirmação)
+    int ItemMenuSobMouse(float x, float y) const;
+    const SDL_FRect* RetanguloItemMenu(int item) const;
+    void MoverItemMenu(int vertical, int horizontal);
+    void ConfirmarItemMenu(int item);
+
     // Atualização do jogo
     void AtualizarHoverMenu();
     void GerenciarMusica();
@@ -286,6 +292,9 @@ private:
     bool spam = false;
     int hoverBotaoAtual = -1;
     int hoverAbaAtual = -1;
+    // Item destacado no menu principal (teclado ou mouse):
+    // 0 Jogar, 1 Créditos, 2 Sair, 3 Engrenagem, 4 Controles, 5 Troféu, 6 Ajuda
+    int itemMenu = 0;
 
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
 

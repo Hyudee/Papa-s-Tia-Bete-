@@ -71,6 +71,7 @@ typedef struct
     bool      ativo;
     float     velX;
     float     velY;
+    float angulo;   // em graus; o sprite original aponta para a direita
 
     int frame;
     Uint64 ultimoFrame;

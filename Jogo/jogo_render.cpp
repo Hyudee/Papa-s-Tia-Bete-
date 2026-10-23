@@ -154,7 +154,11 @@ void Jogo::RenderizarMundo() {
             (float)alturaFrameTiro
         };
 
-        SDL_RenderTexture(renderer, projetil, &srcTiro, &projeteis[i].rect);
+        // Gira o sprite para a direção do tiro (a explosão não gira)
+        double anguloTiro = projeteis[i].explodindo ? 0.0 : (double)projeteis[i].angulo;
+
+        SDL_RenderTextureRotated(renderer, projetil, &srcTiro, &projeteis[i].rect,
+            anguloTiro, NULL, SDL_FLIP_NONE);
     }
 
     // Inimigos

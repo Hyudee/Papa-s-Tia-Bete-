@@ -38,6 +38,7 @@ void Jogo::AtualizarHoverMenu()
             novoHoverBotao != -1)
         {
             TocarEfeito(somHoverBotao);
+            itemMenu = novoHoverBotao; // 0 a 2 coincidem com os botões
         }
 
         hoverBotaoAtual = novoHoverBotao;
@@ -57,6 +58,10 @@ void Jogo::AtualizarHoverMenu()
             novoHoverAba != -1)
         {
             TocarEfeito(somHoverAbas);
+
+            // Ranking, Engrenagem, Controles, Ajuda -> itens do menu
+            const int itemPorAba[4] = { 5, 3, 4, 6 };
+            itemMenu = itemPorAba[novoHoverAba];
         }
 
         hoverAbaAtual = novoHoverAba;

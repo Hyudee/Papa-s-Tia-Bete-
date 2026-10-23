@@ -45,6 +45,30 @@ bool Jogo::TelaMenu()
         SDL_RenderTexture(renderer, creditos, NULL, &botaoCreditos);
         SDL_RenderTexture(renderer, sair, NULL, &botaoSair);
 
+        // Contorno do item destacado (teclado ou mouse)
+        const SDL_FRect* destaque = RetanguloItemMenu(itemMenu);
+
+        if (destaque)
+        {
+            Uint8 corR, corG, corB, corA;
+            SDL_GetRenderDrawColor(renderer, &corR, &corG, &corB, &corA);
+
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+            for (int i = 0; i < 3; i++)
+            {
+                SDL_FRect contorno = {
+                    destaque->x - i,
+                    destaque->y - i,
+                    destaque->w + 2.0f * i,
+                    destaque->h + 2.0f * i
+                };
+                SDL_RenderRect(renderer, &contorno);
+            }
+
+            SDL_SetRenderDrawColor(renderer, corR, corG, corB, corA);
+        }
+
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
         return true;
@@ -59,7 +83,17 @@ bool Jogo::TelaCreditos()
 
         SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
 
-        yCreditos -= 1.0f;
+        // Rolagem rápida: segurar Espaço ou seta para baixo
+        const bool* teclasCreditos = SDL_GetKeyboardState(NULL);
+        float velocidadeCreditos = 1.0f;
+
+        if (teclasCreditos[SDL_SCANCODE_SPACE] ||
+            teclasCreditos[SDL_SCANCODE_DOWN])
+        {
+            velocidadeCreditos = 4.0f;
+        }
+
+        yCreditos -= velocidadeCreditos;
 
         // Textos
 

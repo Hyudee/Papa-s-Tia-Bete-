@@ -18,71 +18,169 @@
 #include "botoes.h"
 #include "jogo.h"
 
+int Jogo::ItemMenuSobMouse(float x, float y) const
+{
+    if (MouseNoBotao(x, y, botaoJogar))    return 0;
+    if (MouseNoBotao(x, y, botaoCreditos)) return 1;
+    if (MouseNoBotao(x, y, botaoSair))     return 2;
+    if (MouseNoBotao(x, y, abaConfig))     return 3;
+    if (MouseNoBotao(x, y, abaControles))  return 4;
+    if (MouseNoBotao(x, y, abaRanking))    return 5;
+    if (MouseNoBotao(x, y, abaAjuda))      return 6;
+    return -1;
+}
+
+const SDL_FRect* Jogo::RetanguloItemMenu(int item) const
+{
+    switch (item)
+    {
+    case 0: return &botaoJogar;
+    case 1: return &botaoCreditos;
+    case 2: return &botaoSair;
+    case 3: return &abaConfig;
+    case 4: return &abaControles;
+    case 5: return &abaRanking;
+    case 6: return &abaAjuda;
+    }
+    return nullptr;
+}
+
+// vertical: -1 sobe, +1 desce | horizontal: -1 esquerda, +1 direita
+// Botões (0 a 2) ficam na coluna da esquerda; abas (3 a 6) na fileira do topo.
+void Jogo::MoverItemMenu(int vertical, int horizontal)
+{
+    int anterior = itemMenu;
+
+    if (itemMenu >= 3)
+    {
+        // Nas abas: esquerda/direita andam entre elas; para baixo volta a "Jogar"
+        if (horizontal < 0 && itemMenu == 3)
+            itemMenu = 0;
+        else if (horizontal != 0)
+            itemMenu = SDL_clamp(itemMenu + horizontal, 3, 6);
+        else if (vertical > 0)
+            itemMenu = 0;
+    }
+    else
+    {
+        // Nos botões: cima/baixo andam entre eles; cima em "Jogar" ou direita vai para as abas
+        if (vertical < 0 && itemMenu == 0)
+            itemMenu = 3;
+        else if (vertical != 0)
+            itemMenu = SDL_clamp(itemMenu + vertical, 0, 2);
+        else if (horizontal > 0)
+            itemMenu = 3;
+    }
+
+    if (itemMenu != anterior)
+        TocarEfeito(itemMenu < 3 ? somHoverBotao : somHoverAbas);
+}
+
+void Jogo::ConfirmarItemMenu(int item)
+{
+    switch (item)
+    {
+    case 0: // Jogar
+        TocarEfeito(somConfirm);
+        estado = JOGAR;
+        ReiniciarPartida();
+        break;
+
+    case 1: // Créditos
+        TocarEfeito(somConfirm);
+        estado = CREDITOS;
+        yCreditos = (float)alturaTela;
+        break;
+
+    case 2: // Sair
+        TocarEfeito(somConfirm);
+        running = false;
+        break;
+
+    case 3: // Engrenagem
+        TocarEfeito(somConfirm);
+        estado = CONFIGURACOES;
+        break;
+
+    case 4: // Controles
+        TocarEfeito(somConfirm);
+        estado = CONTROLES;
+        break;
+
+    case 5: // Troféu
+        TocarEfeito(somConfirm);
+        estado = RANKING;
+        break;
+
+    case 6: // Ajuda
+        TocarEfeito(somConfirm);
+        estado = AJUDA;
+        break;
+    }
+}
+
 void Jogo::ProcessarEventos()
 {
     while (SDL_PollEvent(&event))
     {
 
-        // Eventos do menu
+        // Eventos do menu: clique esquerdo confirma o item sob o cursor
         if (estado == MENU &&
-            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT)
         {
-            float mouseX = event.button.x;
-            float mouseY = event.button.y;
+            int itemClicado = ItemMenuSobMouse(event.button.x, event.button.y);
 
-
-            if (MouseNoBotao(mouseX, mouseY, botaoJogar))
+            if (itemClicado != -1)
             {
-
-                TocarEfeito(somConfirm);
-                estado = JOGAR;
-                TocarEfeito(somConfirm);
-                estado = JOGAR;
-                ReiniciarPartida();
+                itemMenu = itemClicado;
+                ConfirmarItemMenu(itemClicado);
                 continue;
             }
+        }
 
-            if (MouseNoBotao(mouseX, mouseY, botaoCreditos))
+        // Teclado no menu: setas/WASD movem o destaque, Enter confirma
+        if (estado == MENU &&
+            event.type == SDL_EVENT_KEY_DOWN &&
+            !event.key.repeat)
+        {
+            bool tratado = true;
+
+            switch (event.key.key)
             {
-                TocarEfeito(somConfirm);
-                estado = CREDITOS;
-                yCreditos = alturaTela;
+            case SDLK_W:
+            case SDLK_UP:
+                MoverItemMenu(-1, 0);
+                break;
+
+            case SDLK_S:
+            case SDLK_DOWN:
+                MoverItemMenu(1, 0);
+                break;
+
+            case SDLK_A:
+            case SDLK_LEFT:
+                MoverItemMenu(0, -1);
+                break;
+
+            case SDLK_D:
+            case SDLK_RIGHT:
+                MoverItemMenu(0, 1);
+                break;
+
+            case SDLK_RETURN:
+            case SDLK_KP_ENTER:
+                ConfirmarItemMenu(itemMenu);
+                break;
+
+            default:
+                tratado = false;
+                break;
             }
 
-            if (MouseNoBotao(mouseX, mouseY, botaoSair))
-            {
-                TocarEfeito(somConfirm);
-                running = false;
-            }
-
-
-            // Troféu
-            if (MouseNoBotao(mouseX, mouseY, abaRanking))
-            {
-                TocarEfeito(somConfirm);
-                estado = RANKING;
-            }
-
-            // Engrenagem
-            if (MouseNoBotao(mouseX, mouseY, abaConfig))
-            {
-                TocarEfeito(somConfirm);
-                estado = CONFIGURACOES;
-            }
-
-            // Controles
-            if (MouseNoBotao(mouseX, mouseY, abaControles))
-            {
-                TocarEfeito(somConfirm);
-                estado = CONTROLES;
-            }
-
-            // Ajuda
-            if (MouseNoBotao(mouseX, mouseY, abaAjuda))
-            {
-                TocarEfeito(somConfirm);
-                estado = AJUDA;
-            }
+            // Evita que o mesmo evento seja tratado de novo pela tela seguinte
+            if (tratado)
+                continue;
         }
 
         if (event.type == SDL_EVENT_QUIT)
@@ -327,6 +425,15 @@ void Jogo::ProcessarEventos()
                 estado = MENU;
             }
         }
+        // Roda do mouse rola os créditos
+        if (estado == CREDITOS &&
+            event.type == SDL_EVENT_MOUSE_WHEEL)
+        {
+            yCreditos += event.wheel.y * 40.0f;
+
+            if (yCreditos > (float)alturaTela)
+                yCreditos = (float)alturaTela;
+        }
         if (estado == RESULTADO && event.type == SDL_EVENT_KEY_DOWN)
         {
             if (event.key.key == SDLK_RETURN)
@@ -518,10 +625,19 @@ void Jogo::ProcessarEventos()
                             projeteis[i].explodindo = false;
                             projeteis[i].ultimoFrame = SDL_GetTicks();
 
-                            projeteis[i].rect.x = player.x + player.w;
-                            projeteis[i].rect.y = player.y + (tiroDuplo ? (criados == 0 ? -12.0f * escalaJogo : 12.0f * escalaJogo) : 0.0f);
                             projeteis[i].rect.w = tamanhoProjetil;
                             projeteis[i].rect.h = tamanhoProjetil;
+
+                            // Nasce no centro do jogador, deslocado na direção do tiro
+                            float origemX = centroPlayerX + dirX * (player.w / 2);
+                            float origemY = centroPlayerY + dirY * (player.w / 2)
+                                + (tiroDuplo ? (criados == 0 ? -12.0f * escalaJogo : 12.0f * escalaJogo) : 0.0f);
+
+                            projeteis[i].rect.x = origemX - projeteis[i].rect.w / 2;
+                            projeteis[i].rect.y = origemY - projeteis[i].rect.h / 2;
+
+                            // O sprite aponta para a direita (0 graus)
+                            projeteis[i].angulo = SDL_atan2f(dirY, dirX) * 57.29578f;
 
                             float velocidade = 12.0f * escalaJogo;
                             projeteis[i].velX = dirX * velocidade;
