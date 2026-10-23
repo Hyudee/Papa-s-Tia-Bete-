@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\SDL\SDL3_image-3.4.8\include\SDL3_image;C:\SDL\SDL3_ttf-3.2.2\include\SDL3_ttf;C:\SDL\SDL3-3.4.18\include\SDL3;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -111,12 +114,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\SDL\SDL3_ttf-3.1.0\include;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\include;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SDL\SDL3_image-3.4.8\include;C:\SDL\SDL3_ttf-3.2.2\include;C:\SDL\SDL3-3.4.18\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\SDL\SDL3_ttf-3.1.0\lib\x64;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\lib\x64;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\SDL\SDL3-3.4.18\lib\x64;C:\SDL\SDL3_ttf-3.2.2\lib\x64;C:\SDL\SDL3_image-3.4.8\lib\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL3_image.lib;SDL3_ttf.lib;SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
@@ -132,12 +135,12 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\SDL\SDL3_ttf-3.1.0\include;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\include;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SDL\SDL3_image-3.4.8\include;C:\SDL\SDL3_ttf-3.2.2\include;C:\SDL\SDL3-3.4.18\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\SDL\SDL3_ttf-3.1.0\lib\x64;C:\SDL\SDL3_image-devel-3.4.4-VC\SDL3_image-3.4.4\lib\x64;C:\SDL\SDL3-devel-3.4.8-VC\SDL3-3.4.8\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\SDL\SDL3-3.4.18\lib\x64;C:\SDL\SDL3_ttf-3.2.2\lib\x64;C:\SDL\SDL3_image-3.4.8\lib\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL3_image.lib;SDL3_ttf.lib;SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
@@ -145,11 +148,34 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="assets.cpp" />
+    <ClCompile Include="audio.cpp" />
+    <ClCompile Include="escala.cpp" />
+    <ClCompile Include="jogo.cpp" />
+    <ClCompile Include="jogo_colisoes.cpp" />
+    <ClCompile Include="jogo_estado.cpp" />
+    <ClCompile Include="jogo_eventos.cpp" />
+    <ClCompile Include="jogo_jogador.cpp" />
+    <ClCompile Include="jogo_render.cpp" />
+    <ClCompile Include="jogo_telas.cpp" />
+    <ClCompile Include="jogo_update.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ranking.cpp" />
+    <ClCompile Include="texto.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="assets.h" />
+    <ClInclude Include="audio.h" />
+    <ClInclude Include="botoes.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="escala.h" />
+    <ClInclude Include="jogo.h" />
+    <ClInclude Include="ranking.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resource1.h" />
+    <ClInclude Include="sdl_raii.h" />
+    <ClInclude Include="texto.h" />
+    <ClInclude Include="tipos.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Jogo.rc" />

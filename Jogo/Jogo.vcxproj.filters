@@ -13,10 +13,67 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{40ef8b4a-f03b-4c12-a7d0-e0ca65c536f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core">
+      <UniqueIdentifier>{93094991-12f2-4bac-952f-3b701ec5f2ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\game">
+      <UniqueIdentifier>{4b3031e3-63e1-477f-be7b-f41910e3e778}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\persist">
+      <UniqueIdentifier>{b75f2114-b37a-4b10-8601-29bfff72ad98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\audio">
+      <UniqueIdentifier>{f37d74f7-0a25-40ee-97c7-d56d5db081d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ui">
+      <UniqueIdentifier>{f8d84f1c-af04-4f18-90fe-1392d1088c1d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ranking.cpp">
+      <Filter>src\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="audio.cpp">
+      <Filter>src\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="escala.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="assets.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="texto.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Arquivos de Recurso</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_colisoes.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_jogador.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_render.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_update.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_eventos.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_telas.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_estado.cpp">
+      <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -25,6 +82,36 @@
     </ClInclude>
     <ClInclude Include="resource1.h">
       <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="tipos.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="ranking.h">
+      <Filter>src\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="audio.h">
+      <Filter>src\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="escala.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="sdl_raii.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="assets.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="texto.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="botoes.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="jogo.h">
+      <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
