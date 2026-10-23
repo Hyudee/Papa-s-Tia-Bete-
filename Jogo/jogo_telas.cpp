@@ -1,0 +1,477 @@
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+#include <SDL3_ttf/SDL_ttf.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <Windows.h>
+#include "config.h"
+#include "tipos.h"
+#include "ranking.h"
+#include "audio.h"
+#include "escala.h"
+#include "sdl_raii.h"
+#include "assets.h"
+#include "texto.h"
+#include "botoes.h"
+#include "jogo.h"
+
+bool Jogo::TelaMenu()
+{
+    if (estado == MENU)
+    {
+
+        SDL_RenderClear(renderer);
+
+        SDL_FRect menuRect = {
+            0,
+            0,
+            (float)larguraTela,
+            (float)alturaTela
+        };
+
+        SDL_RenderTexture(renderer, menu, NULL, &menuRect);
+        SDL_RenderTexture(renderer, texturaEngrenagem, NULL, &abaConfig);
+        SDL_RenderTexture(renderer, texturaControles, NULL, &abaControles);
+        SDL_RenderTexture(renderer, texturaTrofeu, NULL, &abaRanking);
+        SDL_RenderTexture(renderer, texturaAjuda, NULL, &abaAjuda);
+
+        //Desenhar logo e botões
+
+        SDL_RenderTexture(renderer, logo, NULL, &logoRect);
+        SDL_RenderTexture(renderer, jogar, NULL, &botaoJogar);
+        SDL_RenderTexture(renderer, creditos, NULL, &botaoCreditos);
+        SDL_RenderTexture(renderer, sair, NULL, &botaoSair);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaCreditos()
+{
+    if (estado == CREDITOS) {
+        SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+
+        yCreditos -= 1.0f;
+
+        // Textos
+
+        float espacamento = alturaTela * 0.07f;
+
+        const char* linhascreditos[] =
+        {
+            "Desenvolvido por:",
+            "",
+
+
+            "Direção",
+            "Davi Hyude Nunes de Almeida",
+            "",
+
+            "Programação",
+            "Davi Hyude Nunes de Almeida",
+            "",
+
+            "Game Design",
+            "Davi Hyude Nunes de Almeida,",
+            "Danah Bezerra de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Direção de Arte",
+            "Danah Bezerra de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Arte 2D",
+            "Danah Bezerra de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Animação",
+            "Danah Bezerra de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Design de Interface (UI)",
+            "Davi Hyude Nunes de Almeida,",
+            "Danah Bezerra de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Efeitos Sonoros",
+            "Davi Hyude Nunes de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Balanceamento",
+            "Davi Hyude Nunes de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Testes",
+            "Davi Hyude Nunes de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "Danah Bezerra de Almeida e",
+            "Ian Victor de Miranda e Carvalho",
+            "",
+
+
+            "Suporte Moral",
+            "Lucas Natanael de Oliveira Costa",
+            "",
+
+            "Ferramentas Utilizadas",
+            "C++",
+            "SDL3",
+            "SDL_image",
+            "SDL_ttf",
+            "Microsoft Visual Studio 2026",
+            "",
+
+            "© 2026",
+            "Davi Hyude Nunes de Almeida,",
+            "Danah Bezerra de Almeida e",
+            "João Pedro Souza de Oliveira",
+            "",
+
+            "Obrigado por jogar!"
+        };
+
+        int quantidadeLinhas = sizeof(linhascreditos) / sizeof(linhascreditos[0]);
+
+        for (int i = 0; i < quantidadeLinhas; i++)
+        {
+            if (strlen(linhascreditos[i]) == 0)
+                continue;
+
+            DesenharTextoCentrado(renderer, fontHud, linhascreditos[i], preto,
+                (float)(larguraTela / 2), yCreditos + i * espacamento);
+        }
+
+        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
+            20, (float)(alturaTela - 50));
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaRanking()
+{
+    if (estado == RANKING)
+    {
+        SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+
+        char texto[50];
+
+        // Titulo
+        DesenharTextoCentrado(renderer, font, "RANKING", preto,
+            (float)(larguraTela / 2), 50);
+
+        for (int i = 0; i < 3; i++)
+        {
+            sprintf_s(
+                texto,
+                sizeof(texto),
+                "%d. %s - %d",
+                i + 1,
+                ranking[i].nome,
+                ranking[i].pontos
+            );
+
+            DesenharTextoCentrado(renderer, font, texto, preto,
+                (float)(larguraTela / 2), (float)(150 + i * 80));
+        }
+
+        // Voltar
+        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
+            20, (float)(alturaTela - 50));
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaDigitarNome()
+{
+    if (estado == DIGITAR_NOME)
+    {
+        SDL_FRect fundo = {
+        0,
+        0,
+        (float)larguraTela,
+        (float)alturaTela
+        };
+
+        SDL_RenderTexture(renderer, backgroundNome, NULL, &fundo);
+
+        //desenha os textos aqui
+
+        DesenharTextoCentrado(renderer, font, "NOVO RECORDE!", preto,
+            (float)(larguraTela / 2), 120);
+
+        DesenharTextoCentrado(renderer, fontHud, "Digite seu nome:", preto,
+            (float)(larguraTela / 2), 200);
+
+        DesenharTextoCentrado(renderer, font, nomeJogador, preto,
+            (float)(larguraTela / 2), 260);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaConfiguracoes()
+{
+    if (estado == CONFIGURACOES)
+    {
+        SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+
+        // textos
+
+        char texto[50];
+
+        DesenharTextoCentrado(renderer, font, "CONFIGURAÇÕES", preto,
+            (float)(larguraTela / 2), 50);
+
+        // Tela cheia
+
+        sprintf_s(
+            texto,
+            sizeof(texto),
+            "%s Tela cheia: %s",
+            opcaoConfig == 0 ? ">" : " ",
+            telaCheia ? "ON" : "OFF"
+        );
+
+        DesenharTextoCentrado(renderer, fontHud, texto, preto,
+            (float)(larguraTela / 2), alturaTela * 0.30f);
+
+        // Musica
+        sprintf_s(
+            texto,
+            sizeof(texto),
+            "%s Musica: %s",
+            opcaoConfig == 1 ? ">" : " ",
+            musicaLigada ? "ON" : "OFF"
+        );
+
+        DesenharTextoCentrado(renderer, fontHud, texto, preto,
+            (float)(larguraTela / 2), alturaTela * 0.40f);
+
+        // EFeitos Sonoros
+        sprintf_s(
+            texto,
+            sizeof(texto),
+            "%s Efeitos sonoros: %s",
+            opcaoConfig == 2 ? ">" : " ",
+            efeitosLigados ? "ON" : "OFF"
+        );
+
+        DesenharTextoCentrado(renderer, fontHud, texto, preto,
+            (float)(larguraTela / 2), alturaTela * 0.50f);
+
+        // Voltar
+        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
+            20, (float)(alturaTela - 50));
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaControles()
+{
+    if (estado == CONTROLES)
+    {
+        SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+
+        // textos
+        DesenharTextoCentrado(renderer, font, "CONTROLES", preto,
+            (float)(larguraTela / 2), 50);
+
+        float yInicial = alturaTela * 0.25f;
+        float espacamento = alturaTela * 0.07f;
+
+        DesenharTextoCentrado(renderer, fontHud, "W A S D - Movimentar", preto,
+            (float)(larguraTela / 2), yInicial);
+
+        //Controles
+
+        DesenharTextoCentrado(renderer, fontHud, "ESPACO - Pular", preto,
+            (float)(larguraTela / 2), yInicial + espacamento);
+
+        DesenharTextoCentrado(renderer, fontHud, "BOTAO ESQUERDO DO MOUSE - Atirar", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 2);
+
+        DesenharTextoCentrado(renderer, fontHud, "ESC - Pausar / Voltar", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 3);
+
+        // Voltar
+        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
+            20, (float)(alturaTela - 50));
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaAjuda()
+{
+    if (estado == AJUDA)
+    {
+        SDL_RenderClear(renderer);
+
+        SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
+
+        // textos
+        DesenharTextoCentrado(renderer, font, "AJUDA", preto,
+            (float)(larguraTela / 2), 50);
+
+        float yInicial = alturaTela * 0.20f;
+        float espacamento = alturaTela * 0.055f;
+
+        // Explicação
+        DesenharTextoCentrado(renderer, fontHud, "OBJETIVO:", preto,
+            (float)(larguraTela / 2), yInicial);
+
+        DesenharTextoCentrado(renderer, fontHud, "Proteja a base dos inimigos.", preto,
+            (float)(larguraTela / 2), yInicial + espacamento);
+
+        DesenharTextoCentrado(renderer, fontHud, "Elimine inimigos para ganhar pontos.", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 2);
+
+        DesenharTextoCentrado(renderer, fontHud, "BOSS:", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 4);
+
+        DesenharTextoCentrado(renderer, fontHud, "Surge a cada 1000 pontos.", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 5);
+
+        DesenharTextoCentrado(renderer, fontHud, "Enquanto estiver vivo, nenhum inimigo aparece.", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 6);
+
+        DesenharTextoCentrado(renderer, fontHud, "POWER-UPS:", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 8);
+
+        DesenharTextoCentrado(renderer, fontHud, "Colete-os para facilitar a sobrevivencia.", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 9);
+
+        DesenharTextoCentrado(renderer, fontHud, "Se a base perder todas as vidas, o jogo termina.", preto,
+            (float)(larguraTela / 2), yInicial + espacamento * 11);
+
+        // Voltar
+        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
+            20, (float)(alturaTela - 50));
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaGameOver()
+{
+    if (estado == GAMEOVER)
+    {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        SDL_FRect gameoverRect = {
+            0,
+            0,
+            (float)larguraTela,
+            (float)alturaTela
+        };
+
+        SDL_RenderTexture(renderer, gameover, NULL, &gameoverRect);
+        SDL_RenderPresent(renderer);
+
+        ultimoSpawnAtq = SDL_GetTicks();
+
+        //Limpar powerUps
+
+        for (int i = 0; i < MAX_POWERUPSATQ; i++)
+        {
+            ataquePowerup[i].ativo = false;
+        }
+
+        for (int i = 0; i < MAX_POWERUPS; i++)
+        {
+            vidasPowerup[i].ativo = false;
+        }
+
+        if (SDL_GetTicks() - tempoAtual >= 3000)
+        {
+            estado = RESULTADO;
+        }
+
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}
+
+bool Jogo::TelaResultado()
+{
+    if (estado == RESULTADO)
+    {
+        SDL_RenderClear(renderer);
+        SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
+
+        // Evento — Enter avança
+
+        SDL_Color amarelo = { 255, 220,  50, 255 };
+        SDL_Color cinza = { 180, 180, 180, 255 };
+
+        float cy = alturaTela * 0.15f;
+        float esp = alturaTela * 0.10f;
+
+        DesenharTextoCentrado(renderer, font, "RESULTADO", branco, larguraTela / 2.0f, cy);
+
+        char buf[64];
+
+        sprintf_s(buf, sizeof(buf), "Pontos:              %d", pontos);
+        DesenharTextoCentrado(renderer, fontHud, buf, amarelo, larguraTela / 2.0f, cy + esp * 1.5f);
+
+        sprintf_s(buf, sizeof(buf), "Onda alcancada:      %d", ondas);
+        DesenharTextoCentrado(renderer, fontHud, buf, cinza, larguraTela / 2.0f, cy + esp * 2.2f);
+
+        sprintf_s(buf, sizeof(buf), "Inimigos derrotados: %d", inimigosDerrotados);
+        DesenharTextoCentrado(renderer, fontHud, buf, cinza, larguraTela / 2.0f, cy + esp * 2.9f);
+
+        sprintf_s(buf, sizeof(buf), "Bosses derrotados:   %d", bossAtivados);
+        DesenharTextoCentrado(renderer, fontHud, buf, cinza, larguraTela / 2.0f, cy + esp * 3.6f);
+
+        DesenharTextoCentrado(renderer, fontHud, "ENTER - Continuar", branco, larguraTela / 2.0f, alturaTela * 0.82f);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+        return true;
+    }
+    return false;
+}

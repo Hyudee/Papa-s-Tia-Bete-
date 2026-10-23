@@ -1,0 +1,312 @@
+#pragma once
+
+#include <optional>
+
+#include "config.h"
+#include "sdl_raii.h"
+#include "assets.h"
+#include "tipos.h"
+#include "audio.h"
+
+// Estado e lógica do jogo.
+// As variáveis que eram locais de main() agora são membros desta classe, na mesma ordem.
+// O código do loop principal continua o mesmo (agora em Jogo::Executar).
+
+class Jogo
+{
+public:
+    bool Iniciar();   // inicialização (tudo que vinha antes do loop principal)
+    void Executar();  // loop principal + finalização
+
+private:
+
+    // Estado da partida
+    void ReiniciarPartida();
+    void DeslocarTimers(Uint64 delta);   // empurra os temporizadores pelo tempo em que o jogo ficou parado
+
+    // ---- SDL / janela / fontes (na ordem de declaracao original; define a ordem de destruicao) ----
+    std::optional<SdlGuard> sdlGuard;
+    SdlPtr<SDL_Window> windowOwner;
+    SDL_Window* window = nullptr;
+    SdlPtr<SDL_Renderer> rendererOwner;
+    SDL_Renderer* renderer = nullptr;
+    std::optional<TtfGuard> ttfGuard;
+
+    SDL_AudioStream* streamMenu = NULL;
+
+    SdlPtr<TTF_Font> fontOwner;
+    TTF_Font* font = nullptr;
+    SdlPtr<TTF_Font> fontHudOwner;
+    TTF_Font* fontHud = nullptr;
+
+    // Textos da tela
+
+    SDL_Color preto = { 0, 0, 0, 255 };
+    SDL_Color branco = { 255, 255, 255, 255 };
+
+    // ADAPTAR A TELA
+
+    int larguraTela;
+    int alturaTela;
+    float tileW;
+    float tileH;
+
+    // ESTADO DO SISTEMA / MENU
+
+    Sistema estado = MENU;
+    SDL_FRect botaoJogar;
+    SDL_FRect botaoCreditos;
+    SDL_FRect botaoSair;
+    SDL_FRect logoRect;
+    SDL_FRect abaConfig;
+    SDL_FRect abaControles;
+    SDL_FRect abaRanking;
+    SDL_FRect abaAjuda;
+    float textoW;
+    float textoH;
+    SDL_FRect textoRect;
+    float larguraAba;
+    float alturaAba;
+    float padding;
+    Ranking ranking[3];
+    char nomeJogador[20] = "";
+    int tamanhoNome = 0;
+
+    // CARREGAMENTO DOS SPRITES
+
+    Assets assets;
+    SDL_Texture* background;
+    SDL_Texture* backgroundNome;
+    SDL_Texture* menu;
+    SDL_Texture* logo;
+    SDL_Texture* jogar;
+    SDL_Texture* creditos;
+    SDL_Texture* sair;
+    SDL_Texture* texturaInimigo;
+    SDL_Texture* texturaPlayer;
+    SDL_Texture* texturaPlayerSujo;
+    SDL_Texture* projetil;
+    SDL_Texture* gameover;
+    SDL_Texture* coracao;
+    SDL_Texture* powerUpAtq;
+    SDL_Texture* powerUpVida;
+    SDL_Texture* texturaTrofeu;
+    SDL_Texture* texturaEngrenagem;
+    SDL_Texture* texturaControles;
+    SDL_Texture* texturaAjuda;
+    SDL_Texture* texturaBoss;
+    SDL_Texture* texturaObstaculo;
+    SDL_Texture* texturaSombra;
+    SDL_Texture* baseTexture;
+
+    // Texturas das cartas de upgrade
+    SDL_Texture* upgradeImgDano;
+    SDL_Texture* upgradeImgVida;
+    SDL_Texture* upgradeImgBalas;
+    SDL_Texture* upgradeImgDuplo;
+    SDL_Texture* upgradeImgCacador;
+    SdlPtr<SDL_Cursor> cursor;
+
+    // VARIÁVEIS DO JOGADOR
+
+    SDL_FRect player = {
+        320.0f,
+        240.0f,
+        64,
+        64
+    };
+    float velocidadeY;
+    float alturaChao;
+    int framePowerUp = 0;
+    int framePlayer = 0;
+    int framePulo = 0;
+    int danoTiro = 1;
+    int danoTiroBase = 1;
+    int vidaMaxima = MAX_VIDAS;
+    int tirosExtras = 0;
+    int quantidadeTiros;
+    const int totalFramesPowerUp = 5;
+    const int larguraFramePowerUp = 64;
+    const int alturaFramePowerUp = 64;
+    bool noChao = true;
+    bool tiroDuplo = false;
+    bool cacadorBoss = false;
+    bool atirando = false;
+    bool pulando = false;
+    bool aterrissando = false;
+    bool olhandoDireita = true;
+    bool dano = false;
+    bool stun = false;
+    bool ataqueBuff = false;
+    bool sujo = false;
+    bool naBordaDir = false;
+
+    // Eventos
+    void ProcessarEventos();
+
+    // Atualização do jogo
+    void AtualizarHoverMenu();
+    void GerenciarMusica();
+    void AtualizarAnimacoes();
+    void AtualizarOndasEBuffs();
+
+    void AtualizarSpawn();
+    void AtualizarProjeteis();
+    void AtualizarInimigos();
+    void AtualizarPowerups();
+    void AtualizarBoss();
+    void AtualizarObstaculos();
+
+    // Colisões
+    void ColisaoPlayerInimigos();
+    void ColisaoPlayerBase();
+    void ColisaoTiroPowerups();
+    void ColisaoTiroBoss();
+    void ColisaoBaseInimigos();
+    void ColisaoBossBase();
+    void ColisaoProjeteisObstaculos();
+    void ColisaoProjeteisInimigos();
+
+    // Teclado, movimento e física do jogador
+    void LerTeclado();
+    void MoverJogador();
+    void AnimarJogador();
+    void AnimarDano();
+    void ColisoesTela();
+    void FisicaJogador();
+    void ColisaoJogadorObstaculos();
+    void AnimarPulo();
+    void AtualizarTexturaPontos();
+    void SpawnarBoss();
+    void AtualizarTexturaOnda();
+
+    // Renderização
+    void CalcularShake();
+    void RenderizarMundo();
+    void RenderizarHud();
+    bool RenderizarUpgrade();   // true = tela de upgrade tratada neste frame
+    void RenderizarPause();
+
+    // Telas de estado (true = tela tratada neste frame)
+    bool TelaMenu();
+    bool TelaCreditos();
+    bool TelaRanking();
+    bool TelaDigitarNome();
+    bool TelaConfiguracoes();
+    bool TelaControles();
+    bool TelaAjuda();
+    bool TelaGameOver();
+    bool TelaResultado();
+
+    Uint64 tempoBordaDir = 0;
+    Uint64 ultimoFramePowerUp = 0;
+    Uint64 sujoInicio = 0;
+    Uint64 stunStart = 0;
+    Uint64 danoStart = 0;
+    Uint64 ultimoFramePlayer = 0;
+    Uint64 inicioAterrissagem = 0;
+    Uint64 ataqueBuffInicio = 0;
+    const Uint64 LIMITE_BORDA = 2000;
+    const Uint64 DURACAO_SUJO = 5000;
+    const Uint64 STUN_DURACAO = 1250;
+    const Uint64 DURACAO_BUFF = 10000;
+
+    // Variavéis da base
+
+    SDL_FRect base;
+    float tempoFlashBase = 0.0f;
+    FlashBase flashBase = FLASH_NENHUM;
+
+    //Inimigos
+    SDL_FRect srcInimigo = {
+        0,
+        0,
+        32,
+        32
+    };
+
+    // VARIÁVEIS DE JOGO
+
+    Projetil projeteis[MAX_PROJETEIS] = { 0 };
+    Inimigo inimigos[MAX_INIMIGOS] = { 0 };
+    Boss boss = { 0 };
+    PowerupVida vidasPowerup[MAX_POWERUPS] = { 0 };
+    PowerupAtq ataquePowerup[MAX_POWERUPSATQ] = { 0 };
+    Obstaculo obstaculos[MAX_OBSTACULOS] = { 0 };
+    int mapa[LINHAS][COLUNAS] = { 0 };
+    int pontos = 0;
+    int pontosAntigos = -1;
+    int ondas = 1;
+    int ondaAntiga = -1;
+    int vidas = MAX_VIDAS;
+    int inimigosDerrotados = 0;
+    int inimigosAtivos = 5;
+    int spawnBoss = 1000;
+    int bossAtivados = 0;
+    int frameBase = 0;
+    int opcaoConfig = 0;  // 0 = Tela cheia, 1 = Música, 2 = Efeitos
+    int opcaoPause = 0;  // 0 = Continuar, 2 = Menu
+    int opcaoUpgrade = 0;
+    bool upgradeTiroDuploDisponivel = false;
+    bool upgradeCacadordeBossDisponivel = false;
+    const char* opcoesPause[2] = { "Continuar", "Menu Principal" };
+    float yCreditos = 0.0f;
+    float shakeX = 0.0f;
+    float shakeY = 0.0f;
+    float shakeDuracao = 0.0f;
+    float shakeForca = 0.0f;
+    Uint64 shakeInicio = 0;
+    Audio musicaMenu;
+    Audio musicaGame;
+    Audio musicaBoss;
+    Audio musicaCreditos;
+    Audio musicaGameOver;
+    Audio somPulo;
+    Audio somTiro;
+    Audio somHoverBotao;
+    Audio somHoverAbas;
+    Audio somConfirm;
+    Audio somPowerup;
+    Audio somQuebra;
+    Audio somAterrissagem;
+    const int larguraFrameBase = 128;
+    const int alturaFrameBase = 384;
+    const int totalFramesBase = 4;
+    const int larguraFrameTiro = 64;
+    const int alturaFrameTiro = 64;
+    const int totalFramesTiro = 5;
+    const int larguraFrameInimigo = 64;
+    const int alturaFrameInimigo = 64;
+    const int totalFramesInimigo = 3;
+    SDL_Texture* texturaPontos = NULL;
+    SDL_Texture* TexturaOndas = NULL;
+    SDL_Texture* texturaBuff = NULL;
+    bool telaCheia = true;
+    bool running = true;
+    bool spam = false;
+    int hoverBotaoAtual = -1;
+    int hoverAbaAtual = -1;
+
+    // TEMPORIZAÇÃO DE SPAWN E ONDAS
+
+    int intervaloSpawn;
+    Uint64 ultimoSpawn;
+    Uint64 ultimoSpawnPowerUp;
+    Uint64 ultimoSpawnAtq;
+    Uint64 intervaloSpawnPowerUp;
+    Uint64 intervaloSpawnAtq = 40000;
+    Uint64 ultimoSpawnObstaculo;
+    Uint64 intervaloObstaculo = 15000;
+    Uint64 tempoAtual = 0;
+    Uint64 inicioOnda;
+    Uint64 inicioSpam;
+    Uint64 ultimoFrameBase = 0;
+    SDL_Event event;
+
+    Uint64 inicioPausa = 0;   // quando o jogo entrou em Pause ou Upgrade
+
+    // Teclado e posição anterior do jogador (usados por mais de uma etapa do frame)
+    const bool* key = nullptr;
+    float playerXAnterior = 0.0f;
+    float playerYAnterior = 0.0f;
+};
