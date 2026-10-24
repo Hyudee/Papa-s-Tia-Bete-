@@ -35,5 +35,8 @@ struct Assets
     SdlPtr<SDL_Texture> upgradeImgDuplo;
     SdlPtr<SDL_Texture> upgradeImgCacador;
 
+    // Gerada em código (sem arquivo): retângulo arredondado branco, para tingir com ColorMod
+    SdlPtr<SDL_Texture> pilulaDestaque;
+
     void Carregar(SDL_Renderer * renderer);
 };

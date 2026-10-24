@@ -48,8 +48,8 @@ bool Jogo::Iniciar()
 
     windowOwner.reset(SDL_CreateWindow(
         "Papa's Tia Bete",
-        840,
-        480,
+        1280,
+        720,
         SDL_WINDOW_FULLSCREEN
     ));
     window = windowOwner.get();
@@ -77,6 +77,15 @@ bool Jogo::Iniciar()
         return false;
     }
 
+
+    // Resolução lógica fixa: o jogo sempre roda em 840x480; a janela só o amplia (com tarjas)
+    if (!SDL_SetRenderLogicalPresentation(renderer,
+        (int)LARGURA_BASE, (int)ALTURA_BASE,
+        SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    {
+        SDL_Log("Falha ao definir a resolucao logica: %s", SDL_GetError());
+    }
+
     if (!TTF_Init()) {
         SDL_Log("Falha ao iniciar o SDL_ttf: %s", SDL_GetError());
         return false;
@@ -96,7 +105,8 @@ bool Jogo::Iniciar()
     if (!font || !fontHud)
         SDL_Log("Falha ao carregar a fonte assets/PixelifySans.ttf: %s", SDL_GetError());
 
-    SDL_GetWindowSize(window, &larguraTela, &alturaTela);
+    larguraTela = (int)LARGURA_BASE;
+    alturaTela = (int)ALTURA_BASE;
 
     AtualizarEscala(larguraTela, alturaTela);
     tileW = (float)larguraTela / COLUNAS;

@@ -119,10 +119,73 @@ void Jogo::ConfirmarItemMenu(int item)
     }
 }
 
+void Jogo::ConfirmarOpcaoPause()
+{
+    switch (opcaoPause)
+    {
+    case 0: // Continuar
+        DeslocarTimers(SDL_GetTicks() - inicioPausa);
+        estado = JOGAR;
+        break;
+
+    case 1: // Menu Principal
+        estado = MENU;
+        break;
+    }
+}
+
+void Jogo::AlternarOpcaoConfig()
+{
+    if (opcaoConfig == 0)
+    {
+        telaCheia = !telaCheia;
+
+        SDL_SetWindowFullscreen(
+            window,
+            telaCheia
+        );
+    }
+    else if (opcaoConfig == 1)
+    {
+        musicaLigada = !musicaLigada;
+
+        if (!musicaLigada)
+        {
+            PararMusica(musicaMenu);
+            PararMusica(musicaGame);
+            PararMusica(musicaBoss);
+            PararMusica(musicaCreditos);
+            PararMusica(musicaGameOver);
+        }
+    }
+    else if (opcaoConfig == 2)
+    {
+        efeitosLigados = !efeitosLigados;
+    }
+}
+
+void Jogo::ConfirmarResultado()
+{
+    if (pontos > ranking[2].pontos)
+    {
+        estado = DIGITAR_NOME;
+        nomeJogador[0] = '\0';
+        tamanhoNome = 0;
+        SDL_StartTextInput(window);
+    }
+    else
+    {
+        ReiniciarPartida();
+        estado = MENU;
+    }
+}
+
 void Jogo::ProcessarEventos()
 {
     while (SDL_PollEvent(&event))
     {
+        // O mouse chega em coordenadas da janela; converte para as do jogo
+        SDL_ConvertEventToRenderCoordinates(renderer, &event);
 
         // Eventos do menu: clique esquerdo confirma o item sob o cursor
         if (estado == MENU &&
@@ -254,8 +317,44 @@ void Jogo::ProcessarEventos()
             }
         }
 
+        // Configurações: o mouse move o destaque e o clique esquerdo alterna a opção
         if (estado == CONFIGURACOES &&
-            event.type == SDL_EVENT_KEY_DOWN)
+            event.type == SDL_EVENT_MOUSE_MOTION)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                if (MouseNaOpcao(event.motion.x, event.motion.y, RetanguloOpcaoConfig(i)))
+                {
+                    opcaoConfig = i;
+                    break;
+                }
+            }
+        }
+
+        if (estado == CONFIGURACOES &&
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT)
+        {
+            bool clicou = false;
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (MouseNaOpcao(event.button.x, event.button.y, RetanguloOpcaoConfig(i)))
+                {
+                    opcaoConfig = i;
+                    AlternarOpcaoConfig();
+                    clicou = true;
+                    break;
+                }
+            }
+
+            if (clicou)
+                continue;
+        }
+
+        if (estado == CONFIGURACOES &&
+            event.type == SDL_EVENT_KEY_DOWN &&
+            !event.key.repeat)
         {
             switch (event.key.key)
             {
@@ -264,78 +363,81 @@ void Jogo::ProcessarEventos()
                 break;
 
             case SDLK_W:
+            case SDLK_UP:
                 if (opcaoConfig > 0)
                     opcaoConfig--;
                 break;
 
             case SDLK_S:
+            case SDLK_DOWN:
                 if (opcaoConfig < 2)
                     opcaoConfig++;
                 break;
 
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
-
-                if (opcaoConfig == 0)
-                {
-                    telaCheia = !telaCheia;
-
-                    SDL_SetWindowFullscreen(
-                        window,
-                        telaCheia
-                    );
-                }
-                else if (opcaoConfig == 1)
-                {
-                    musicaLigada = !musicaLigada;
-
-                    if (!musicaLigada)
-                    {
-                        PararMusica(musicaMenu);
-                        PararMusica(musicaGame);
-                        PararMusica(musicaBoss);
-                        PararMusica(musicaCreditos);
-                        PararMusica(musicaGameOver);
-                    }
-                }
-                else if (opcaoConfig == 2)
-                {
-                    efeitosLigados = !efeitosLigados;
-                }
-
+                AlternarOpcaoConfig();
                 break;
             }
         }
 
+        // Pause: o mouse move o destaque e o clique esquerdo confirma
         if (estado == PAUSE &&
-            event.type == SDL_EVENT_KEY_DOWN)
+            event.type == SDL_EVENT_MOUSE_MOTION)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                if (MouseNaOpcao(event.motion.x, event.motion.y, RetanguloOpcaoPause(i)))
+                {
+                    opcaoPause = i;
+                    break;
+                }
+            }
+        }
+
+        if (estado == PAUSE &&
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT)
+        {
+            bool clicou = false;
+
+            for (int i = 0; i < 2; i++)
+            {
+                if (MouseNaOpcao(event.button.x, event.button.y, RetanguloOpcaoPause(i)))
+                {
+                    opcaoPause = i;
+                    ConfirmarOpcaoPause();
+                    clicou = true;
+                    break;
+                }
+            }
+
+            // Evita que o mesmo clique vire tiro ao voltar para o jogo
+            if (clicou)
+                continue;
+        }
+
+        if (estado == PAUSE &&
+            event.type == SDL_EVENT_KEY_DOWN &&
+            !event.key.repeat)
         {
             switch (event.key.key)
             {
             case SDLK_W:
+            case SDLK_UP:
                 if (opcaoPause > 0)
                     opcaoPause--;
                 break;
 
             case SDLK_S:
+            case SDLK_DOWN:
                 if (opcaoPause < 1)
                     opcaoPause++;
                 break;
 
             case SDLK_RETURN:
-
-                switch (opcaoPause)
-                {
-                case 0: // Continuar
-                    DeslocarTimers(SDL_GetTicks() - inicioPausa);
-                    estado = JOGAR;
-                    break;
-
-                case 1: // Menu Principal
-                    estado = MENU;
-                    break;
-                }
-
+            case SDLK_KP_ENTER:
+                ConfirmarOpcaoPause();
                 break;
             }
         }
@@ -434,23 +536,28 @@ void Jogo::ProcessarEventos()
             if (yCreditos > (float)alturaTela)
                 yCreditos = (float)alturaTela;
         }
-        if (estado == RESULTADO && event.type == SDL_EVENT_KEY_DOWN)
+
+        if (estado == RESULTADO &&
+            event.type == SDL_EVENT_KEY_DOWN &&
+            !event.key.repeat)
         {
-            if (event.key.key == SDLK_RETURN)
+            if (event.key.key == SDLK_RETURN ||
+                event.key.key == SDLK_KP_ENTER)
             {
-                if (pontos > ranking[2].pontos)
-                {
-                    estado = DIGITAR_NOME;
-                    nomeJogador[0] = '\0';
-                    tamanhoNome = 0;
-                    SDL_StartTextInput(window);
-                }
-                else
-                {
-                    ReiniciarPartida();
-                    estado = MENU;
-                }
+                ConfirmarResultado();
             }
+        }
+
+        // Clique esquerdo no botão "Continuar" (com uma trava curta para o
+        // clique de quem estava atirando até o fim não pular a tela)
+        if (estado == RESULTADO &&
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT &&
+            SDL_GetTicks() - inicioResultado >= 400 &&
+            MouseNaOpcao(event.button.x, event.button.y, RetanguloBotaoResultado()))
+        {
+            ConfirmarResultado();
+            continue;
         }
 
         // Redimensionamento da janela

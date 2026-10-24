@@ -384,9 +384,14 @@ void Jogo::RenderizarPause() {
 
         for (int i = 0; i < 2; i++)
         {
+            SDL_FRect rect = RetanguloOpcaoPause(i);
+
+            if (i == opcaoPause)
+                DesenharDestaque(rect, margemDestaqueX, margemDestaqueY, corDestaqueMarrom);
+
             SDL_Color cor = (i == opcaoPause) ? preto : branco;
             DesenharTextoCentrado(renderer, font, opcoesPause[i], cor,
-                painel.x + painel.w / 2, painel.y + 120 + i * 70);
+                rect.x + rect.w / 2, rect.y);
         }
     }
 }

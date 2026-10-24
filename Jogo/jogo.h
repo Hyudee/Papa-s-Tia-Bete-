@@ -43,6 +43,10 @@ private:
 
     SDL_Color preto = { 0, 0, 0, 255 };
     SDL_Color branco = { 255, 255, 255, 255 };
+    SDL_Color corDestaqueOuro = { 255, 215, 0, 255 };
+    SDL_Color corDestaqueMarrom = { 200, 110, 20, 255 };
+    const float margemDestaqueX = 24.0f;
+    const float margemDestaqueY = 6.0f;
 
     // ADAPTAR A TELA
 
@@ -149,6 +153,21 @@ private:
     const SDL_FRect* RetanguloItemMenu(int item) const;
     void MoverItemMenu(int vertical, int horizontal);
     void ConfirmarItemMenu(int item);
+
+    // Limpa a janela (tarjas pretas) e pinta a área do jogo com a cor de desenho atual
+    void LimparTela();
+
+    // Destaque arredondado
+    void DesenharDestaque(const SDL_FRect& alvo, float margemX, float margemY, SDL_Color cor) const;
+
+    bool MouseNaOpcao(float x, float y, const SDL_FRect& textoOpcao) const;
+    SDL_FRect RetanguloOpcaoPause(int i) const;
+    SDL_FRect RetanguloOpcaoConfig(int i) const;
+    void TextoOpcaoConfig(int i, char* destino, size_t tamanho) const;
+    void ConfirmarOpcaoPause();
+    void AlternarOpcaoConfig();
+    SDL_FRect RetanguloBotaoResultado() const;
+    void ConfirmarResultado();
 
     // Atualização do jogo
     void AtualizarHoverMenu();
@@ -295,6 +314,8 @@ private:
     // Item destacado no menu principal (teclado ou mouse):
     // 0 Jogar, 1 Créditos, 2 Sair, 3 Engrenagem, 4 Controles, 5 Troféu, 6 Ajuda
     int itemMenu = 0;
+
+    Uint64 inicioResultado = 0; // quando a tela de resultado abriu
 
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
 

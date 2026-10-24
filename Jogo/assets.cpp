@@ -2,6 +2,60 @@
 
 #include <SDL3_image/SDL_image.h>
 
+
+#include <algorithm>
+#include <cmath>
+
+// Opacidade (0 a 255) do pixel (x, y) da textura de destaque, de tam x tam pixels:
+// contorno de 3 px opaco + preenchimento suave, com cantos arredondados e antisserrilhado.
+static Uint8 AlfaDestaque(int x, int y, int tam)
+{
+    const float raio = 20.0f;           // raio dos cantos
+    const float borda = 2.0f;           // espessura do contorno
+    const float opacidadeFundo = 0.12f; // preenchimento
+
+    float metade = tam / 2.0f;
+    float px = x + 0.5f - metade;
+    float py = y + 0.5f - metade;
+
+    // distância com sinal até a borda do retângulo arredondado (negativa = dentro)
+    float qx = std::fabs(px) - (metade - raio);
+    float qy = std::fabs(py) - (metade - raio);
+    float fx = std::max(qx, 0.0f);
+    float fy = std::max(qy, 0.0f);
+    float d = std::sqrt(fx * fx + fy * fy) + std::min(std::max(qx, qy), 0.0f) - raio;
+
+    float anel = std::clamp(0.5f + borda / 2.0f - std::fabs(d + borda / 2.0f), 0.0f, 1.0f);
+    float fundo = std::clamp(0.5f - d, 0.0f, 1.0f) * opacidadeFundo;
+
+    return (Uint8)(std::max(anel, fundo) * 255.0f + 0.5f);
+}
+
+static SDL_Texture* CriarTexturaDestaque(SDL_Renderer* renderer)
+{
+    const int tam = 64;
+
+    SdlPtr<SDL_Surface> surface(SDL_CreateSurface(tam, tam, SDL_PIXELFORMAT_RGBA32));
+
+    if (!surface)
+        return nullptr;
+
+    for (int y = 0; y < tam; y++)
+    {
+        Uint32* linha = (Uint32*)((Uint8*)surface->pixels + y * surface->pitch);
+
+        for (int x = 0; x < tam; x++)
+            linha[x] = SDL_MapSurfaceRGBA(surface.get(), 255, 255, 255, AlfaDestaque(x, y, tam));
+    }
+
+    SDL_Texture* textura = SDL_CreateTextureFromSurface(renderer, surface.get());
+
+    if (textura)
+        SDL_SetTextureBlendMode(textura, SDL_BLENDMODE_BLEND);
+
+    return textura;
+}
+
 void Assets::Carregar(SDL_Renderer* renderer)
 {
     auto carregar = [renderer](SdlPtr<SDL_Texture>& destino, const char* caminho)
@@ -40,4 +94,8 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregar(upgradeImgBalas, "assets/mais_balas.png");
     carregar(upgradeImgDuplo, "assets/tiro_duplo.png");
     carregar(upgradeImgCacador, "assets/matador_de_boss.png");
+    pilulaDestaque.reset(CriarTexturaDestaque(renderer));
+
+    if (!pilulaDestaque)
+        SDL_Log("Falha ao criar a textura de destaque: %s", SDL_GetError());
 }
