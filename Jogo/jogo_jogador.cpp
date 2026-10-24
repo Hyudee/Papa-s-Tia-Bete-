@@ -318,7 +318,8 @@ void Jogo::AtualizarTexturaPontos() {
 
 void Jogo::SpawnarBoss() {
     if (estado == JOGAR) {
-        if (!boss.ativo && pontos >= spawnBoss) {
+        if (!boss.ativo && pontos >= spawnBoss &&
+            SDL_GetTicks() - fimUltimoBoss >= INTERVALO_MINIMO_BOSS) {
             boss.ativo = true;
 
             shakeDuracao = 600.0f;
@@ -334,9 +335,9 @@ void Jogo::SpawnarBoss() {
             if (maxYBoss < 0) maxYBoss = 0;
             boss.rect.y = (float)(rand() % (int)(maxYBoss + 1));
 
-            boss.speed = 1.5f + (bossAtivados * 0.5f) * escalaJogo;
+            boss.speed = 1.5f + BossVelocidadeExtra(bossAtivados) * escalaJogo;
 
-            boss.vidaMax = 60 + (bossAtivados * 5);
+            boss.vidaMax = BossVidaMax(bossAtivados);
             boss.vida = boss.vidaMax;
 
             boss.frame = 0;

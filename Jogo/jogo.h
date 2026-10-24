@@ -7,6 +7,8 @@
 #include "assets.h"
 #include "tipos.h"
 #include "audio.h"
+#include "metricas.h"
+#include "curva.h"
 
 // Estado e lógica do jogo.
 // As variáveis que eram locais de main() agora são membros desta classe, na mesma ordem.
@@ -191,6 +193,8 @@ private:
     void ColisaoBossBase();
     void ColisaoProjeteisObstaculos();
     void ColisaoProjeteisInimigos();
+    void RegistrarFimDePartida(const char* causa);
+    void EsperarProximoFrame();
 
     // Teclado, movimento e física do jogador
     void LerTeclado();
@@ -267,6 +271,7 @@ private:
     int inimigosDerrotados = 0;
     int inimigosAtivos = 5;
     int spawnBoss = 1000;
+    Uint64 fimUltimoBoss = 0;   // quando o último boss morreu ou chegou à base
     int bossAtivados = 0;
     int frameBase = 0;
     int opcaoConfig = 0;  // 0 = Tela cheia, 1 = Música, 2 = Efeitos
@@ -315,6 +320,8 @@ private:
     // 0 Jogar, 1 Créditos, 2 Sair, 3 Engrenagem, 4 Controles, 5 Troféu, 6 Ajuda
     int itemMenu = 0;
 
+    Metricas metricas;            // FPS e registro das partidas (metricas.csv)
+    Uint64 proximoFrameNs = 0;    // limitador de quadros
     Uint64 inicioResultado = 0; // quando a tela de resultado abriu
 
     // TEMPORIZAÇÃO DE SPAWN E ONDAS

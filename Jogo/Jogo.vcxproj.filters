@@ -75,6 +75,9 @@
     <ClCompile Include="jogo_estado.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="metricas.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -111,6 +114,12 @@
       <Filter>src\ui</Filter>
     </ClInclude>
     <ClInclude Include="jogo.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="metricas.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="curva.h">
       <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>

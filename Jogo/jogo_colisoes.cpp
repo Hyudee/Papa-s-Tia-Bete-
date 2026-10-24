@@ -159,6 +159,7 @@ void Jogo::ColisaoTiroBoss() {
                     opcaoUpgrade = 0;
                     pontos += 100;
                     bossAtivados++;
+                    fimUltimoBoss = SDL_GetTicks();
                 }
             }
         }
@@ -184,6 +185,7 @@ void Jogo::ColisaoBaseInimigos() {
                     {
                         estado = GAMEOVER;
                         tempoAtual = SDL_GetTicks();
+                        RegistrarFimDePartida("inimigo_na_base");
                     }
                 }
             }
@@ -205,11 +207,13 @@ void Jogo::ColisaoBossBase() {
                 tempoFlashBase = 0.2f; // 200 ms
                 boss.ativo = false;
                 spawnBoss = pontos + 1000;
+                fimUltimoBoss = SDL_GetTicks();
 
                 if (vidas <= 0)
                 {
                     estado = GAMEOVER;
                     tempoAtual = SDL_GetTicks();
+                    RegistrarFimDePartida("boss_na_base");
                 }
             }
         }

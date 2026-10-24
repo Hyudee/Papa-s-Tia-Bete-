@@ -111,15 +111,15 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\SDL\SDL3_image-3.4.8\include;C:\SDL\SDL3_ttf-3.2.2\include;C:\SDL\SDL3-3.4.18\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>"C:\SDL\SDL3_ttf-devel-3.2.2-VC\SDL3_ttf-3.2.2\include";C:\SDL\SDL3_image-devel-3.4.8-VC\SDL3_image-3.4.8\include;"C:\SDL\SDL3-devel-3.4.18-VC\SDL3-3.4.18\include";%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\SDL\SDL3-3.4.18\lib\x64;C:\SDL\SDL3_ttf-3.2.2\lib\x64;C:\SDL\SDL3_image-3.4.8\lib\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>"C:\SDL\SDL3-devel-3.4.18-VC\SDL3-3.4.18\lib\x64";"C:\SDL\SDL3_ttf-devel-3.2.2-VC\SDL3_ttf-3.2.2\lib\x64";"C:\SDL\SDL3_image-devel-3.4.8-VC\SDL3_image-3.4.8\lib\x64"</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL3_image.lib;SDL3_ttf.lib;SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
@@ -160,6 +160,7 @@
     <ClCompile Include="jogo_telas.cpp" />
     <ClCompile Include="jogo_update.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="metricas.cpp" />
     <ClCompile Include="ranking.cpp" />
     <ClCompile Include="texto.cpp" />
   </ItemGroup>
@@ -168,8 +169,10 @@
     <ClInclude Include="audio.h" />
     <ClInclude Include="botoes.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="curva.h" />
     <ClInclude Include="escala.h" />
     <ClInclude Include="jogo.h" />
+    <ClInclude Include="metricas.h" />
     <ClInclude Include="ranking.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="resource1.h" />

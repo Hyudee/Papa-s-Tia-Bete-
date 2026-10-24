@@ -558,7 +558,7 @@ void Jogo::ProcessarEventos()
         {
             ConfirmarResultado();
             continue;
-        }
+        }   
 
         // Redimensionamento da janela
         if (event.type == SDL_EVENT_WINDOW_RESIZED)
@@ -578,7 +578,7 @@ void Jogo::ProcessarEventos()
             // Boss
             boss.rect.w = tamanhoBoss;
             boss.rect.h = tamanhoBoss;
-            boss.speed = 1.5f + (bossAtivados * 0.25f) * escalaJogo;
+            boss.speed = 1.5f + BossVelocidadeExtra(bossAtivados) * escalaJogo;
 
             // Obstáculos
             for (int i = 0; i < MAX_OBSTACULOS; i++)

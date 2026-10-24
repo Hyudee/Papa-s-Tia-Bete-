@@ -22,10 +22,10 @@ void Jogo::ReiniciarPartida()
     pontosAntigos = -1;
     vidas = MAX_VIDAS;
     vidaMaxima = MAX_VIDAS;
-    inimigosAtivos = 5;
+    inimigosAtivos = MaximoInimigosVivos(ondas);
     inimigosDerrotados = 0;
     spam = false;
-    intervaloSpawn = 2000 - (ondas * 150);
+    intervaloSpawn = IntervaloSpawn(ondas);
 
     // Upgrades
     tiroDuplo = false;
@@ -42,6 +42,7 @@ void Jogo::ReiniciarPartida()
     boss = { 0 };
     spawnBoss = 1000;
     bossAtivados = 0;
+    fimUltimoBoss = SDL_GetTicks();
 
     // Temporizadores
     inicioOnda = SDL_GetTicks();
@@ -58,6 +59,28 @@ void Jogo::ReiniciarPartida()
     memset(vidasPowerup, 0, sizeof(vidasPowerup));
     memset(ataquePowerup, 0, sizeof(ataquePowerup));
     memset(obstaculos, 0, sizeof(obstaculos));
+
+    metricas.IniciarPartida();
+}
+
+// Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)
+void Jogo::RegistrarFimDePartida(const char* causa)
+{
+    ResumoPartida resumo;
+
+    resumo.onda = ondas;
+    resumo.pontos = pontos;
+    resumo.bossesDerrotados = bossAtivados;
+    resumo.causa = causa;
+    resumo.danoBase = danoTiroBase;
+    resumo.tirosExtras = tirosExtras;
+    resumo.vidaMaxima = vidaMaxima;
+    resumo.tiroDuplo = tiroDuplo;
+    resumo.cacadorBoss = cacadorBoss;
+    resumo.larguraTela = larguraTela;
+    resumo.alturaTela = alturaTela;
+
+    metricas.FinalizarPartida(resumo);
 }
 
 // Pause e Upgrade param o jogo, mas SDL_GetTicks() continua correndo.
@@ -72,6 +95,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
     ultimoSpawnPowerUp += delta;
     ultimoSpawnAtq += delta;
     ultimoSpawnObstaculo += delta;
+    fimUltimoBoss += delta;
 
     // Jogador
     ataqueBuffInicio += delta;

@@ -202,23 +202,10 @@ void Jogo::AtualizarOndasEBuffs()
 
         spam = true;
         inicioSpam = SDL_GetTicks();
-        inimigosAtivos += 2;
 
-        if (inimigosAtivos > MAX_INIMIGOS)
-            inimigosAtivos = MAX_INIMIGOS;
+        inimigosAtivos = MaximoInimigosVivos(ondas);
 
-        if (intervaloSpawn > 150)
-            intervaloSpawn -= 150;
-        else
-            intervaloSpawn = 500;
-
-        if (intervaloSpawn < 500)
-            intervaloSpawn = 500;
-
-        if (inimigosAtivos > MAX_INIMIGOS)
-        {
-            inimigosAtivos = MAX_INIMIGOS;
-        }
+        intervaloSpawn = IntervaloSpawn(ondas);
     }
 }
 
@@ -241,11 +228,11 @@ void Jogo::AtualizarSpawn() {
         {
             ultimoSpawn = tempoAtual;
 
-            int quantidadeSpawn = 1;
+            int quantidadeSpawn = QuantidadePorSpawn(ondas);
 
-            if (ondas >= 10) quantidadeSpawn = 2;
-            if (ondas >= 20) quantidadeSpawn = 3;
-            if (ondas >= 30) quantidadeSpawn = 4;
+            // Não passa do máximo de inimigos vivos
+            if (quantidadeSpawn > inimigosAtivos - vivos)
+                quantidadeSpawn = inimigosAtivos - vivos;
 
             for (int s = 0; s < quantidadeSpawn; s++)
             {
@@ -260,10 +247,7 @@ void Jogo::AtualizarSpawn() {
                         inimigos[i].rect.w = tamanhoInimigo;
                         inimigos[i].rect.h = tamanhoInimigo;
 
-                        inimigos[i].speed = (2.0f + (ondas * 0.2f)) * escalaJogo;
-
-                        if (inimigos[i].speed > 6.0f * escalaJogo)
-                            inimigos[i].speed = 6.0f * escalaJogo;
+                        inimigos[i].speed = VelocidadeInimigo(ondas) * escalaJogo;
 
                         inimigos[i].rect.x = larguraTela + (s * 70) + (rand() % 20);
 
@@ -271,7 +255,7 @@ void Jogo::AtualizarSpawn() {
                             (rand() % (alturaTela - (int)inimigos[i].rect.h));
 
                         if (spam)
-                            inimigos[i].speed += 0.5f;
+                            inimigos[i].speed += 0.5f * escalaJogo;
 
                         break;
                     }

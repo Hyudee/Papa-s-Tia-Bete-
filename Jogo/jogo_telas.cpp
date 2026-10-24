@@ -57,7 +57,7 @@ bool Jogo::TelaMenu()
         }
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -181,7 +181,7 @@ bool Jogo::TelaCreditos()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -221,7 +221,7 @@ bool Jogo::TelaRanking()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -252,7 +252,7 @@ bool Jogo::TelaDigitarNome()
             (float)(larguraTela / 2), 260);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -395,7 +395,7 @@ bool Jogo::TelaConfiguracoes()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -435,7 +435,7 @@ bool Jogo::TelaControles()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -489,7 +489,7 @@ bool Jogo::TelaAjuda()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -532,7 +532,7 @@ bool Jogo::TelaGameOver()
             inicioResultado = SDL_GetTicks();
         }
 
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -574,7 +574,7 @@ bool Jogo::TelaResultado()
         DesenharTextoCentrado(renderer, fontHud, "ENTER - Continuar", branco, larguraTela / 2.0f, alturaTela * 0.82f);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;

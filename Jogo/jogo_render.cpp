@@ -557,7 +557,7 @@ bool Jogo::RenderizarUpgrade() {
         }
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         
         return true;
     }

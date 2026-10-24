@@ -7,8 +7,7 @@
 inline constexpr float LARGURA_BASE = 840.0f;
 inline constexpr float ALTURA_BASE = 480.0f;
 
-extern float escalaJogo;
-
+extern float escalaJogo;       // tamanhos e física vertical (altura / ALTURA_BASE)
 extern float gravidade;
 extern float forcaPulo;
 

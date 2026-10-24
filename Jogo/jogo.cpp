@@ -48,8 +48,8 @@ bool Jogo::Iniciar()
 
     windowOwner.reset(SDL_CreateWindow(
         "Papa's Tia Bete",
-        1280,
-        720,
+        840,
+        480,
         SDL_WINDOW_FULLSCREEN
     ));
     window = windowOwner.get();
@@ -75,16 +75,7 @@ bool Jogo::Iniciar()
     {
         SDL_Log("Falha ao criar o renderer: %s", SDL_GetError());
         return false;
-    }
-
-
-    // Resolução lógica fixa: o jogo sempre roda em 840x480; a janela só o amplia (com tarjas)
-    if (!SDL_SetRenderLogicalPresentation(renderer,
-        (int)LARGURA_BASE, (int)ALTURA_BASE,
-        SDL_LOGICAL_PRESENTATION_LETTERBOX))
-    {
-        SDL_Log("Falha ao definir a resolucao logica: %s", SDL_GetError());
-    }
+    }   
 
     if (!TTF_Init()) {
         SDL_Log("Falha ao iniciar o SDL_ttf: %s", SDL_GetError());
@@ -105,8 +96,7 @@ bool Jogo::Iniciar()
     if (!font || !fontHud)
         SDL_Log("Falha ao carregar a fonte assets/PixelifySans.ttf: %s", SDL_GetError());
 
-    larguraTela = (int)LARGURA_BASE;
-    alturaTela = (int)ALTURA_BASE;
+    SDL_GetWindowSize(window, &larguraTela, &alturaTela);
 
     AtualizarEscala(larguraTela, alturaTela);
     tileW = (float)larguraTela / COLUNAS;
@@ -266,7 +256,7 @@ bool Jogo::Iniciar()
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
     // ----------------------------------------------------------
 
-    intervaloSpawn = 2000 - (ondas * 150);
+    intervaloSpawn = IntervaloSpawn(ondas);
     ultimoSpawn = SDL_GetTicks();
     ultimoSpawnPowerUp = SDL_GetTicks();
     ultimoSpawnAtq = SDL_GetTicks();
@@ -276,6 +266,29 @@ bool Jogo::Iniciar()
     inicioSpam = SDL_GetTicks();
 
     return true;
+}
+
+// Segura o laço em FPS_ALVO quadros por segundo, qualquer que seja o tempo gasto no quadro.
+// Substitui o SDL_Delay(16), que somava 16 ms ao tempo do quadro (FPS dependia da máquina).
+void Jogo::EsperarProximoFrame()
+{
+    const Uint64 duracaoFrameNs = 1000000000ULL / FPS_ALVO;
+    Uint64 agora = SDL_GetTicksNS();
+
+    if (proximoFrameNs == 0)
+        proximoFrameNs = agora;
+
+    proximoFrameNs += duracaoFrameNs;
+
+    if (agora < proximoFrameNs)
+    {
+        SDL_DelayPrecise(proximoFrameNs - agora);
+    }
+    else if (agora - proximoFrameNs > 5 * duracaoFrameNs)
+    {
+        // Atrasou muito (janela arrastada, carregamento): não tenta recuperar os quadros perdidos
+        proximoFrameNs = agora;
+    }
 }
 
 void Jogo::Executar()
@@ -294,6 +307,7 @@ void Jogo::Executar()
         AtualizarHoverMenu();
         GerenciarMusica();
         AtualizarAnimacoes();
+        metricas.AtualizarFrame(estado == JOGAR);
 
         // ------------------------------------------------------
         // SISTEMA DE ONDAS
@@ -307,13 +321,7 @@ void Jogo::Executar()
             {
                 spam = false;
 
-                intervaloSpawn = 2000 - (ondas * 150);
-
-                if (intervaloSpawn < 500)
-                    intervaloSpawn = 500;
-
-                if (intervaloSpawn > 2000)
-                    intervaloSpawn = 2000;
+                intervaloSpawn = IntervaloSpawn(ondas);
             }
         }
 
@@ -389,7 +397,7 @@ void Jogo::Executar()
         RenderizarPause();
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
 
 } // fim do loop principal
 

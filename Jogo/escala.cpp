@@ -1,7 +1,6 @@
 #include "escala.h"
 
 float escalaJogo = 1.0f;
-
 float gravidade = 0.5f;
 float forcaPulo = -10.0f;
 
