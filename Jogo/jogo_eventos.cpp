@@ -747,9 +747,10 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
 
     // Tiro Duplo: duas balas em leque, cada uma com dano reduzido (o dano é fixado agora)
     float anguloMira = SDL_atan2f(dirY, dirX) * 57.29578f;   // graus
-    int danoBala = tiroDuplo ? DanoPorBalaTiroDuplo(danoTiro) : danoTiro;
-
+    int danoAtual = DanoAtualDoTiro();   // inclui a Furia de Combo, se ativa
+    int danoBala = tiroDuplo ? DanoPorBalaTiroDuplo(danoAtual) : danoAtual;
     int criados = 0;
+
     for (int i = 0; i < MAX_PROJETEIS && criados < balasPorDisparo; i++)
     {
         if (projeteis[i].ativo)

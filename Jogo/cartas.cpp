@@ -13,6 +13,8 @@ static const int MAX_DOCE_SORTE = 2;     // DOCE SORTE: coração 35% mais lento
 static const int MAX_GLACE = 2;          // GLACE PEGAJOSO: boss 15% mais lento por carta, -1 de dano por carta
 static const int MAX_PERFURANTE = 2;     // PERFURANTE: a bala atravessa +1 minion por carta, tiro 15% mais lento
 static const int MAX_BARREIRA = 2;       // BARREIRA DA BASE: +1 carga por carta, jogador 10% mais lento por carta
+static const int MAX_EXPLOSAO = 2;       // EXPLOSAO ACUCARADA: +15% de chance por carta
+static const int MAX_FURIA = 2;          // FURIA DE COMBO: +25% de dano por carta
 
 static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
 {
@@ -28,6 +30,8 @@ static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
     { CARTA_GLACE,        "GLACE PEGAJOSO",  "Boss 15% mais lento, -1 dano", RARIDADE_RARA, MAX_GLACE,                 40,  0 },
     { CARTA_PERFURANTE,   "PERFURANTE",      "Atravessa +1 inimigo, tiro lento", RARIDADE_RARA, MAX_PERFURANTE,        40,  0 },
     { CARTA_BARREIRA,     "BARREIRA DA BASE", "Bloqueia 1 minion, recarga 25s", RARIDADE_RARA, MAX_BARREIRA,         35,  0 },
+    { CARTA_EXPLOSAO,     "EXPLOSAO ACUCARADA", "15% de explodir ao abater", RARIDADE_RARA, MAX_EXPLOSAO,        30,  0 },
+    { CARTA_FURIA,        "FURIA DE COMBO", "10 abates seguidos: +25% dano", RARIDADE_EPICA, MAX_FURIA,           30,  0 },
 };
 
 const CartaDef& DadosDaCarta(IdCarta id)
@@ -121,6 +125,14 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
     // BARREIRA DA BASE: cada carta guarda 1 carga
     s.barreiras = cartas.Quantidade(CARTA_BARREIRA);
 
+
+    // EXPLOSAO ACUCARADA: 15% de chance por carta de explodir ao abater um minion
+    s.explosaoChancePercent = 15 * cartas.Quantidade(CARTA_EXPLOSAO);
+
+
+    // FURIA DE COMBO: +25% de dano por carta enquanto a Furia estiver ativa
+    s.furiaDanoPercent = 25 * cartas.Quantidade(CARTA_FURIA);
+
     return s;
 }
 
@@ -134,9 +146,9 @@ ChancesRaridade ChancesPorBosses(int bossesDerrotados)
 {
     ChancesRaridade c;
 
-    c.comum = 90;
-    c.rara = 8;
-    c.epica = 2;
+    c.comum = 0;
+    c.rara = 80;
+    c.epica = 20;
 
     return c;
 }

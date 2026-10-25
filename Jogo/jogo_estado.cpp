@@ -35,6 +35,10 @@ void Jogo::ReiniciarPartida()
     rerollsUsados = 0;
     barreiraCargas = 0;
     inicioRecargaBarreira = SDL_GetTicks();
+    memset(explosoes, 0, sizeof(explosoes));
+    sequenciaAbates = 0;
+    furiaAtiva = false;
+    furiaInicio = 0;
 
     // Tiros
     ultimoTiro = SDL_GetTicks();
@@ -84,6 +88,8 @@ void Jogo::AplicarCartas()
     lentidaoBossPercent = stats.lentidaoBossPercent;
     perfuracoesTiro = stats.perfuracoes;
     barreirasMax = stats.barreiras;
+    explosaoChancePercent = stats.explosaoChancePercent;
+    furiaDanoPercent = stats.furiaDanoPercent;
 
     danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
 }
@@ -139,6 +145,85 @@ void Jogo::AtualizarEfeitosDasCartas()
         barreiraCargas++;
         inicioRecargaBarreira = agora;
     }
+
+    // Fúria: termina depois de DURACAO_FURIA
+    if (furiaAtiva && agora - furiaInicio >= DURACAO_FURIA)
+        furiaAtiva = false;
+
+    for (int i = 0; i < MAX_EXPLOSOES; i++)
+    {
+        if (explosoes[i].ativa && agora - explosoes[i].inicio >= DURACAO_EXPLOSAO)
+            explosoes[i].ativa = false;
+    }
+}
+
+// Conta um abate com tiro; ao chegar em ABATES_FURIA seguidos, liga a Fúria
+void Jogo::RegistrarAbate()
+{
+    if (furiaDanoPercent <= 0)
+        return;
+
+    sequenciaAbates++;
+
+    if (sequenciaAbates >= ABATES_FURIA)
+    {
+        sequenciaAbates = 0;
+        furiaAtiva = true;
+        furiaInicio = SDL_GetTicks();   // completar outra sequência renova os 8 s
+    }
+}
+
+// O jogador foi atingido ou a base perdeu vida: a sequência recomeça (a Fúria já ativa continua)
+void Jogo::QuebrarSequenciaAbates()
+{
+    sequenciaAbates = 0;
+}
+
+// Dano do tiro neste instante: o dano normal (já com o buff de ataque) mais o bônus da Fúria
+int Jogo::DanoAtualDoTiro() const
+{
+    if (!furiaAtiva || furiaDanoPercent <= 0)
+        return danoTiro;
+
+    // Arredondado só com inteiros: com dano 1 o bônus de 25% ainda dá 1
+    return (danoTiro * (100 + furiaDanoPercent) + 50) / 100;
+}
+
+// Explosão Açucarada: mata os minions em volta do ponto, sem pontos e sem encadear outra explosão
+void Jogo::ExplodirAcucar(float centroX, float centroY)
+{
+    float raio = RAIO_EXPLOSAO * escalaJogo;
+    Uint64 agora = SDL_GetTicks();
+
+    for (int i = 0; i < MAX_INIMIGOS; i++)
+    {
+        if (!inimigos[i].ativo || inimigos[i].morrendo)
+            continue;
+
+        float dx = inimigos[i].rect.x + inimigos[i].rect.w / 2.0f - centroX;
+        float dy = inimigos[i].rect.y + inimigos[i].rect.h / 2.0f - centroY;
+        float alcance = raio + inimigos[i].rect.w / 2.0f;
+
+        if (dx * dx + dy * dy <= alcance * alcance)
+        {
+            inimigos[i].morrendo = true;
+            inimigos[i].flashInicio = agora;
+        }
+    }
+
+    // Efeito visual (usa a primeira vaga livre; se não houver, só não desenha)
+    for (int i = 0; i < MAX_EXPLOSOES; i++)
+    {
+        if (explosoes[i].ativa)
+            continue;
+
+        explosoes[i].ativa = true;
+        explosoes[i].x = centroX;
+        explosoes[i].y = centroY;
+        explosoes[i].raio = raio;
+        explosoes[i].inicio = agora;
+        break;
+    }
 }
 
 // Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)
@@ -164,6 +249,8 @@ void Jogo::RegistrarFimDePartida(const char* causa)
     resumo.barreira = cartas.Quantidade(CARTA_BARREIRA);
     resumo.larguraTela = larguraTela;
     resumo.alturaTela = alturaTela;
+    resumo.explosao = cartas.Quantidade(CARTA_EXPLOSAO);
+    resumo.furia = cartas.Quantidade(CARTA_FURIA);
 
     metricas.FinalizarPartida(resumo);
 }
@@ -192,6 +279,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
     shakeInicio += delta;
     ultimoTiro += delta;
     inicioRecargaBarreira += delta;
+    furiaInicio += delta;
 
     // Animações
     ultimoFramePlayer += delta;
@@ -222,4 +310,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
 
     boss.ultimoFrame += delta;
     boss.lentidaoFim += delta;
+
+    for (int i = 0; i < MAX_EXPLOSOES; i++)
+        explosoes[i].inicio += delta;
 }

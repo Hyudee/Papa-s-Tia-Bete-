@@ -149,6 +149,8 @@ private:
     int lentidaoBossPercent = 0; // GLACÊ
     int perfuracoesTiro = 0;                 // PERFURANTE4
     int barreirasMax = 0;                    // BARREIRA DA BASE (cargas máximas)
+    int explosaoChancePercent = 0;           // EXPLOSAO ACUCARADA
+    int furiaDanoPercent = 0;                // FURIA DE COMBO
     bool atirando = false;
     bool pulando = false;
     bool aterrissando = false;
@@ -221,6 +223,10 @@ private:
     int RerollsDisponiveis() const;
     void RefazerOferta();
     void AtualizarEfeitosDasCartas();   // recarga da Barreira, fim da Furia e das explosoes
+    void ExplodirAcucar(float centroX, float centroY);
+    void RegistrarAbate();              // conta um abate para a Furia
+    void QuebrarSequenciaAbates();      // o jogador ou a base foi atingido
+    int DanoAtualDoTiro() const;        // dano do tiro agora (com a Furia, se ativa)
 
     // Teclado, movimento e física do jogador
     void LerTeclado();
@@ -279,6 +285,11 @@ private:
     const Uint64 DURACAO_BUFF = 10000;
     const Uint64 DURACAO_GLACE = 1500;   // ms de lentidão do boss depois de cada acerto com Glacê
     const Uint64 RECARGA_BARREIRA = 25000;   // ms para recuperar 1 carga da Barreira
+    const Uint64 DURACAO_EXPLOSAO = 250;     // ms da animação da explosão
+    const Uint64 DURACAO_FURIA = 8000;       // ms de dano extra depois de completar a sequência
+    const int ABATES_FURIA = 10;             // abates seguidos para ativar a Fúria
+    const float RAIO_EXPLOSAO = 48.0f;       // raio da explosão, antes de multiplicar por escalaJogo
+    static const int MAX_EXPLOSOES = 8;      // explosões visíveis ao mesmo tempo
 
     // Variavéis da base
 
@@ -392,6 +403,10 @@ private:
     // Estado das cartas Barreira, Fúria e Explosão (os instantes entram em DeslocarTimers)
     int barreiraCargas = 0;
     Uint64 inicioRecargaBarreira = 0;
+    Explosao explosoes[MAX_EXPLOSOES] = { 0 };
+    int sequenciaAbates = 0;
+    bool furiaAtiva = false;
+    Uint64 furiaInicio = 0;
 
     Uint64 ultimoTiro = 0;      // instante do último disparo (cooldown)
     int proximoIdDisparo = 1;   // id do próximo disparo (não é tempo, não precisa de DeslocarTimers)

@@ -35,6 +35,8 @@ void Jogo::ColisaoPlayerInimigos() {
                     player.x -= 100.0f * escalaJogo;
                     player.y -= 50.0f * escalaJogo;
 
+                    QuebrarSequenciaAbates();
+
                     // Stun
                     stun = true;
                     stunStart = SDL_GetTicks();
@@ -206,6 +208,7 @@ void Jogo::ColisaoBaseInimigos() {
                     }
 
                     vidas--;
+                    QuebrarSequenciaAbates();
                     flashBase = FLASH_DANO;
                     tempoFlashBase = 0.2f; // 200 ms
                     inimigos[i].ativo = false;
@@ -231,6 +234,7 @@ void Jogo::ColisaoBossBase() {
             ))
             {
                 vidas -= 3;
+                QuebrarSequenciaAbates();
                 if (vidas < 0) vidas = 0;
                 flashBase = FLASH_DANO;
                 tempoFlashBase = 0.2f; // 200 ms
@@ -311,6 +315,16 @@ void Jogo::ColisaoProjeteisInimigos() {
                     }
                     pontos += 50;
                     inimigosDerrotados++;
+                    RegistrarAbate();
+
+
+                    // Explosão Açucarada: chance de explodir ao abater o minion
+                    if (explosaoChancePercent > 0 && rand() % 100 < explosaoChancePercent)
+                    {
+                        ExplodirAcucar(inimigos[i].rect.x + inimigos[i].rect.w / 2.0f,
+                            inimigos[i].rect.y + inimigos[i].rect.h / 2.0f);
+                    }
+
                     break;
                 }
             }

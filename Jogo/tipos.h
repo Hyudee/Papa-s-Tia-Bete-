@@ -116,6 +116,15 @@ typedef struct
 
 } Obstaculo;
 
+typedef struct
+{
+    bool   ativa;
+    float  x;       // centro da explosão
+    float  y;
+    float  raio;    // raio máximo, já multiplicado por escalaJogo
+    Uint64 inicio;
+} Explosao;
+
 enum FlashBase
 {
     FLASH_NENHUM,

@@ -282,7 +282,55 @@ void Jogo::RenderizarMundo() {
 
         SDL_RenderTexture(renderer, powerUpAtq, &src, &dest);
     }
-}
+
+    // Explosão Açucarada: disco translúcido que cresce e some
+    SDL_BlendMode modoAnterior;
+    SDL_GetRenderDrawBlendMode(renderer, &modoAnterior);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    for (int i = 0; i < MAX_EXPLOSOES; i++)
+    {
+        if (!explosoes[i].ativa)
+            continue;
+
+        float t = (float)(SDL_GetTicks() - explosoes[i].inicio) / (float)DURACAO_EXPLOSAO;
+
+        if (t > 1.0f)
+            t = 1.0f;
+
+        float raio = explosoes[i].raio * (0.3f + 0.7f * t);
+
+        const int SEGMENTOS = 24;
+        SDL_Vertex vertices[SEGMENTOS + 1];
+        int indices[SEGMENTOS * 3];
+        SDL_FColor cor = { 1.0f, 0.65f, 0.15f, 0.6f * (1.0f - t) };
+
+        vertices[0].position.x = explosoes[i].x;
+        vertices[0].position.y = explosoes[i].y;
+        vertices[0].color = cor;
+        vertices[0].tex_coord.x = 0.0f;
+        vertices[0].tex_coord.y = 0.0f;
+
+        for (int k = 0; k < SEGMENTOS; k++)
+        {
+            float angulo = 6.2831853f * k / SEGMENTOS;
+
+            vertices[k + 1].position.x = explosoes[i].x + SDL_cosf(angulo) * raio;
+            vertices[k + 1].position.y = explosoes[i].y + SDL_sinf(angulo) * raio;
+            vertices[k + 1].color = cor;
+            vertices[k + 1].tex_coord.x = 0.0f;
+            vertices[k + 1].tex_coord.y = 0.0f;
+
+            indices[k * 3] = 0;
+            indices[k * 3 + 1] = k + 1;
+            indices[k * 3 + 2] = (k + 1) % SEGMENTOS + 1;
+        }
+
+        SDL_RenderGeometry(renderer, NULL, vertices, SEGMENTOS + 1, indices, SEGMENTOS * 3);
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, modoAnterior);
+}    
 
 void Jogo::RenderizarHud() {
     SDL_SetRenderViewport(renderer, NULL);
@@ -385,6 +433,36 @@ void Jogo::RenderizarHud() {
             SDL_SetRenderDrawColor(renderer, 90, 170, 255, 255);
             SDL_RenderFillRect(renderer, &cheio);
         }
+    }
+
+
+    // Fúria de Combo: amarela enche com os abates; laranja esvazia enquanto está ativa
+    if (furiaDanoPercent > 0)
+    {
+        SDL_FRect fundo = { 10.0f, 120.0f, 100.0f, 10.0f };
+        SDL_Color corBarra;
+        float fracao;
+
+        if (furiaAtiva)
+        {
+            float decorrido = (agora > furiaInicio) ? (float)(agora - furiaInicio) : 0.0f;
+            fracao = SDL_max(0.0f, 1.0f - decorrido / (float)DURACAO_FURIA);
+            corBarra = { 255, 140, 0, 255 };
+        }
+        else
+        {
+            fracao = (float)sequenciaAbates / (float)ABATES_FURIA;
+            corBarra = { 230, 200, 60, 255 };
+        }
+
+        SDL_FRect cheio = { fundo.x, fundo.y, fundo.w * fracao, fundo.h };
+
+        SDL_SetRenderDrawColor(renderer, 60, 40, 20, 255);
+        SDL_RenderFillRect(renderer, &fundo);
+        SDL_SetRenderDrawColor(renderer, corBarra.r, corBarra.g, corBarra.b, 255);
+        SDL_RenderFillRect(renderer, &cheio);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderRect(renderer, &fundo);
     }
 }
 

@@ -19,6 +19,8 @@ enum IdCarta
     CARTA_GLACE,
     CARTA_PERFURANTE,
     CARTA_BARREIRA,
+    CARTA_EXPLOSAO,
+    CARTA_FURIA,
 
     NUM_CARTAS
 };
@@ -71,6 +73,8 @@ struct StatsJogador
     int lentidaoBossPercent;        // % de lentidão que cada acerto aplica no boss (0 = sem Glacê)
     int perfuracoes; // Quantas perfurações a bala tem
     int barreiras;               // cargas máximas da Barreira da Base (0 = sem a carta)
+    int explosaoChancePercent;   // chance (%) de explodir ao abater um minion
+    int furiaDanoPercent;        // bônus (%) de dano da Fúria de Combo (0 = sem a carta)
 };
 
 const CartaDef& DadosDaCarta(IdCarta id);
