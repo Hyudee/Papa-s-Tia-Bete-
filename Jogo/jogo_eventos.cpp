@@ -620,104 +620,129 @@ void Jogo::ProcessarEventos()
         }
 
         // Atirar
-        if (estado == JOGAR && !stun && !dano && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+                // Atirar (um disparo por clique; o cooldown fica dentro de DispararTiro)
+        if (estado == JOGAR && !stun && !dano &&
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT)
         {
-            if (event.button.button == SDL_BUTTON_LEFT)
-            {
-                float mouseX = event.button.x;
-                float mouseY = event.button.y;
-
-                float centroPlayerX = player.x + player.w / 2;
-
-                if (mouseX < centroPlayerX)
-                    olhandoDireita = false;
-                else
-                    olhandoDireita = true;
-
-                float centroPlayerY = player.y + player.h / 2;
-
-                float dirX = mouseX - centroPlayerX;
-                float dirY = mouseY - centroPlayerY;
-
-                float tamanho =
-                    SDL_sqrtf(dirX * dirX + dirY * dirY);
-
-                if (tamanho > 0.0f)
-                {
-                    dirX /= tamanho;
-                    dirY /= tamanho;
-                }
-
-                atirando = true;
-
-                if (olhandoDireita)
-                    framePlayer = 2;
-                else
-                    framePlayer = 6;
-
-                ultimoFramePlayer = SDL_GetTicks();
-
-                int projeteisAtivos = 0;
-                for (int i = 0; i < MAX_PROJETEIS; i++)
-                {
-                    if (projeteis[i].ativo)
-                        projeteisAtivos++;
-                }
-
-                int tirosCriar = tiroDuplo ? 2 : 1;
-
-                // Conta slots livres
-                int slotsLivres = 0;
-                for (int i = 0; i < MAX_PROJETEIS; i++)
-                    if (!projeteis[i].ativo) slotsLivres++;
-
-                // Conta disparos ativos (pares se duplo)
-                int disparosAtivos = 0;
-                for (int i = 0; i < MAX_PROJETEIS; i++)
-                    if (projeteis[i].ativo) disparosAtivos++;
-                int disparosAtivosCont = tiroDuplo ? (disparosAtivos / 2) : disparosAtivos;
-
-                if (slotsLivres >= tirosCriar && disparosAtivosCont < quantidadeTiros)
-                {
-                    int criados = 0;
-                    for (int i = 0; i < MAX_PROJETEIS && criados < tirosCriar; i++)
-                    {
-                        if (!projeteis[i].ativo)
-                        {
-                            projeteis[i].ativo = true;
-
-                            if (criados == 0)
-                                TocarEfeito(somTiro);
-
-                            projeteis[i].frame = 0;
-                            projeteis[i].explodindo = false;
-                            projeteis[i].ultimoFrame = SDL_GetTicks();
-
-                            projeteis[i].rect.w = tamanhoProjetil;
-                            projeteis[i].rect.h = tamanhoProjetil;
-
-                            // Nasce no centro do jogador, deslocado na direção do tiro
-                            float origemX = centroPlayerX + dirX * (player.w / 2);
-                            float origemY = centroPlayerY + dirY * (player.w / 2)
-                                + (tiroDuplo ? (criados == 0 ? -12.0f * escalaJogo : 12.0f * escalaJogo) : 0.0f);
-
-                            projeteis[i].rect.x = origemX - projeteis[i].rect.w / 2;
-                            projeteis[i].rect.y = origemY - projeteis[i].rect.h / 2;
-
-                            // O sprite aponta para a direita (0 graus)
-                            projeteis[i].angulo = SDL_atan2f(dirY, dirX) * 57.29578f;
-
-                            float velocidade = 12.0f * escalaJogo;
-                            projeteis[i].velX = dirX * velocidade;
-                            projeteis[i].velY = dirY * velocidade;
-
-                            criados++;
-                        }
-                    }
-                }
-
-            }
+            DispararTiro(event.button.x, event.button.y);
         }
     }
 
+}
+
+// Quantos disparos (cliques) ainda têm balas ativas.
+// Um disparo de Tiro Duplo (2 balas) conta como 1.
+int Jogo::DisparosAtivos() const
+{
+    int ids[MAX_PROJETEIS];
+    int total = 0;
+
+    for (int i = 0; i < MAX_PROJETEIS; i++)
+    {
+        if (!projeteis[i].ativo)
+            continue;
+
+        bool jaContado = false;
+
+        for (int k = 0; k < total; k++)
+        {
+            if (ids[k] == projeteis[i].idDisparo)
+            {
+                jaContado = true;
+                break;
+            }
+        }
+
+        if (!jaContado)
+            ids[total++] = projeteis[i].idDisparo;
+    }
+
+    return total;
+}
+
+void Jogo::DispararTiro(float mouseX, float mouseY)
+{
+    // Cooldown: um clique só atira se já passou o tempo mínimo desde o último disparo
+    if (SDL_GetTicks() - ultimoTiro < COOLDOWN_TIRO_BASE)
+        return;
+
+    float centroPlayerX = player.x + player.w / 2;
+
+    if (mouseX < centroPlayerX)
+        olhandoDireita = false;
+    else
+        olhandoDireita = true;
+
+    float centroPlayerY = player.y + player.h / 2;
+
+    float dirX = mouseX - centroPlayerX;
+    float dirY = mouseY - centroPlayerY;
+
+    float tamanho =
+        SDL_sqrtf(dirX * dirX + dirY * dirY);
+
+    if (tamanho > 0.0f)
+    {
+        dirX /= tamanho;
+        dirY /= tamanho;
+    }
+
+    atirando = true;
+
+    if (olhandoDireita)
+        framePlayer = 2;
+    else
+        framePlayer = 6;
+
+    ultimoFramePlayer = SDL_GetTicks();
+
+    int balasPorDisparo = tiroDuplo ? 2 : 1;
+
+    int slotsLivres = 0;
+    for (int i = 0; i < MAX_PROJETEIS; i++)
+        if (!projeteis[i].ativo) slotsLivres++;
+
+    // Sem espaço para as balas, ou já no limite de disparos simultâneos
+    if (slotsLivres < balasPorDisparo || DisparosAtivos() >= quantidadeTiros)
+        return;
+
+    ultimoTiro = SDL_GetTicks();
+    int idDisparo = proximoIdDisparo++;
+
+    TocarEfeito(somTiro);
+
+    int criados = 0;
+    for (int i = 0; i < MAX_PROJETEIS && criados < balasPorDisparo; i++)
+    {
+        if (projeteis[i].ativo)
+            continue;
+
+        projeteis[i].ativo = true;
+        projeteis[i].idDisparo = idDisparo;
+
+        projeteis[i].frame = 0;
+        projeteis[i].explodindo = false;
+        projeteis[i].ultimoFrame = SDL_GetTicks();
+
+        projeteis[i].rect.w = tamanhoProjetil;
+        projeteis[i].rect.h = tamanhoProjetil;
+
+        // Nasce no centro do jogador, deslocado na direção do tiro
+        float origemX = centroPlayerX + dirX * (player.w / 2);
+        float origemY = centroPlayerY + dirY * (player.w / 2)
+            + (tiroDuplo ? (criados == 0 ? -12.0f * escalaJogo : 12.0f * escalaJogo) : 0.0f);
+
+        projeteis[i].rect.x = origemX - projeteis[i].rect.w / 2;
+        projeteis[i].rect.y = origemY - projeteis[i].rect.h / 2;
+
+        // O sprite aponta para a direita (0 graus)
+        projeteis[i].angulo = SDL_atan2f(dirY, dirX) * 57.29578f;
+
+        float velocidade = 12.0f * escalaJogo;
+        projeteis[i].velX = dirX * velocidade;
+        projeteis[i].velY = dirY * velocidade;
+
+        criados++;
+    }
 }

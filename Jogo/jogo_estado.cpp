@@ -34,6 +34,9 @@ void Jogo::ReiniciarPartida()
     totalOfertaCartas = 0;
     rerollsUsados = 0;
 
+    // Tiros
+    ultimoTiro = SDL_GetTicks();
+
     // Boss
     boss = { 0 };
     spawnBoss = 1000;
@@ -147,6 +150,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
     tempoBordaDir += delta;
     inicioAterrissagem += delta;
     shakeInicio += delta;
+    ultimoTiro += delta;
 
     // Animações
     ultimoFramePlayer += delta;

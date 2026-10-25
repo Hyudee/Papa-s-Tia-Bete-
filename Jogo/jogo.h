@@ -152,6 +152,10 @@ private:
     // Eventos
     void ProcessarEventos();
 
+    // Tiro
+    void DispararTiro(float mouseX, float mouseY);
+    int DisparosAtivos() const;
+
     // Menu principal (Enter e clique esquerdo usam a mesma confirmação)
     int ItemMenuSobMouse(float x, float y) const;
     const SDL_FRect* RetanguloItemMenu(int item) const;
@@ -359,4 +363,6 @@ private:
     float playerYAnterior = 0.0f;
 
     int rerollsUsados = 0;      // trocas de cartas já gastas nesta partida
+    Uint64 ultimoTiro = 0;      // instante do último disparo (cooldown)
+    int proximoIdDisparo = 1;   // id do próximo disparo (não é tempo, não precisa de DeslocarTimers)
 };

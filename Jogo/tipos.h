@@ -72,6 +72,7 @@ typedef struct
     float     velX;
     float     velY;
     float angulo;   // em graus; o sprite original aponta para a direita
+    int idDisparo;  // balas do mesmo clique têm o mesmo id (o Tiro Duplo conta como 1 disparo)
 
     int frame;
     Uint64 ultimoFrame;
