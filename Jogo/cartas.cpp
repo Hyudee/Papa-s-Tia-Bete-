@@ -15,23 +15,27 @@ static const int MAX_PERFURANTE = 2;     // PERFURANTE: a bala atravessa +1 mini
 static const int MAX_BARREIRA = 2;       // BARREIRA DA BASE: +1 carga por carta, jogador 10% mais lento por carta
 static const int MAX_EXPLOSAO = 2;       // EXPLOSAO ACUCARADA: +15% de chance por carta
 static const int MAX_FURIA = 2;          // FURIA DE COMBO: +25% de dano por carta
+static const int MAX_PACTO = 1;          // PACTO AMARGO: +4 de dano e +2 tiros, custa 1 de vida máxima
+static const int BOSSES_PARA_EPICAS = 2; // cartas épicas só aparecem depois de 2 bosses derrotados
 
 static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
 {
-    { CARTA_MAIS_DANO,    "MAIS DANO",       "+1 de dano por tiro",       RARIDADE_COMUM, MAX_DANO_EXTRA,             100, 0 },
-    { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 vida max. e +1 vida",   RARIDADE_COMUM, MAX_VIDA_EXTRA,             100, 0 },
-    { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_BALAS_EXTRAS,           100, 0 },
-    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_EPICA,  1,                          5,  0 },
-    { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_EPICA,  1,                          20,  0 },
-    { CARTA_CADENCIA,     "CADENCIA",        "-20% tempo entre tiros",    RARIDADE_COMUM, MAX_CADENCIA,               100,  0 },
-    { CARTA_BALA_PESADA,  "BALA PESADA",     "+2 dano, tiro mais lento",  RARIDADE_COMUM, MAX_BALA_PESADA,            100,  0 },
-    { CARTA_PERNAS_ACUCAR,"PERNAS DE ACUCAR","+10% velocidade, mais recuo", RARIDADE_COMUM, MAX_PERNAS,                100,  0 },
-    { CARTA_DOCE_SORTE,   "DOCE SORTE",      "Coracao lento e frequente", RARIDADE_COMUM, MAX_DOCE_SORTE,             60,  0 },
-    { CARTA_GLACE,        "GLACE PEGAJOSO",  "Boss 15% mais lento, -1 dano", RARIDADE_RARA, MAX_GLACE,                 40,  0 },
-    { CARTA_PERFURANTE,   "PERFURANTE",      "Atravessa +1 inimigo, tiro lento", RARIDADE_RARA, MAX_PERFURANTE,        40,  0 },
-    { CARTA_BARREIRA,     "BARREIRA DA BASE", "Bloqueia 1 minion, recarga 25s", RARIDADE_RARA, MAX_BARREIRA,         35,  0 },
-    { CARTA_EXPLOSAO,     "EXPLOSAO ACUCARADA", "15% de explodir ao abater", RARIDADE_RARA, MAX_EXPLOSAO,        30,  0 },
-    { CARTA_FURIA,        "FURIA DE COMBO", "10 abates seguidos: +25% dano", RARIDADE_EPICA, MAX_FURIA,           30,  0 },
+    //                                                                                                      máx.             peso  bossesMin.            vidaMaxMin.
+    { CARTA_MAIS_DANO,    "MAIS DANO",       "+1 de dano por tiro",       RARIDADE_COMUM, MAX_DANO_EXTRA,                  100, 0 },
+    { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 vida max. e +1 vida",   RARIDADE_COMUM, MAX_VIDA_EXTRA,                  100, 0 },
+    { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_BALAS_EXTRAS,                100, 0 },
+    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_RARA, 1,                            40,  0 },
+    { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_RARA,  1,                               25,  0 },
+    { CARTA_CADENCIA,     "CADENCIA",        "-20% tempo entre tiros",    RARIDADE_COMUM, MAX_CADENCIA,                    90,  0 },
+    { CARTA_BALA_PESADA,  "BALA PESADA",     "+2 dano, tiro mais lento",  RARIDADE_COMUM, MAX_BALA_PESADA,                 80,  0 },
+    { CARTA_PERNAS_ACUCAR,"PERNAS DE ACUCAR","+10% velocidade, mais recuo", RARIDADE_COMUM, MAX_PERNAS,                     80,  0 },
+    { CARTA_DOCE_SORTE,   "DOCE SORTE",      "Coracao lento e frequente", RARIDADE_COMUM, MAX_DOCE_SORTE,                  60,  0 },
+    { CARTA_GLACE,        "GLACE PEGAJOSO",  "Boss 15% mais lento, -1 dano", RARIDADE_RARA, MAX_GLACE,                     40,  0 },
+    { CARTA_PERFURANTE,   "PERFURANTE",      "Atravessa +1 inimigo, tiro lento", RARIDADE_RARA, MAX_PERFURANTE,            40,  0 },
+    { CARTA_BARREIRA,     "BARREIRA DA BASE", "Bloqueia 1 minion, recarga 25s", RARIDADE_RARA, MAX_BARREIRA,               35,  0 },
+    { CARTA_EXPLOSAO,     "EXPLOSAO ACUCARADA", "15% de explodir ao abater", RARIDADE_RARA, MAX_EXPLOSAO,                  30,  0 },
+    { CARTA_FURIA,        "FURIA DE COMBO", "10 abates seguidos: +25% dano", RARIDADE_EPICA, MAX_FURIA,                    30,  BOSSES_PARA_EPICAS },
+    { CARTA_PACTO_AMARGO, "PACTO AMARGO",   "+4 dano, +2 tiros, -1 vida max.", RARIDADE_EPICA, MAX_PACTO,                  30,  BOSSES_PARA_EPICAS, 3 },
 };
 
 const CartaDef& DadosDaCarta(IdCarta id)
@@ -74,11 +78,17 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
         + cartas.Quantidade(CARTA_MAIS_DANO)
         + 5 * cartas.Quantidade(CARTA_CACADOR_BOSS)
         + 2 * cartas.Quantidade(CARTA_BALA_PESADA)
+        + 4 * cartas.Quantidade(CARTA_PACTO_AMARGO)
         - cartas.Quantidade(CARTA_GLACE);
 
-    s.vidaMaxima = MAX_VIDAS + cartas.Quantidade(CARTA_MAIS_VIDA);
+    // PACTO AMARGO custa 1 de vida máxima, mas nunca deixa menos que 1
+    s.vidaMaxima = std::max(1, MAX_VIDAS
+        + cartas.Quantidade(CARTA_MAIS_VIDA)
+        - cartas.Quantidade(CARTA_PACTO_AMARGO));
 
-    s.tirosExtras = std::min(cartas.Quantidade(CARTA_MAIS_BALAS), MAX_BALAS_EXTRAS);
+    // PACTO AMARGO dá +2 tiros simultâneos além do teto de MAIS BALAS
+    s.tirosExtras = std::min(cartas.Quantidade(CARTA_MAIS_BALAS), MAX_BALAS_EXTRAS)
+        + 2 * cartas.Quantidade(CARTA_PACTO_AMARGO);
     s.quantidadeTiros = TIROS_BASE + s.tirosExtras;
 
     s.tiroDuplo = cartas.Quantidade(CARTA_TIRO_DUPLO) > 0;
@@ -146,9 +156,9 @@ ChancesRaridade ChancesPorBosses(int bossesDerrotados)
 {
     ChancesRaridade c;
 
-    c.comum = 0;
-    c.rara = 80;
-    c.epica = 20;
+    c.comum = 93;
+    c.rara = 5;
+    c.epica = 2;
 
     return c;
 }
@@ -165,6 +175,7 @@ static bool SortearCartaDaRaridade(const ColecaoCartas& cartas, int bossesDerrot
 {
     bool elegivel[NUM_CARTAS];
     int somaPesos = 0;
+    int vidaMaximaAtual = CalcularStats(cartas).vidaMaxima;   // para os pré-requisitos de vida
 
     for (int i = 0; i < NUM_CARTAS; i++)
     {
@@ -173,7 +184,8 @@ static bool SortearCartaDaRaridade(const ColecaoCartas& cartas, int bossesDerrot
         elegivel[i] = carta.raridade == raridade
             && carta.peso > 0
             && cartas.PodeReceber(carta.id)               // fora as no máximo e as únicas já pegas
-            && bossesDerrotados >= carta.bossesMinimos;   // pré-requisito
+            && bossesDerrotados >= carta.bossesMinimos    // pré-requisito: bosses derrotados
+            && vidaMaximaAtual >= carta.vidaMaximaMinima; // pré-requisito: vida máxima
 
         // Fora as que já estão nesta oferta
         for (int k = 0; k < total; k++)

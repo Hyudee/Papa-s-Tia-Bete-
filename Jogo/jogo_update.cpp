@@ -18,7 +18,7 @@
 #include "botoes.h"
 #include "jogo.h"
 
-void Jogo::AtualizarHoverMenu() 
+void Jogo::AtualizarHoverMenu()
 {
     if (estado == MENU)
     {
@@ -264,12 +264,18 @@ void Jogo::AtualizarSpawn() {
                 }
             }
         }
-        // Spawn de powerups
+        // Spawn do coração (powerup de vida)
+        // O relógio roda sempre, com a vida cheia ou não. Quando o tempo sorteado passa, ele
+        // recomeça com um novo sorteio (70% a 130% do intervalo) e o coração só nasce se a vida
+        // estiver abaixo do máximo. Assim, tomar dano não faz o coração nascer na hora.
+        Uint64 esperaCoracao = intervaloSpawnPowerUp * sorteioIntervaloCoracao / 100
+            * intervaloCoracaoPercent / 100;
 
-        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp * intervaloCoracaoPercent / 100 && (vidas < vidaMaxima)) {
+        if (tempoAtual - ultimoSpawnPowerUp >= esperaCoracao) {
             ultimoSpawnPowerUp = tempoAtual;
+            sorteioIntervaloCoracao = 70 + rand() % 61;
 
-            for (int i = 0; i < MAX_POWERUPS; i++) {
+            for (int i = 0; vidas < vidaMaxima && i < MAX_POWERUPS; i++) {
                 if (!vidasPowerup[i].ativo) {
                     vidasPowerup[i].ativo = true;
                     vidasPowerup[i].frame = 0;
@@ -485,28 +491,28 @@ void Jogo::AtualizarPowerups() {
     }
 }
 
-void Jogo::AtualizarBoss (){
+void Jogo::AtualizarBoss() {
     if (estado == JOGAR) {
-            if (boss.ativo)
+        if (boss.ativo)
+        {
+            // Glacê Pegajoso: enquanto a lentidão durar, o boss anda mais devagar
+            float fatorBoss = 1.0f;
+
+            if (SDL_GetTicks() < boss.lentidaoFim)
+                fatorBoss = (100 - boss.lentidaoPercent) / 100.0f;
+
+            boss.rect.x -= boss.speed * fatorBoss;
+
+            if (SDL_GetTicks() - boss.ultimoFrame > 120)
             {
-                // Glacê Pegajoso: enquanto a lentidão durar, o boss anda mais devagar
-                float fatorBoss = 1.0f;
+                boss.frame++;
 
-                if (SDL_GetTicks() < boss.lentidaoFim)
-                    fatorBoss = (100 - boss.lentidaoPercent) / 100.0f;
+                if (boss.frame >= 6)
+                    boss.frame = 0;
 
-                boss.rect.x -= boss.speed * fatorBoss;
-
-                if (SDL_GetTicks() - boss.ultimoFrame > 120)
-                {
-                    boss.frame++;
-
-                    if (boss.frame >= 6)
-                        boss.frame = 0;
-
-                    boss.ultimoFrame = SDL_GetTicks();
-                }
+                boss.ultimoFrame = SDL_GetTicks();
             }
+        }
     }
 }
 

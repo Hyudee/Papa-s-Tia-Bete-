@@ -5,7 +5,7 @@ float gravidade = 0.5f;
 float forcaPulo = -10.0f;
 
 float SPEED_NORMAL = 5.0f;
-float SPEED_SUJO = 2.5f;
+float SPEED_SUJO = 3.5f;
 float speed = 5.0f;
 
 float tamanhoPlayer = 64.0f;
@@ -30,7 +30,7 @@ void AtualizarEscala(int larguraTela, int alturaTela)
     tamanhoObstaculo = 64.0f * escalaJogo;
 
     SPEED_NORMAL = 5.0f * escalaJogo;
-    SPEED_SUJO = 2.5f * escalaJogo;
+    SPEED_SUJO = 3.5f * escalaJogo;
 
     speed = SPEED_NORMAL;
 

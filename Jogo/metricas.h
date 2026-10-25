@@ -23,6 +23,7 @@ struct ResumoPartida
     int barreira;
     int explosao;
     int furia;
+    int pacto;
     int larguraTela;
     int alturaTela;
 };

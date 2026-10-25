@@ -21,6 +21,7 @@ enum IdCarta
     CARTA_BARREIRA,
     CARTA_EXPLOSAO,
     CARTA_FURIA,
+    CARTA_PACTO_AMARGO,
 
     NUM_CARTAS
 };
@@ -40,8 +41,8 @@ struct CartaDef
     Raridade raridade;
     int maximo;         // quantas vezes pode ser pega (0 = sem limite)
     int peso;
-    int bossesMinimos;
-    int chanceOferta;   // % de aparecer na escolha (100 = sempre); regra provisória
+    int bossesMinimos;      // bosses derrotados para a carta poder aparecer
+    int vidaMaximaMinima;   // vida máxima atual mínima para a carta aparecer (0 = sem exigência)
 };
 
 // Cartas que o jogador já pegou nesta partida

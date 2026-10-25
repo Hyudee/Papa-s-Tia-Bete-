@@ -546,7 +546,7 @@ void Jogo::ProcessarEventos()
         {
             ConfirmarResultado();
             continue;
-        }   
+        }
 
         // Redimensionamento da janela
         if (event.type == SDL_EVENT_WINDOW_RESIZED)
@@ -691,7 +691,13 @@ int Jogo::DisparosAtivos() const
 void Jogo::DispararTiro(float mouseX, float mouseY)
 {
     // Cooldown: um clique só atira se já passou o tempo mínimo desde o último disparo
-    if (SDL_GetTicks() - ultimoTiro < (Uint64)cooldownTiro)
+    // (sujo de obstáculo grudento: o tempo entre tiros fica maior)
+    int cooldownAtual = cooldownTiro;
+
+    if (sujo)
+        cooldownAtual = cooldownTiro * GRUDENTO_COOLDOWN_PERCENT / 100;
+
+    if (SDL_GetTicks() - ultimoTiro < (Uint64)cooldownAtual)
         return;
 
     float centroPlayerX = player.x + player.w / 2;
@@ -788,6 +794,11 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
         projeteis[i].perfuracoes = perfuracoesTiro;
 
         float velocidade = 12.0f * escalaJogo * velocidadeTiroPercent / 100.0f;
+
+        // Sujo de obstáculo grudento: a bala sai mais devagar
+        if (sujo)
+            velocidade = velocidade * GRUDENTO_VELOCIDADE_TIRO_PERCENT / 100.0f;
+
         projeteis[i].velX = SDL_cosf(radianos) * velocidade;
         projeteis[i].velY = SDL_sinf(radianos) * velocidade;
 

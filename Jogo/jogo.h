@@ -382,6 +382,7 @@ private:
     Uint64 ultimoSpawnPowerUp;
     Uint64 ultimoSpawnAtq;
     Uint64 intervaloSpawnPowerUp;
+    int sorteioIntervaloCoracao = 100;   // 70 a 130: sorteio do tempo até o próximo coração (não é instante)
     Uint64 intervaloSpawnAtq = 40000;
     Uint64 ultimoSpawnObstaculo;
     Uint64 intervaloObstaculo = 15000;

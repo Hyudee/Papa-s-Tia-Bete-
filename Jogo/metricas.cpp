@@ -85,7 +85,7 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
             "data_hora,tempo_s,onda,pontos,bosses_derrotados,causa,"
             "dano_base,tiros_extras,vida_maxima,tiro_duplo,cacador_boss,"
             "cadencia,bala_pesada,pernas_acucar,doce_sorte,glace,perfurante,"
-            "barreira,explosao,furia,"
+            "barreira,explosao,furia,pacto,"
             "fps_medio,largura,altura\n");
     }
 
@@ -103,7 +103,7 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
     float tempoS = tempoPartidaMs / 1000.0f;
     float fpsMedio = (tempoS > 0.0f) ? framesPartida / tempoS : 0.0f;
 
-    fprintf(arquivo, "%s,%.1f,%d,%d,%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d\n",
+    fprintf(arquivo, "%s,%.1f,%d,%d,%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d\n",
         dataHora,
         tempoS,
         resumo.onda,
@@ -124,6 +124,7 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
         resumo.barreira,
         resumo.explosao,
         resumo.furia,
+        resumo.pacto,
         fpsMedio,
         resumo.larguraTela,
         resumo.alturaTela);

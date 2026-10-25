@@ -12,6 +12,7 @@ void Jogo::ReiniciarPartida()
     player.w = tamanhoPlayer;
     player.h = tamanhoPlayer;
     speed = SPEED_NORMAL;
+    sujo = false;   // não leva o obstáculo grudento para a partida nova
     velocidadeY = 0.0f;
     noChao = true;
 
@@ -55,6 +56,7 @@ void Jogo::ReiniciarPartida()
     ultimoSpawn = SDL_GetTicks();
     ultimoSpawnObstaculo = SDL_GetTicks();
     ultimoSpawnPowerUp = SDL_GetTicks();
+    sorteioIntervaloCoracao = 100;
     ultimoSpawnAtq = SDL_GetTicks();
     intervaloSpawnAtq = 40000;
 
@@ -101,6 +103,10 @@ void Jogo::EscolherCarta(IdCarta id)
         return;
 
     AplicarCartas();
+
+    // PACTO AMARGO baixa a vida máxima: a vida atual não pode passar dela
+    if (vidas > vidaMaxima)
+        vidas = vidaMaxima;
 
     // MAIS VIDA sobe a vida máxima em 1 e a vida atual em 1 (não recupera tudo)
     if (id == CARTA_MAIS_VIDA && vidas < vidaMaxima)
@@ -251,6 +257,7 @@ void Jogo::RegistrarFimDePartida(const char* causa)
     resumo.alturaTela = alturaTela;
     resumo.explosao = cartas.Quantidade(CARTA_EXPLOSAO);
     resumo.furia = cartas.Quantidade(CARTA_FURIA);
+    resumo.pacto = cartas.Quantidade(CARTA_PACTO_AMARGO);
 
     metricas.FinalizarPartida(resumo);
 }
