@@ -449,6 +449,7 @@ void Jogo::ProcessarEventos()
             {
             case SDLK_A: if (opcaoUpgrade > 0) { opcaoUpgrade--; } break;
             case SDLK_D: if (opcaoUpgrade < totalOfertaCartas - 1) { opcaoUpgrade++; } break;
+            case SDLK_R: if (!event.key.repeat) RefazerOferta(); break;
 
             case SDLK_RETURN:
             {

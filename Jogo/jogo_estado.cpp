@@ -32,6 +32,7 @@ void Jogo::ReiniciarPartida()
     ataqueBuff = false;
     AplicarCartas();
     totalOfertaCartas = 0;
+    rerollsUsados = 0;
 
     // Boss
     boss = { 0 };
@@ -84,6 +85,24 @@ void Jogo::EscolherCarta(IdCarta id)
     // MAIS VIDA também recupera toda a vida
     if (id == CARTA_MAIS_VIDA)
         vidas = vidaMaxima;
+}
+
+// Trocas de cartas: 1 por partida, mais 1 a cada 5 bosses derrotados
+int Jogo::RerollsDisponiveis() const
+{
+    return 1 + bossAtivados / 5 - rerollsUsados;
+}
+
+// Sorteia uma oferta nova (gasta uma troca)
+void Jogo::RefazerOferta()
+{
+    if (RerollsDisponiveis() <= 0)
+        return;
+
+    rerollsUsados++;
+
+    totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
+    opcaoUpgrade = 0;
 }
 
 // Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)

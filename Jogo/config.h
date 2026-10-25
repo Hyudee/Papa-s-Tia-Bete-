@@ -11,4 +11,5 @@
 #define MAX_POWERUPSATQ  1
 #define MAX_OBSTACULOS 4
 #define FPS_ALVO      60
-#define INTERVALO_MINIMO_BOSS 30000   // ms entre o fim de um boss e o próximo
+#define INTERVALO_MINIMO_BOSS 10000   // ms entre o fim de um boss e o próximo
+#define CARTAS_POR_OFERTA 3           // cartas mostradas depois de cada boss

@@ -555,8 +555,15 @@ bool Jogo::RenderizarUpgrade() {
         }
 
         {
-            SDL_Surface* s = TTF_RenderText_Blended(fontHud,
-                "A / D  —  Navegar          ENTER  —  Confirmar", 0, branco);
+            char dica[96];
+
+            if (RerollsDisponiveis() > 0)
+                sprintf_s(dica, sizeof(dica), "A / D - Navegar      ENTER - Confirmar      R - Trocar cartas (%d)",
+                    RerollsDisponiveis());
+            else
+                sprintf_s(dica, sizeof(dica), "A / D - Navegar      ENTER - Confirmar");
+
+            SDL_Surface* s = TTF_RenderText_Blended(fontHud, dica, 0, branco);
             SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
             SDL_FRect r;
             SDL_GetTextureSize(t, &r.w, &r.h);

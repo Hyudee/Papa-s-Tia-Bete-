@@ -152,13 +152,20 @@ void Jogo::ColisaoTiroBoss() {
                 if (boss.vida <= 0)
                 {
                     boss.ativo = false;
-                    inicioPausa = SDL_GetTicks();
-                    estado = UPGRADE;
-                    totalOfertaCartas = MontarOfertaCartas(cartas, ofertaCartas, NUM_CARTAS);
-                    opcaoUpgrade = 0;
                     pontos += 100;
                     bossAtivados++;
                     fimUltimoBoss = SDL_GetTicks();
+
+                    // A oferta já conta o boss que acabou de morrer
+                    totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
+                    opcaoUpgrade = 0;
+
+                    // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
+                    if (totalOfertaCartas > 0)
+                    {
+                        inicioPausa = SDL_GetTicks();
+                        estado = UPGRADE;
+                    }
                 }
             }
         }

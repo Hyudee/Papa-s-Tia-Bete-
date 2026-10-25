@@ -30,6 +30,8 @@ struct CartaDef
     const char* descricao;
     Raridade raridade;
     int maximo;         // quantas vezes pode ser pega (0 = sem limite)
+    int peso;
+    int bossesMinimos;
     int chanceOferta;   // % de aparecer na escolha (100 = sempre); regra provisória
 };
 
@@ -59,5 +61,16 @@ const CartaDef& DadosDaCarta(IdCarta id);
 
 StatsJogador CalcularStats(const ColecaoCartas& cartas);
 
-// Sorteia as cartas oferecidas após um boss (na ordem da tabela) e devolve quantas são.
-int MontarOfertaCartas(const ColecaoCartas& cartas, IdCarta* oferta, int capacidade);
+struct ChancesRaridade
+{
+    int comum;
+    int rara;
+    int epica;
+};
+
+ChancesRaridade ChancesPorBosses(int bossesDerrotados);
+
+// Sorteia cartas DIFERENTES para a escolha depois de um boss e devolve quantas são
+// (pode ser menos que 'capacidade', ou 0, se não houver cartas elegíveis).
+// 'aleatorio(limite)' devolve um inteiro em [0, limite); se for nulo, usa rand().
+int MontarOfertaCartas(const ColecaoCartas& cartas, int bossesDerrotados, IdCarta* oferta, int capacidade, int (*aleatorio)(int limite) = nullptr);

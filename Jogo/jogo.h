@@ -204,6 +204,8 @@ private:
     void AplicarCartas();
     void EscolherCarta(IdCarta id);
     SDL_Texture* ImagemDaCarta(IdCarta id) const;
+    int RerollsDisponiveis() const;
+    void RefazerOferta();
 
     // Teclado, movimento e física do jogador
     void LerTeclado();
@@ -355,4 +357,6 @@ private:
     const bool* key = nullptr;
     float playerXAnterior = 0.0f;
     float playerYAnterior = 0.0f;
+
+    int rerollsUsados = 0;      // trocas de cartas já gastas nesta partida
 };
