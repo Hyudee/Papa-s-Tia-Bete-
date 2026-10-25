@@ -647,7 +647,7 @@ void Jogo::ProcessarEventos()
         }
 
         // Atirar
-                // Atirar (um disparo por clique; o cooldown fica dentro de DispararTiro)
+        // Atirar (um disparo por clique; o cooldown fica dentro de DispararTiro)
         if (estado == JOGAR && !stun && !dano &&
             event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
             event.button.button == SDL_BUTTON_LEFT)
@@ -691,7 +691,7 @@ int Jogo::DisparosAtivos() const
 void Jogo::DispararTiro(float mouseX, float mouseY)
 {
     // Cooldown: um clique só atira se já passou o tempo mínimo desde o último disparo
-    if (SDL_GetTicks() - ultimoTiro < COOLDOWN_TIRO_BASE)
+    if (SDL_GetTicks() - ultimoTiro < (Uint64)cooldownTiro)
         return;
 
     float centroPlayerX = player.x + player.w / 2;
@@ -784,8 +784,9 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
         // O sprite aponta para a direita (0 graus)
         projeteis[i].angulo = angulo;
         projeteis[i].dano = danoBala;
+        projeteis[i].perfuracoes = perfuracoesTiro;
 
-        float velocidade = 12.0f * escalaJogo;
+        float velocidade = 12.0f * escalaJogo * velocidadeTiroPercent / 100.0f;
         projeteis[i].velX = SDL_cosf(radianos) * velocidade;
         projeteis[i].velY = SDL_sinf(radianos) * velocidade;
 

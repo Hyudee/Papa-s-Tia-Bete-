@@ -12,6 +12,12 @@ enum IdCarta
     CARTA_MAIS_BALAS,
     CARTA_TIRO_DUPLO,
     CARTA_CACADOR_BOSS,
+    CARTA_CADENCIA,
+    CARTA_BALA_PESADA,
+    CARTA_PERNAS_ACUCAR,
+    CARTA_DOCE_SORTE,
+    CARTA_GLACE,
+    CARTA_PERFURANTE,
 
     NUM_CARTAS
 };
@@ -55,6 +61,14 @@ struct StatsJogador
     int quantidadeTiros;
     bool tiroDuplo;
     bool cacadorBoss;
+    int cooldownTiro;               // ms mínimos entre dois disparos
+    int velocidadeTiroPercent;      // 100 = velocidade normal da bala
+    int velocidadeJogadorPercent;   // 100 = velocidade normal do jogador
+    int knockbackPercent;           // 100 = recuo normal ao cair no obstáculo
+    int velocidadeCoracaoPercent;   // 100 = velocidade normal do coração
+    int intervaloCoracaoPercent;    // 100 = intervalo normal entre corações (menor = mais cedo)
+    int lentidaoBossPercent;        // % de lentidão que cada acerto aplica no boss (0 = sem Glacê)
+    int perfuracoes; // Quantas perfurações a bala tem
 };
 
 const CartaDef& DadosDaCarta(IdCarta id);

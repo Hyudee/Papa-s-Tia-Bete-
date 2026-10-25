@@ -140,6 +140,14 @@ private:
     bool tiroDuplo = false;
     ColecaoCartas cartas;       // cartas escolhidas nesta partida
     bool cacadorBoss = false;
+    int cooldownTiro = COOLDOWN_TIRO_BASE;   // ms mínimos entre disparos (CADENCIA e BALA PESADA)
+    int velocidadeTiroPercent = 100;         // BALA PESADA
+    int velocidadeJogadorPercent = 100;      // PERNAS DE ACUCAR
+    int knockbackPercent = 100;              // PERNAS DE ACUCAR
+    int velocidadeCoracaoPercent = 100;      // DOCE SORTE
+    int intervaloCoracaoPercent = 100;       // DOCE SORTE
+    int lentidaoBossPercent = 0; // GLACÊ
+    int perfuracoesTiro = 0;                 // PERFURANTE
     bool atirando = false;
     bool pulando = false;
     bool aterrissando = false;
@@ -267,6 +275,7 @@ private:
     const Uint64 DURACAO_SUJO = 5000;
     const Uint64 STUN_DURACAO = 1250;
     const Uint64 DURACAO_BUFF = 10000;
+    const Uint64 DURACAO_GLACE = 1500;   // ms de lentidão do boss depois de cada acerto com Glacê
 
     // Variavéis da base
 

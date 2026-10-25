@@ -14,6 +14,12 @@ struct ResumoPartida
     int vidaMaxima;
     bool tiroDuplo;
     bool cacadorBoss;
+    int cadencia;           // quantas cartas de cada tipo (carta nova = coluna nova)
+    int balaPesada;
+    int pernasAcucar;
+    int doceSorte;
+    int glace;
+    int perfurante;
     int larguraTela;
     int alturaTela;
 };

@@ -31,13 +31,13 @@ void Jogo::MoverJogador() {
 
             if (key[SDL_SCANCODE_A])
             {
-                player.x -= speed;
+                player.x -= speed * velocidadeJogadorPercent / 100.0f;
                 olhandoDireita = false;
             }
 
             if (key[SDL_SCANCODE_D])
             {
-                player.x += speed;
+                player.x += speed * velocidadeJogadorPercent / 100.0f;
                 olhandoDireita = true;
             }
 
@@ -243,12 +243,12 @@ void Jogo::ColisaoJogadorObstaculos() {
                     // Aplica knockback
                     if (olhandoDireita)
                     {
-                        player.x -= 35.0f;
+                        player.x -= 35.0f * knockbackPercent / 100.0f;
                         velocidadeY = -3.5f;
                     }
                     else
                     {
-                        player.x += 35.0f;
+                        player.x += 35.0f * knockbackPercent / 100.0f;
                         velocidadeY = -3.5f;
                     }
 
@@ -342,6 +342,7 @@ void Jogo::SpawnarBoss() {
 
             boss.frame = 0;
             boss.ultimoFrame = SDL_GetTicks();
+            boss.lentidaoFim = 0;
             spawnBoss += 1000;
         }
     }

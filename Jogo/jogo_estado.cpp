@@ -73,6 +73,14 @@ void Jogo::AplicarCartas()
     quantidadeTiros = stats.quantidadeTiros;
     tiroDuplo = stats.tiroDuplo;
     cacadorBoss = stats.cacadorBoss;
+    cooldownTiro = stats.cooldownTiro;
+    velocidadeTiroPercent = stats.velocidadeTiroPercent;
+    velocidadeJogadorPercent = stats.velocidadeJogadorPercent;
+    knockbackPercent = stats.knockbackPercent;
+    velocidadeCoracaoPercent = stats.velocidadeCoracaoPercent;
+    intervaloCoracaoPercent = stats.intervaloCoracaoPercent;
+    lentidaoBossPercent = stats.lentidaoBossPercent;
+    perfuracoesTiro = stats.perfuracoes;
 
     danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
 }
@@ -123,6 +131,12 @@ void Jogo::RegistrarFimDePartida(const char* causa)
     resumo.vidaMaxima = vidaMaxima;
     resumo.tiroDuplo = tiroDuplo;
     resumo.cacadorBoss = cacadorBoss;
+    resumo.cadencia = cartas.Quantidade(CARTA_CADENCIA);
+    resumo.balaPesada = cartas.Quantidade(CARTA_BALA_PESADA);
+    resumo.pernasAcucar = cartas.Quantidade(CARTA_PERNAS_ACUCAR);
+    resumo.doceSorte = cartas.Quantidade(CARTA_DOCE_SORTE);
+    resumo.glace = cartas.Quantidade(CARTA_GLACE);
+    resumo.perfurante = cartas.Quantidade(CARTA_PERFURANTE);
     resumo.larguraTela = larguraTela;
     resumo.alturaTela = alturaTela;
 
@@ -181,4 +195,5 @@ void Jogo::DeslocarTimers(Uint64 delta)
     }
 
     boss.ultimoFrame += delta;
+    boss.lentidaoFim += delta;
 }

@@ -147,6 +147,14 @@ void Jogo::ColisaoTiroBoss() {
                 projeteis[j].ultimoFrame = SDL_GetTicks();
 
                 boss.vida -= projeteis[j].dano;
+
+                // Glacê Pegajoso: cada acerto renova a lentidão do boss
+                if (lentidaoBossPercent > 0)
+                {
+                    boss.lentidaoPercent = lentidaoBossPercent;
+                    boss.lentidaoFim = SDL_GetTicks() + DURACAO_GLACE;
+                }
+
                 projeteis[j].ativo = false;
 
                 if (boss.vida <= 0)
@@ -273,11 +281,20 @@ void Jogo::ColisaoProjeteisInimigos() {
                 {
                     inimigos[i].morrendo = true;
                     inimigos[i].flashInicio = SDL_GetTicks();
-                    projeteis[j].explodindo = true;
-                    projeteis[j].frame = 3;
-                    projeteis[j].velX = 0;
-                    projeteis[j].velY = 0;
-                    projeteis[j].ultimoFrame = SDL_GetTicks();
+
+                    if (projeteis[j].perfuracoes > 0)
+                    {
+                        // Perfurante: a bala atravessa este minion e segue em frente
+                        projeteis[j].perfuracoes--;
+                    }
+                    else
+                    {
+                        projeteis[j].explodindo = true;
+                        projeteis[j].frame = 3;
+                        projeteis[j].velX = 0;
+                        projeteis[j].velY = 0;
+                        projeteis[j].ultimoFrame = SDL_GetTicks();
+                    }
                     pontos += 50;
                     inimigosDerrotados++;
                 }

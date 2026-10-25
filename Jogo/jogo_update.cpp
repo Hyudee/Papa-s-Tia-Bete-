@@ -264,7 +264,7 @@ void Jogo::AtualizarSpawn() {
         }
         // Spawn de powerups
 
-        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < vidaMaxima)) {
+        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp * intervaloCoracaoPercent / 100 && (vidas < vidaMaxima)) {
             ultimoSpawnPowerUp = tempoAtual;
 
             for (int i = 0; i < MAX_POWERUPS; i++) {
@@ -282,7 +282,7 @@ void Jogo::AtualizarSpawn() {
                     vidasPowerup[i].rect.y =
                         rand() % (alturaTela - (int)vidasPowerup[i].rect.h);
 
-                    vidasPowerup[i].speed = 7.0f * escalaJogo;
+                    vidasPowerup[i].speed = 7.0f * escalaJogo * velocidadeCoracaoPercent / 100.0f;
 
                     break;
                 }
@@ -487,7 +487,13 @@ void Jogo::AtualizarBoss (){
     if (estado == JOGAR) {
             if (boss.ativo)
             {
-                boss.rect.x -= boss.speed;
+                // Glacê Pegajoso: enquanto a lentidão durar, o boss anda mais devagar
+                float fatorBoss = 1.0f;
+
+                if (SDL_GetTicks() < boss.lentidaoFim)
+                    fatorBoss = (100 - boss.lentidaoPercent) / 100.0f;
+
+                boss.rect.x -= boss.speed * fatorBoss;
 
                 if (SDL_GetTicks() - boss.ultimoFrame > 120)
                 {

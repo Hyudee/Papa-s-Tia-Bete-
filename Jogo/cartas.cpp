@@ -6,6 +6,12 @@ static const int TIROS_BASE = 3;
 static const int MAX_VIDA_EXTRA = 5;     // MAIS VIDA: vida máxima de 3 até 8
 static const int MAX_DANO_EXTRA = 7;     // MAIS DANO: dano de 1 até 8
 static const int MAX_BALAS_EXTRAS = 5;   // MAIS BALAS: de 3 até 8 tiros simultâneos
+static const int MAX_CADENCIA = 3;       // CADENCIA: -20% do tempo entre tiros por carta
+static const int MAX_BALA_PESADA = 2;    // BALA PESADA: +2 de dano por carta
+static const int MAX_PERNAS = 3;         // PERNAS DE ACUCAR: +10% de velocidade por carta
+static const int MAX_DOCE_SORTE = 2;     // DOCE SORTE: coração 35% mais lento e 25% mais cedo por carta    
+static const int MAX_GLACE = 2;          // GLACE PEGAJOSO: boss 15% mais lento por carta, -1 de dano por carta
+static const int MAX_PERFURANTE = 2;     // PERFURANTE: a bala atravessa +1 minion por carta, tiro 15% mais lento
 
 static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
 {
@@ -13,7 +19,13 @@ static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
     { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 vida max. e +1 vida",   RARIDADE_COMUM, MAX_VIDA_EXTRA,             100, 0 },
     { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_BALAS_EXTRAS,           100, 0 },
     { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_EPICA,  1,                          5,  0 },
-    { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_RARA,  1,                          20,  0 },
+    { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_EPICA,  1,                          20,  0 },
+    { CARTA_CADENCIA,     "CADENCIA",        "-20% tempo entre tiros",    RARIDADE_COMUM, MAX_CADENCIA,               100,  0 },
+    { CARTA_BALA_PESADA,  "BALA PESADA",     "+2 dano, tiro mais lento",  RARIDADE_COMUM, MAX_BALA_PESADA,            100,  0 },
+    { CARTA_PERNAS_ACUCAR,"PERNAS DE ACUCAR","+10% velocidade, mais recuo", RARIDADE_COMUM, MAX_PERNAS,                100,  0 },
+    { CARTA_DOCE_SORTE,   "DOCE SORTE",      "Coracao lento e frequente", RARIDADE_COMUM, MAX_DOCE_SORTE,             60,  0 },
+    { CARTA_GLACE,        "GLACE PEGAJOSO",  "Boss 15% mais lento, -1 dano", RARIDADE_RARA, MAX_GLACE,                 40,  0 },
+    { CARTA_PERFURANTE,   "PERFURANTE",      "Atravessa +1 inimigo, tiro lento", RARIDADE_RARA, MAX_PERFURANTE,        40,  0 },
 };
 
 const CartaDef& DadosDaCarta(IdCarta id)
@@ -54,7 +66,8 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
 
     s.danoBase = 1
         + cartas.Quantidade(CARTA_MAIS_DANO)
-        + 5 * cartas.Quantidade(CARTA_CACADOR_BOSS);
+        + 5 * cartas.Quantidade(CARTA_CACADOR_BOSS)
+        + 2 * cartas.Quantidade(CARTA_BALA_PESADA);
 
     s.vidaMaxima = MAX_VIDAS + cartas.Quantidade(CARTA_MAIS_VIDA);
 
@@ -63,6 +76,40 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
 
     s.tiroDuplo = cartas.Quantidade(CARTA_TIRO_DUPLO) > 0;
     s.cacadorBoss = cartas.Quantidade(CARTA_CACADOR_BOSS) > 0;
+
+
+    // Tempo entre tiros: CADENCIA tira 20% da base por carta, BALA PESADA põe 20% (soma de percentuais)
+    int percentualCooldown = 100
+        - 20 * cartas.Quantidade(CARTA_CADENCIA)
+        + 20 * cartas.Quantidade(CARTA_BALA_PESADA)
+        - cartas.Quantidade(CARTA_GLACE);
+
+    // Custa 1 de dano por carta, mas nunca cai pra 0
+    s.danoBase = std::max(1, s.danoBase);
+
+    s.cooldownTiro = COOLDOWN_TIRO_BASE * std::max(20, percentualCooldown) / 100;
+
+    // Bala 20% mais lenta por bala pesada e 15% por perfurante
+    s.velocidadeTiroPercent = std::max(20, 100
+        - 20 * cartas.Quantidade(CARTA_BALA_PESADA)
+        - 15 * cartas.Quantidade(CARTA_PERFURANTE));
+
+    // Jogador 10% mais rápido por PERNAS DE ACUCAR, com recuo 30% maior por carta
+    s.velocidadeJogadorPercent = 100 + 10 * cartas.Quantidade(CARTA_PERNAS_ACUCAR);
+    s.knockbackPercent = 100 + 30 * cartas.Quantidade(CARTA_PERNAS_ACUCAR);
+
+
+    // Coração 35% mais lento e nascendo 25% mais cedo por DOCE SORTE (soma de percentuais)
+    s.velocidadeCoracaoPercent = std::max(20, 100 - 35 * cartas.Quantidade(CARTA_DOCE_SORTE));
+    s.intervaloCoracaoPercent = std::max(20, 100 - 25 * cartas.Quantidade(CARTA_DOCE_SORTE));
+
+
+    // Cada acerto no boss o desacelera 15% por carta de GLACE PEGAJOSO
+    s.lentidaoBossPercent = 15 * cartas.Quantidade(CARTA_GLACE);
+
+
+    // PERFURANTE: a bala atravessa 1 minion por carta (o boss sempre para a bala)
+    s.perfuracoes = cartas.Quantidade(CARTA_PERFURANTE);
 
     return s;
 }
@@ -77,9 +124,9 @@ ChancesRaridade ChancesPorBosses(int bossesDerrotados)
 {
     ChancesRaridade c;
 
-    c.comum = std::max(40, 80 - 4 * bossesDerrotados);
-    c.rara = std::min(40, 15 + 2 * bossesDerrotados);
-    c.epica = std::min(20, 5 + 2 * bossesDerrotados);
+    c.comum = 90;
+    c.rara = 8;
+    c.epica = 2;
 
     return c;
 }
