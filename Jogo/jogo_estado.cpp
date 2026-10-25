@@ -85,9 +85,9 @@ void Jogo::EscolherCarta(IdCarta id)
 
     AplicarCartas();
 
-    // MAIS VIDA também recupera toda a vida
-    if (id == CARTA_MAIS_VIDA)
-        vidas = vidaMaxima;
+    // MAIS VIDA sobe a vida máxima em 1 e a vida atual em 1 (não recupera tudo)
+    if (id == CARTA_MAIS_VIDA && vidas < vidaMaxima)
+        vidas++;
 }
 
 // Trocas de cartas: 1 por partida, mais 1 a cada 5 bosses derrotados
@@ -106,6 +106,7 @@ void Jogo::RefazerOferta()
 
     totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
     opcaoUpgrade = 0;
+    IniciarTelaCartas();
 }
 
 // Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)

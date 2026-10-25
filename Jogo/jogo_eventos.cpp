@@ -442,24 +442,51 @@ void Jogo::ProcessarEventos()
             }
         }
 
+        // Tela de cartas: A/D ou setas e o mouse escolhem; Enter, Enter do teclado numérico
+// e clique esquerdo confirmam. Tudo travado no começo da tela e durante a confirmação.
         if (estado == UPGRADE &&
-            event.type == SDL_EVENT_KEY_DOWN)
+            InputLiberadoCartas(animCartas, SDL_GetTicks()))
         {
-            switch (event.key.key)
-            {
-            case SDLK_A: if (opcaoUpgrade > 0) { opcaoUpgrade--; } break;
-            case SDLK_D: if (opcaoUpgrade < totalOfertaCartas - 1) { opcaoUpgrade++; } break;
-            case SDLK_R: if (!event.key.repeat) RefazerOferta(); break;
+            if (event.type == SDL_EVENT_MOUSE_MOTION)
+                SelecionarCarta(CartaNaPosicao(layoutCartas, event.motion.x, event.motion.y));
 
-            case SDLK_RETURN:
+            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+                event.button.button == SDL_BUTTON_LEFT)
             {
-                if (opcaoUpgrade >= 0 && opcaoUpgrade < totalOfertaCartas)
-                    EscolherCarta(ofertaCartas[opcaoUpgrade]);
+                int clicada = CartaNaPosicao(layoutCartas, event.button.x, event.button.y);
 
-                DeslocarTimers(SDL_GetTicks() - inicioPausa);
-                estado = JOGAR;
-                break;
+                if (clicada != -1)
+                {
+                    ConfirmarCarta(clicada);
+                    continue;
+                }
             }
+
+            if (event.type == SDL_EVENT_KEY_DOWN)
+            {
+                switch (event.key.key)
+                {
+                case SDLK_A:
+                case SDLK_LEFT:
+                    SelecionarCarta(opcaoUpgrade - 1);
+                    break;
+
+                case SDLK_D:
+                case SDLK_RIGHT:
+                    SelecionarCarta(opcaoUpgrade + 1);
+                    break;
+
+                case SDLK_R:
+                    if (!event.key.repeat)
+                        RefazerOferta();
+                    break;
+
+                case SDLK_RETURN:
+                case SDLK_KP_ENTER:
+                    if (!event.key.repeat)
+                        ConfirmarCarta(opcaoUpgrade);
+                    break;
+                }
             }
         }
 

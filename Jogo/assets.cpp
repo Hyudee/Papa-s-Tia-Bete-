@@ -66,6 +66,15 @@ void Assets::Carregar(SDL_Renderer* renderer)
                 SDL_Log("Falha ao carregar a textura %s: %s", caminho, SDL_GetError());
         };
 
+    // Arte opcional: a falta do arquivo não é erro
+    auto carregarOpcional = [renderer](SdlPtr<SDL_Texture>& destino, const char* caminho)
+        {
+            destino.reset(IMG_LoadTexture(renderer, caminho));
+
+            if (!destino)
+                SDL_Log("Arte opcional ausente (%s): usando formas simples no lugar", caminho);
+        };
+
     carregar(background, "assets/cozinha.png");
     carregar(backgroundNome, "assets/background.png");
     carregar(menu, "assets/menu.png");
@@ -94,6 +103,11 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregar(upgradeImgBalas, "assets/mais_balas.png");
     carregar(upgradeImgDuplo, "assets/tiro_duplo.png");
     carregar(upgradeImgCacador, "assets/matador_de_boss.png");
+    carregarOpcional(molduraCarta[0], "assets/carta_comum.png");
+    carregarOpcional(molduraCarta[1], "assets/carta_rara.png");
+    carregarOpcional(molduraCarta[2], "assets/carta_epica.png");
+    carregarOpcional(brilhoCarta, "assets/carta_brilho.png");
+    carregarOpcional(burstCarta, "assets/carta_burst.png");
     pilulaDestaque.reset(CriarTexturaDestaque(renderer));
 
     if (!pilulaDestaque)

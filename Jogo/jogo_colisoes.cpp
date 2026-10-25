@@ -165,6 +165,7 @@ void Jogo::ColisaoTiroBoss() {
                     {
                         inicioPausa = SDL_GetTicks();
                         estado = UPGRADE;
+                        IniciarTelaCartas();
                     }
                 }
             }

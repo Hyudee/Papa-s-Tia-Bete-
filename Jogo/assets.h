@@ -35,6 +35,11 @@ struct Assets
     SdlPtr<SDL_Texture> upgradeImgDuplo;
     SdlPtr<SDL_Texture> upgradeImgCacador;
 
+    // Arte opcional da tela de cartas: se o arquivo não existir, o jogo desenha formas simples no lugar
+    SdlPtr<SDL_Texture> molduraCarta[3];   // comum, rara e épica (carta_comum.png, carta_rara.png, carta_epica.png)
+    SdlPtr<SDL_Texture> brilhoCarta;       // carta_brilho.png: 8 quadros lado a lado
+    SdlPtr<SDL_Texture> burstCarta;        // carta_burst.png: 6 quadros lado a lado
+
     // Gerada em código (sem arquivo): retângulo arredondado branco, para tingir com ColorMod
     SdlPtr<SDL_Texture> pilulaDestaque;
 

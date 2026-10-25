@@ -3,13 +3,16 @@
 #include "cartas.h"
 
 static const int TIROS_BASE = 3;
+static const int MAX_VIDA_EXTRA = 5;     // MAIS VIDA: vida máxima de 3 até 8
+static const int MAX_DANO_EXTRA = 7;     // MAIS DANO: dano de 1 até 8
+static const int MAX_BALAS_EXTRAS = 5;   // MAIS BALAS: de 3 até 8 tiros simultâneos
 
 static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
 {
-    { CARTA_MAIS_DANO,    "MAIS DANO",       "+1 de dano por tiro",       RARIDADE_COMUM, 0,                          100, 0 },
-    { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 de vida maxima",         RARIDADE_COMUM, 0,                          100, 0 },
-    { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_PROJETEIS - TIROS_BASE, 100, 0 },
-    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_RARA,  1,                          30,  0 },
+    { CARTA_MAIS_DANO,    "MAIS DANO",       "+1 de dano por tiro",       RARIDADE_COMUM, MAX_DANO_EXTRA,             100, 0 },
+    { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 vida max. e +1 vida",   RARIDADE_COMUM, MAX_VIDA_EXTRA,             100, 0 },
+    { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_BALAS_EXTRAS,           100, 0 },
+    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_EPICA,  1,                          5,  0 },
     { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_RARA,  1,                          20,  0 },
 };
 
@@ -55,7 +58,7 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
 
     s.vidaMaxima = MAX_VIDAS + cartas.Quantidade(CARTA_MAIS_VIDA);
 
-    s.tirosExtras = std::min(cartas.Quantidade(CARTA_MAIS_BALAS), MAX_PROJETEIS - TIROS_BASE);
+    s.tirosExtras = std::min(cartas.Quantidade(CARTA_MAIS_BALAS), MAX_BALAS_EXTRAS);
     s.quantidadeTiros = TIROS_BASE + s.tirosExtras;
 
     s.tiroDuplo = cartas.Quantidade(CARTA_TIRO_DUPLO) > 0;
@@ -74,8 +77,8 @@ ChancesRaridade ChancesPorBosses(int bossesDerrotados)
 {
     ChancesRaridade c;
 
-    c.comum = std::max(40, 70 - 4 * bossesDerrotados);
-    c.rara = std::min(40, 25 + 2 * bossesDerrotados);
+    c.comum = std::max(40, 80 - 4 * bossesDerrotados);
+    c.rara = std::min(40, 15 + 2 * bossesDerrotados);
     c.epica = std::min(20, 5 + 2 * bossesDerrotados);
 
     return c;

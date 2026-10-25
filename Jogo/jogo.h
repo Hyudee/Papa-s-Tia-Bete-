@@ -10,6 +10,7 @@
 #include "metricas.h"
 #include "curva.h"
 #include "cartas.h"
+#include "anim_cartas.h"
 
 // Estado e lógica do jogo.
 // As variáveis que eram locais de main() agora são membros desta classe, na mesma ordem.
@@ -231,6 +232,18 @@ private:
     bool RenderizarUpgrade();   // true = tela de upgrade tratada neste frame
     void RenderizarPause();
 
+
+    // Tela de escolha de cartas (jogo_upgrade.cpp)
+    void IniciarTelaCartas();
+    void AtualizarUpgrade();
+    void ConstruirTexturasCartas();
+    void DesenharCartaNaTextura(SDL_Texture* alvo, IdCarta id, bool destacada);
+    void EncerrarTelaCartas();
+    void ConfirmarCarta(int indice);
+    void SelecionarCarta(int indice);
+    void DesenharBrilhoCarta(const SDL_FRect& destino, Raridade raridade, float alfa, Uint64 agora);
+    void DesenharBurstCarta(const SDL_FRect& destino, Raridade raridade, int quadro);
+
     // Telas de estado (true = tela tratada neste frame)
     bool TelaMenu();
     bool TelaCreditos();
@@ -365,4 +378,17 @@ private:
     int rerollsUsados = 0;      // trocas de cartas já gastas nesta partida
     Uint64 ultimoTiro = 0;      // instante do último disparo (cooldown)
     int proximoIdDisparo = 1;   // id do próximo disparo (não é tempo, não precisa de DeslocarTimers)
+
+
+    // Tela de escolha de cartas. Fica por último de propósito: as texturas precisam ser
+    // destruídas antes do renderer. Os instantes de animCartas NÃO entram em DeslocarTimers.
+    AnimCartas animCartas;
+    LayoutCartas layoutCartas = {};
+    bool cartasProntas = false;
+    int larguraCartasConstruida = 0;
+    int alturaCartasConstruida = 0;
+    SdlPtr<SDL_Texture> cartaNormal[CARTAS_POR_OFERTA];
+    SdlPtr<SDL_Texture> cartaDestacada[CARTAS_POR_OFERTA];
+    SdlPtr<SDL_Texture> textoTituloCartas;
+    SdlPtr<SDL_Texture> textoDicaCartas;
 };

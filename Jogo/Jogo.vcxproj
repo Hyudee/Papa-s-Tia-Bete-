@@ -148,6 +148,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="anim_cartas.cpp" />
     <ClCompile Include="assets.cpp" />
     <ClCompile Include="audio.cpp" />
     <ClCompile Include="cartas.cpp" />
@@ -160,12 +161,14 @@
     <ClCompile Include="jogo_render.cpp" />
     <ClCompile Include="jogo_telas.cpp" />
     <ClCompile Include="jogo_update.cpp" />
+    <ClCompile Include="jogo_upgrade.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="metricas.cpp" />
     <ClCompile Include="ranking.cpp" />
     <ClCompile Include="texto.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="anim_cartas.h" />
     <ClInclude Include="assets.h" />
     <ClInclude Include="audio.h" />
     <ClInclude Include="botoes.h" />

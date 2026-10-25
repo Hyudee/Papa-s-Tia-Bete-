@@ -4,7 +4,7 @@
 
 #define COLUNAS      25
 #define LINHAS       19
-#define MAX_PROJETEIS 20
+#define MAX_PROJETEIS 25
 #define MAX_INIMIGOS  50
 #define MAX_VIDAS     3
 #define MAX_POWERUPS  2

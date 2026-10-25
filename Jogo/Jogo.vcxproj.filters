@@ -84,6 +84,12 @@
     <ClCompile Include="cartas.cpp">
       <Filter>src\upgrades</Filter>
     </ClCompile>
+    <ClCompile Include="anim_cartas.cpp">
+      <Filter>src\upgrades</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_upgrade.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -129,6 +135,9 @@
       <Filter>src\game</Filter>
     </ClInclude>
     <ClInclude Include="cartas.h">
+      <Filter>src\upgrades</Filter>
+    </ClInclude>
+    <ClInclude Include="anim_cartas.h">
       <Filter>src\upgrades</Filter>
     </ClInclude>
   </ItemGroup>

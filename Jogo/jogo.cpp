@@ -390,6 +390,7 @@ void Jogo::Executar()
         // RENDERIZAÇÃO
         // ------------------------------------------------------
 
+        AtualizarUpgrade();
         CalcularShake();
         RenderizarMundo();
         RenderizarHud();
