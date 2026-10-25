@@ -146,7 +146,7 @@ void Jogo::ColisaoTiroBoss() {
                 projeteis[j].velY = 0;
                 projeteis[j].ultimoFrame = SDL_GetTicks();
 
-                boss.vida -= danoTiro;
+                boss.vida -= projeteis[j].dano;
                 projeteis[j].ativo = false;
 
                 if (boss.vida <= 0)

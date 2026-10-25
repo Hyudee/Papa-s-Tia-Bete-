@@ -9,8 +9,8 @@ static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
     { CARTA_MAIS_DANO,    "MAIS DANO",       "+1 de dano por tiro",       RARIDADE_COMUM, 0,                          100, 0 },
     { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 de vida maxima",         RARIDADE_COMUM, 0,                          100, 0 },
     { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_PROJETEIS - TIROS_BASE, 100, 0 },
-    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "Atira 2 projeteis por vez", RARIDADE_RARA,  1,                          40,  0 },
-    { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_RARA,  1,                          25,  0 },
+    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_RARA,  1,                          30,  0 },
+    { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_RARA,  1,                          20,  0 },
 };
 
 const CartaDef& DadosDaCarta(IdCarta id)
@@ -62,6 +62,12 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
     s.cacadorBoss = cartas.Quantidade(CARTA_CACADOR_BOSS) > 0;
 
     return s;
+}
+
+int DanoPorBalaTiroDuplo(int dano)
+{
+    // 0,6 * dano arredondado, só com inteiros: (6 * dano + 5) / 10
+    return std::max(1, (6 * dano + 5) / 10);
 }
 
 ChancesRaridade ChancesPorBosses(int bossesDerrotados)

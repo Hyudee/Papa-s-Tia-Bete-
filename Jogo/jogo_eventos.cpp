@@ -687,6 +687,12 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
         dirX /= tamanho;
         dirY /= tamanho;
     }
+    else
+    {
+        // Cursor exatamente no centro do jogador: atira para o lado em que ele olha
+        dirX = olhandoDireita ? 1.0f : -1.0f;
+        dirY = 0.0f;
+    }
 
     atirando = true;
 
@@ -712,6 +718,10 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
 
     TocarEfeito(somTiro);
 
+    // Tiro Duplo: duas balas em leque, cada uma com dano reduzido (o dano é fixado agora)
+    float anguloMira = SDL_atan2f(dirY, dirX) * 57.29578f;   // graus
+    int danoBala = tiroDuplo ? DanoPorBalaTiroDuplo(danoTiro) : danoTiro;
+
     int criados = 0;
     for (int i = 0; i < MAX_PROJETEIS && criados < balasPorDisparo; i++)
     {
@@ -728,20 +738,29 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
         projeteis[i].rect.w = tamanhoProjetil;
         projeteis[i].rect.h = tamanhoProjetil;
 
-        // Nasce no centro do jogador, deslocado na direção do tiro
+        // Nasce no centro do jogador, deslocado na direção da mira (as duas balas saem do mesmo ponto)
         float origemX = centroPlayerX + dirX * (player.w / 2);
-        float origemY = centroPlayerY + dirY * (player.w / 2)
-            + (tiroDuplo ? (criados == 0 ? -12.0f * escalaJogo : 12.0f * escalaJogo) : 0.0f);
+        float origemY = centroPlayerY + dirY * (player.w / 2);
 
         projeteis[i].rect.x = origemX - projeteis[i].rect.w / 2;
         projeteis[i].rect.y = origemY - projeteis[i].rect.h / 2;
 
+        // Leque do Tiro Duplo: uma bala para cada lado da mira
+        float desvio = 0.0f;
+
+        if (tiroDuplo)
+            desvio = (criados == 0) ? -ANGULO_LEQUE_DUPLO : ANGULO_LEQUE_DUPLO;
+
+        float angulo = anguloMira + desvio;
+        float radianos = angulo * 0.01745329f;
+
         // O sprite aponta para a direita (0 graus)
-        projeteis[i].angulo = SDL_atan2f(dirY, dirX) * 57.29578f;
+        projeteis[i].angulo = angulo;
+        projeteis[i].dano = danoBala;
 
         float velocidade = 12.0f * escalaJogo;
-        projeteis[i].velX = dirX * velocidade;
-        projeteis[i].velY = dirY * velocidade;
+        projeteis[i].velX = SDL_cosf(radianos) * velocidade;
+        projeteis[i].velY = SDL_sinf(radianos) * velocidade;
 
         criados++;
     }

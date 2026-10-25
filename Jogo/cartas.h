@@ -68,6 +68,8 @@ struct ChancesRaridade
     int epica;
 };
 
+// Dano de cada bala do Tiro Duplo: 60% do dano (arredondado), no mínimo 1
+int DanoPorBalaTiroDuplo(int dano);
 ChancesRaridade ChancesPorBosses(int bossesDerrotados);
 
 // Sorteia cartas DIFERENTES para a escolha depois de um boss e devolve quantas são

@@ -13,4 +13,5 @@
 #define FPS_ALVO      60
 #define INTERVALO_MINIMO_BOSS 10000   // ms entre o fim de um boss e o próximo
 #define CARTAS_POR_OFERTA 3           // cartas mostradas depois de cada boss
-#define COOLDOWN_TIRO_BASE 200        // ms mínimos entre dois disparos
+#define COOLDOWN_TIRO_BASE 100        // ms mínimos entre dois disparos
+#define ANGULO_LEQUE_DUPLO 5.0f       // graus de cada bala do Tiro Duplo em relação à mira
