@@ -21,7 +21,7 @@ struct ResumoPartida
     int glace;
     int perfurante;
     int barreira;
-    int explosão;
+    int explosao;
     int furia;
     int larguraTela;
     int alturaTela;

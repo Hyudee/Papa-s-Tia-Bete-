@@ -233,10 +233,33 @@ void Jogo::ColisaoBossBase() {
                 &boss.rect
             ))
             {
-                vidas -= 3;
-                QuebrarSequenciaAbates();
-                if (vidas < 0) vidas = 0;
-                flashBase = FLASH_DANO;
+                // Barreira da Base: cada carga absorve 1 ponto do dano do boss
+                int danoBoss = DANO_BOSS_BASE;
+
+                if (barreiraCargas > 0)
+                {
+                    int absorvido = (barreiraCargas < danoBoss) ? barreiraCargas : danoBoss;
+
+                    if (barreiraCargas == barreirasMax)
+                        inicioRecargaBarreira = SDL_GetTicks();   // começa a recarregar agora
+
+                    barreiraCargas -= absorvido;
+                    danoBoss -= absorvido;
+                    TocarEfeito(somPowerup);
+                }
+
+                if (danoBoss > 0)
+                {
+                    vidas -= danoBoss;
+                    QuebrarSequenciaAbates();
+                    if (vidas < 0) vidas = 0;
+                    flashBase = FLASH_DANO;
+                }
+                else
+                {
+                    flashBase = FLASH_CURA;   // a barreira absorveu tudo
+                }
+
                 tempoFlashBase = 0.2f; // 200 ms
                 boss.ativo = false;
                 spawnBoss = pontos + 1000;
