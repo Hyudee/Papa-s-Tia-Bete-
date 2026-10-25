@@ -9,6 +9,7 @@
 #include "audio.h"
 #include "metricas.h"
 #include "curva.h"
+#include "cartas.h"
 
 // Estado e lógica do jogo.
 // As variáveis que eram locais de main() agora são membros desta classe, na mesma ordem.
@@ -136,6 +137,7 @@ private:
     const int alturaFramePowerUp = 64;
     bool noChao = true;
     bool tiroDuplo = false;
+    ColecaoCartas cartas;       // cartas escolhidas nesta partida
     bool cacadorBoss = false;
     bool atirando = false;
     bool pulando = false;
@@ -193,8 +195,15 @@ private:
     void ColisaoBossBase();
     void ColisaoProjeteisObstaculos();
     void ColisaoProjeteisInimigos();
+
+    // Fim de partida
     void RegistrarFimDePartida(const char* causa);
     void EsperarProximoFrame();
+
+    // Cartas
+    void AplicarCartas();
+    void EscolherCarta(IdCarta id);
+    SDL_Texture* ImagemDaCarta(IdCarta id) const;
 
     // Teclado, movimento e física do jogador
     void LerTeclado();
@@ -277,8 +286,8 @@ private:
     int opcaoConfig = 0;  // 0 = Tela cheia, 1 = Música, 2 = Efeitos
     int opcaoPause = 0;  // 0 = Continuar, 2 = Menu
     int opcaoUpgrade = 0;
-    bool upgradeTiroDuploDisponivel = false;
-    bool upgradeCacadordeBossDisponivel = false;
+    IdCarta ofertaCartas[NUM_CARTAS];   // cartas mostradas na tela de escolha
+    int totalOfertaCartas = 0;
     const char* opcoesPause[2] = { "Continuar", "Menu Principal" };
     float yCreditos = 0.0f;
     float shakeX = 0.0f;

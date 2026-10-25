@@ -396,6 +396,20 @@ void Jogo::RenderizarPause() {
     }
 }
 
+// Imagem de cada carta (as texturas pertencem ao Assets)
+SDL_Texture* Jogo::ImagemDaCarta(IdCarta id) const
+{
+    switch (id)
+    {
+    case CARTA_MAIS_DANO:    return upgradeImgDano;
+    case CARTA_MAIS_VIDA:    return upgradeImgVida;
+    case CARTA_MAIS_BALAS:   return upgradeImgBalas;
+    case CARTA_TIRO_DUPLO:   return upgradeImgDuplo;
+    case CARTA_CACADOR_BOSS: return upgradeImgCacador;
+    default:                 return nullptr;
+    }
+}
+
 bool Jogo::RenderizarUpgrade() {
     if (estado == UPGRADE)
     {
@@ -410,18 +424,15 @@ bool Jogo::RenderizarUpgrade() {
             SDL_Texture* img;
         };
 
-        SlotUpgrade slots[5];
-        int totalSlots = 0;
+        SlotUpgrade slots[NUM_CARTAS];
+        int totalSlots = totalOfertaCartas;
 
-        slots[totalSlots++] = { "MAIS DANO",      "+1 de dano por tiro",      upgradeImgDano };
-        slots[totalSlots++] = { "MAIS VIDA",      "+1 de vida maxima",         upgradeImgVida };
-        slots[totalSlots++] = { "MAIS BALAS",     "+1 projetil simultaneo",    upgradeImgBalas };
+        for (int i = 0; i < totalSlots; i++)
+        {
+            const CartaDef& carta = DadosDaCarta(ofertaCartas[i]);
 
-        if (upgradeTiroDuploDisponivel)
-            slots[totalSlots++] = { "TIRO DUPLO",      "Atira 2 projeteis por vez", upgradeImgDuplo };
-
-        if (upgradeCacadordeBossDisponivel)
-            slots[totalSlots++] = { "CACADOR DE BOSS", "+5 de dano nos bosses",     upgradeImgCacador };
+            slots[i] = { carta.nome, carta.descricao, ImagemDaCarta(ofertaCartas[i]) };
+        }
 
         const float CARTA_W = larguraTela * 0.14f;
         const float CARTA_H = alturaTela * 0.62f;

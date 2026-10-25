@@ -31,6 +31,9 @@
     <Filter Include="src\ui">
       <UniqueIdentifier>{f8d84f1c-af04-4f18-90fe-1392d1088c1d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\upgrades">
+      <UniqueIdentifier>{0de2ee2c-83ea-49a8-b076-dc8a07e964ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ranking.cpp">
@@ -78,6 +81,9 @@
     <ClCompile Include="metricas.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
+    <ClCompile Include="cartas.cpp">
+      <Filter>src\upgrades</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -121,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="curva.h">
       <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="cartas.h">
+      <Filter>src\upgrades</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

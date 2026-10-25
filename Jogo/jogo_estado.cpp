@@ -28,15 +28,10 @@ void Jogo::ReiniciarPartida()
     intervaloSpawn = IntervaloSpawn(ondas);
 
     // Upgrades
-    tiroDuplo = false;
-    cacadorBoss = false;
-    danoTiro = 1;
-    danoTiroBase = 1;
-    tirosExtras = 0;
-    quantidadeTiros = 3;
+    cartas.Limpar();
     ataqueBuff = false;
-    upgradeTiroDuploDisponivel = false;
-    upgradeCacadordeBossDisponivel = false;
+    AplicarCartas();
+    totalOfertaCartas = 0;
 
     // Boss
     boss = { 0 };
@@ -61,6 +56,34 @@ void Jogo::ReiniciarPartida()
     memset(obstaculos, 0, sizeof(obstaculos));
 
     metricas.IniciarPartida();
+}
+
+// Recalcula tudo que as cartas mudam a partir da coleção de cartas
+void Jogo::AplicarCartas()
+{
+    StatsJogador stats = CalcularStats(cartas);
+
+    danoTiroBase = stats.danoBase;
+    vidaMaxima = stats.vidaMaxima;
+    tirosExtras = stats.tirosExtras;
+    quantidadeTiros = stats.quantidadeTiros;
+    tiroDuplo = stats.tiroDuplo;
+    cacadorBoss = stats.cacadorBoss;
+
+    danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
+}
+
+// Aplica a carta escolhida na tela de upgrade
+void Jogo::EscolherCarta(IdCarta id)
+{
+    if (!cartas.Adicionar(id))
+        return;
+
+    AplicarCartas();
+
+    // MAIS VIDA também recupera toda a vida
+    if (id == CARTA_MAIS_VIDA)
+        vidas = vidaMaxima;
 }
 
 // Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)

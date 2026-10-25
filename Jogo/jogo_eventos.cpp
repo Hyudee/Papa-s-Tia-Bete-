@@ -445,55 +445,15 @@ void Jogo::ProcessarEventos()
         if (estado == UPGRADE &&
             event.type == SDL_EVENT_KEY_DOWN)
         {
-            int maxOpcao = 2
-                + (upgradeTiroDuploDisponivel ? 1 : 0)
-                + (upgradeCacadordeBossDisponivel ? 1 : 0);
-
             switch (event.key.key)
             {
             case SDLK_A: if (opcaoUpgrade > 0) { opcaoUpgrade--; } break;
-            case SDLK_D: if (opcaoUpgrade < maxOpcao) { opcaoUpgrade++; } break;
+            case SDLK_D: if (opcaoUpgrade < totalOfertaCartas - 1) { opcaoUpgrade++; } break;
 
             case SDLK_RETURN:
             {
-                int idxDano = 0;
-                int idxVida = 1;
-                int idxBalas = 2;
-                int idxDuplo = upgradeTiroDuploDisponivel ? 3 : -1;
-                int idxCacador = upgradeCacadordeBossDisponivel
-                    ? 3 + (upgradeTiroDuploDisponivel ? 1 : 0)
-                    : -1;
-
-                if (opcaoUpgrade == idxDano)
-                {
-                    danoTiroBase += 1;
-                    danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
-                }
-                else if (opcaoUpgrade == idxVida)
-                {
-                    vidaMaxima++;
-                    vidas = vidaMaxima;
-                }
-                else if (opcaoUpgrade == idxBalas)
-                {
-                    if (quantidadeTiros < MAX_PROJETEIS)
-                    {
-                        tirosExtras++;
-                        quantidadeTiros = 3 + tirosExtras;
-                        if (quantidadeTiros > MAX_PROJETEIS)
-                            quantidadeTiros = MAX_PROJETEIS;
-                    }
-                }
-                else if (idxDuplo != -1 && opcaoUpgrade == idxDuplo)
-                {
-                    tiroDuplo = true;
-                }
-                else if (idxCacador != -1 && opcaoUpgrade == idxCacador)
-                {
-                    cacadorBoss = true;
-                    danoTiroBase += 5;
-                    danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
-                }
+                if (opcaoUpgrade >= 0 && opcaoUpgrade < totalOfertaCartas)
+                    EscolherCarta(ofertaCartas[opcaoUpgrade]);
 
                 DeslocarTimers(SDL_GetTicks() - inicioPausa);
                 estado = JOGAR;

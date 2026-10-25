@@ -150,6 +150,7 @@
   <ItemGroup>
     <ClCompile Include="assets.cpp" />
     <ClCompile Include="audio.cpp" />
+    <ClCompile Include="cartas.cpp" />
     <ClCompile Include="escala.cpp" />
     <ClCompile Include="jogo.cpp" />
     <ClCompile Include="jogo_colisoes.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="assets.h" />
     <ClInclude Include="audio.h" />
     <ClInclude Include="botoes.h" />
+    <ClInclude Include="cartas.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="curva.h" />
     <ClInclude Include="escala.h" />

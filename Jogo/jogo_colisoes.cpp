@@ -154,8 +154,7 @@ void Jogo::ColisaoTiroBoss() {
                     boss.ativo = false;
                     inicioPausa = SDL_GetTicks();
                     estado = UPGRADE;
-                    upgradeTiroDuploDisponivel = !tiroDuplo && (rand() % 100 < 25);
-                    upgradeCacadordeBossDisponivel = !cacadorBoss && (rand() % 100 < 5);
+                    totalOfertaCartas = MontarOfertaCartas(cartas, ofertaCartas, NUM_CARTAS);
                     opcaoUpgrade = 0;
                     pontos += 100;
                     bossAtivados++;
