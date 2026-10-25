@@ -33,6 +33,8 @@ void Jogo::ReiniciarPartida()
     AplicarCartas();
     totalOfertaCartas = 0;
     rerollsUsados = 0;
+    barreiraCargas = 0;
+    inicioRecargaBarreira = SDL_GetTicks();
 
     // Tiros
     ultimoTiro = SDL_GetTicks();
@@ -81,6 +83,7 @@ void Jogo::AplicarCartas()
     intervaloCoracaoPercent = stats.intervaloCoracaoPercent;
     lentidaoBossPercent = stats.lentidaoBossPercent;
     perfuracoesTiro = stats.perfuracoes;
+    barreirasMax = stats.barreiras;
 
     danoTiro = ataqueBuff ? danoTiroBase * 2 : danoTiroBase;
 }
@@ -96,6 +99,11 @@ void Jogo::EscolherCarta(IdCarta id)
     // MAIS VIDA sobe a vida máxima em 1 e a vida atual em 1 (não recupera tudo)
     if (id == CARTA_MAIS_VIDA && vidas < vidaMaxima)
         vidas++;
+
+
+    // BARREIRA DA BASE: a carta nova ja vem carregada
+    if (id == CARTA_BARREIRA && barreiraCargas < barreirasMax)
+        barreiraCargas++;
 }
 
 // Trocas de cartas: 1 por partida, mais 1 a cada 5 bosses derrotados
@@ -115,6 +123,22 @@ void Jogo::RefazerOferta()
     totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
     opcaoUpgrade = 0;
     IniciarTelaCartas();
+}
+
+// Recarga da Barreira, fim da Fúria e fim das explosões (chamado a cada quadro)
+void Jogo::AtualizarEfeitosDasCartas()
+{
+    if (estado != JOGAR)
+        return;
+
+    Uint64 agora = SDL_GetTicks();
+
+    // Barreira: recupera 1 carga a cada RECARGA_BARREIRA enquanto faltar alguma
+    if (barreiraCargas < barreirasMax && agora - inicioRecargaBarreira >= RECARGA_BARREIRA)
+    {
+        barreiraCargas++;
+        inicioRecargaBarreira = agora;
+    }
 }
 
 // Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)
@@ -137,6 +161,7 @@ void Jogo::RegistrarFimDePartida(const char* causa)
     resumo.doceSorte = cartas.Quantidade(CARTA_DOCE_SORTE);
     resumo.glace = cartas.Quantidade(CARTA_GLACE);
     resumo.perfurante = cartas.Quantidade(CARTA_PERFURANTE);
+    resumo.barreira = cartas.Quantidade(CARTA_BARREIRA);
     resumo.larguraTela = larguraTela;
     resumo.alturaTela = alturaTela;
 
@@ -166,6 +191,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
     inicioAterrissagem += delta;
     shakeInicio += delta;
     ultimoTiro += delta;
+    inicioRecargaBarreira += delta;
 
     // Animações
     ultimoFramePlayer += delta;

@@ -12,6 +12,7 @@ static const int MAX_PERNAS = 3;         // PERNAS DE ACUCAR: +10% de velocidade
 static const int MAX_DOCE_SORTE = 2;     // DOCE SORTE: coração 35% mais lento e 25% mais cedo por carta    
 static const int MAX_GLACE = 2;          // GLACE PEGAJOSO: boss 15% mais lento por carta, -1 de dano por carta
 static const int MAX_PERFURANTE = 2;     // PERFURANTE: a bala atravessa +1 minion por carta, tiro 15% mais lento
+static const int MAX_BARREIRA = 2;       // BARREIRA DA BASE: +1 carga por carta, jogador 10% mais lento por carta
 
 static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
 {
@@ -26,6 +27,7 @@ static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
     { CARTA_DOCE_SORTE,   "DOCE SORTE",      "Coracao lento e frequente", RARIDADE_COMUM, MAX_DOCE_SORTE,             60,  0 },
     { CARTA_GLACE,        "GLACE PEGAJOSO",  "Boss 15% mais lento, -1 dano", RARIDADE_RARA, MAX_GLACE,                 40,  0 },
     { CARTA_PERFURANTE,   "PERFURANTE",      "Atravessa +1 inimigo, tiro lento", RARIDADE_RARA, MAX_PERFURANTE,        40,  0 },
+    { CARTA_BARREIRA,     "BARREIRA DA BASE", "Bloqueia 1 minion, recarga 25s", RARIDADE_RARA, MAX_BARREIRA,         35,  0 },
 };
 
 const CartaDef& DadosDaCarta(IdCarta id)
@@ -67,7 +69,8 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
     s.danoBase = 1
         + cartas.Quantidade(CARTA_MAIS_DANO)
         + 5 * cartas.Quantidade(CARTA_CACADOR_BOSS)
-        + 2 * cartas.Quantidade(CARTA_BALA_PESADA);
+        + 2 * cartas.Quantidade(CARTA_BALA_PESADA)
+        - cartas.Quantidade(CARTA_GLACE);
 
     s.vidaMaxima = MAX_VIDAS + cartas.Quantidade(CARTA_MAIS_VIDA);
 
@@ -81,8 +84,7 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
     // Tempo entre tiros: CADENCIA tira 20% da base por carta, BALA PESADA põe 20% (soma de percentuais)
     int percentualCooldown = 100
         - 20 * cartas.Quantidade(CARTA_CADENCIA)
-        + 20 * cartas.Quantidade(CARTA_BALA_PESADA)
-        - cartas.Quantidade(CARTA_GLACE);
+        + 20 * cartas.Quantidade(CARTA_BALA_PESADA);
 
     // Custa 1 de dano por carta, mas nunca cai pra 0
     s.danoBase = std::max(1, s.danoBase);
@@ -95,7 +97,11 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
         - 15 * cartas.Quantidade(CARTA_PERFURANTE));
 
     // Jogador 10% mais rápido por PERNAS DE ACUCAR, com recuo 30% maior por carta
-    s.velocidadeJogadorPercent = 100 + 10 * cartas.Quantidade(CARTA_PERNAS_ACUCAR);
+    // BARREIRA DA BASE custa 10% de velocidade por carta (soma de percentuais)
+    s.velocidadeJogadorPercent = std::max(20, 100
+        + 10 * cartas.Quantidade(CARTA_PERNAS_ACUCAR)
+        - 10 * cartas.Quantidade(CARTA_BARREIRA));
+
     s.knockbackPercent = 100 + 30 * cartas.Quantidade(CARTA_PERNAS_ACUCAR);
 
 
@@ -110,6 +116,10 @@ StatsJogador CalcularStats(const ColecaoCartas& cartas)
 
     // PERFURANTE: a bala atravessa 1 minion por carta (o boss sempre para a bala)
     s.perfuracoes = cartas.Quantidade(CARTA_PERFURANTE);
+
+
+    // BARREIRA DA BASE: cada carta guarda 1 carga
+    s.barreiras = cartas.Quantidade(CARTA_BARREIRA);
 
     return s;
 }

@@ -191,6 +191,20 @@ void Jogo::ColisaoBaseInimigos() {
                     &base,
                     &inimigos[i].rect))
                 {
+                    // Barreira da Base: gasta uma carga e o minion some sem ferir a base
+                    if (barreiraCargas > 0)
+                    {
+                        if (barreiraCargas == barreirasMax)
+                            inicioRecargaBarreira = SDL_GetTicks();   // começa a recarregar agora
+
+                        barreiraCargas--;
+                        flashBase = FLASH_CURA;
+                        tempoFlashBase = 0.2f;
+                        inimigos[i].ativo = false;
+                        TocarEfeito(somPowerup);
+                        continue;
+                    }
+
                     vidas--;
                     flashBase = FLASH_DANO;
                     tempoFlashBase = 0.2f; // 200 ms
@@ -297,6 +311,7 @@ void Jogo::ColisaoProjeteisInimigos() {
                     }
                     pontos += 50;
                     inimigosDerrotados++;
+                    break;
                 }
             }
         }

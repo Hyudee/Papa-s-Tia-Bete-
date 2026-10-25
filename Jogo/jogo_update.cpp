@@ -194,6 +194,8 @@ void Jogo::AtualizarAnimacoes()
 
 void Jogo::AtualizarOndasEBuffs()
 {
+    AtualizarEfeitosDasCartas();
+
     if (estado == JOGAR && SDL_GetTicks() - inicioOnda >= 30000)
     {
         ondas++;

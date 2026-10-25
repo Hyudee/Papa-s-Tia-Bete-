@@ -349,6 +349,43 @@ void Jogo::RenderizarHud() {
         buffRect.y = 50;
         SDL_RenderTexture(renderer, texturaBuff, NULL, &buffRect);
     }
+
+
+    // Em Pause/Upgrade o relógio dos indicadores fica parado em inicioPausa
+    Uint64 agora = (estado == JOGAR) ? SDL_GetTicks() : inicioPausa;
+
+    // Barreira da Base: uma caixa por carga (azul = carregada) e barra de recarga
+    if (barreirasMax > 0)
+    {
+        for (int i = 0; i < barreirasMax; i++)
+        {
+            SDL_FRect caixa = { 10.0f + i * 34.0f, 90.0f, 28.0f, 14.0f };
+
+            if (i < barreiraCargas)
+                SDL_SetRenderDrawColor(renderer, 90, 170, 255, 255);
+            else
+                SDL_SetRenderDrawColor(renderer, 50, 60, 80, 255);
+
+            SDL_RenderFillRect(renderer, &caixa);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderRect(renderer, &caixa);
+        }
+
+        if (barreiraCargas < barreirasMax)
+        {
+            float decorrido = (agora > inicioRecargaBarreira) ? (float)(agora - inicioRecargaBarreira) : 0.0f;
+            float progresso = SDL_min(1.0f, decorrido / (float)RECARGA_BARREIRA);
+            float larguraTotal = barreirasMax * 34.0f - 6.0f;
+
+            SDL_FRect fundo = { 10.0f, 108.0f, larguraTotal, 4.0f };
+            SDL_FRect cheio = { 10.0f, 108.0f, larguraTotal * progresso, 4.0f };
+
+            SDL_SetRenderDrawColor(renderer, 50, 60, 80, 255);
+            SDL_RenderFillRect(renderer, &fundo);
+            SDL_SetRenderDrawColor(renderer, 90, 170, 255, 255);
+            SDL_RenderFillRect(renderer, &cheio);
+        }
+    }
 }
 
 void Jogo::RenderizarPause() {

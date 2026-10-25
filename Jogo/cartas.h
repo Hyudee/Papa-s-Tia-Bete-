@@ -18,6 +18,7 @@ enum IdCarta
     CARTA_DOCE_SORTE,
     CARTA_GLACE,
     CARTA_PERFURANTE,
+    CARTA_BARREIRA,
 
     NUM_CARTAS
 };
@@ -69,6 +70,7 @@ struct StatsJogador
     int intervaloCoracaoPercent;    // 100 = intervalo normal entre corações (menor = mais cedo)
     int lentidaoBossPercent;        // % de lentidão que cada acerto aplica no boss (0 = sem Glacê)
     int perfuracoes; // Quantas perfurações a bala tem
+    int barreiras;               // cargas máximas da Barreira da Base (0 = sem a carta)
 };
 
 const CartaDef& DadosDaCarta(IdCarta id);

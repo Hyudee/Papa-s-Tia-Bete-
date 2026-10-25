@@ -20,6 +20,7 @@ struct ResumoPartida
     int doceSorte;
     int glace;
     int perfurante;
+    int barreira;
     int larguraTela;
     int alturaTela;
 };

@@ -147,7 +147,8 @@ private:
     int velocidadeCoracaoPercent = 100;      // DOCE SORTE
     int intervaloCoracaoPercent = 100;       // DOCE SORTE
     int lentidaoBossPercent = 0; // GLACÊ
-    int perfuracoesTiro = 0;                 // PERFURANTE
+    int perfuracoesTiro = 0;                 // PERFURANTE4
+    int barreirasMax = 0;                    // BARREIRA DA BASE (cargas máximas)
     bool atirando = false;
     bool pulando = false;
     bool aterrissando = false;
@@ -219,6 +220,7 @@ private:
     SDL_Texture* ImagemDaCarta(IdCarta id) const;
     int RerollsDisponiveis() const;
     void RefazerOferta();
+    void AtualizarEfeitosDasCartas();   // recarga da Barreira, fim da Furia e das explosoes
 
     // Teclado, movimento e física do jogador
     void LerTeclado();
@@ -276,6 +278,7 @@ private:
     const Uint64 STUN_DURACAO = 1250;
     const Uint64 DURACAO_BUFF = 10000;
     const Uint64 DURACAO_GLACE = 1500;   // ms de lentidão do boss depois de cada acerto com Glacê
+    const Uint64 RECARGA_BARREIRA = 25000;   // ms para recuperar 1 carga da Barreira
 
     // Variavéis da base
 
@@ -385,6 +388,11 @@ private:
     float playerYAnterior = 0.0f;
 
     int rerollsUsados = 0;      // trocas de cartas já gastas nesta partida
+
+    // Estado das cartas Barreira, Fúria e Explosão (os instantes entram em DeslocarTimers)
+    int barreiraCargas = 0;
+    Uint64 inicioRecargaBarreira = 0;
+
     Uint64 ultimoTiro = 0;      // instante do último disparo (cooldown)
     int proximoIdDisparo = 1;   // id do próximo disparo (não é tempo, não precisa de DeslocarTimers)
 
