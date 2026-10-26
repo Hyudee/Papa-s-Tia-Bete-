@@ -9,6 +9,7 @@
 #include "audio.h"
 #include "metricas.h"
 #include "curva.h"
+#include "inimigos.h"
 #include "cartas.h"
 #include "anim_cartas.h"
 
@@ -108,7 +109,8 @@ private:
     SDL_Texture* baseTexture;
 
     // Texturas das cartas de upgrade
-    SDL_Texture* upgradeImgDano;
+    SDL_Texture* 
+        Dano;
     SDL_Texture* upgradeImgVida;
     SDL_Texture* upgradeImgBalas;
     SDL_Texture* upgradeImgDuplo;
@@ -208,7 +210,7 @@ private:
     void AtualizarSpawn();
     void AtualizarProjeteis();
     void AtualizarInimigos();
-    void AtualizarPowerups();
+    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga    void AtualizarPowerups();
     void AtualizarBoss();
     void AtualizarObstaculos();
 

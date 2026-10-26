@@ -320,8 +320,19 @@ void Jogo::ColisaoProjeteisInimigos() {
                     &inimigos[i].rect,
                     &projeteis[j].rect))
                 {
-                    inimigos[i].morrendo = true;
-                    inimigos[i].flashInicio = SDL_GetTicks();
+                    // O tiro causa dano; o minion so morre quando a vida chega a 0
+                    inimigos[i].vida -= projeteis[j].dano;
+                    bool morreu = inimigos[i].vida <= 0;
+
+                    if (morreu)
+                    {
+                        inimigos[i].morrendo = true;
+                        inimigos[i].flashInicio = SDL_GetTicks();
+                    }
+                    else
+                    {
+                        inimigos[i].hitInicio = SDL_GetTicks();
+                    }
 
                     if (projeteis[j].perfuracoes > 0)
                     {
@@ -336,7 +347,10 @@ void Jogo::ColisaoProjeteisInimigos() {
                         projeteis[j].velY = 0;
                         projeteis[j].ultimoFrame = SDL_GetTicks();
                     }
-                    pontos += 50;
+                    if (!morreu)
+                        break;      // so levou dano: sem pontos, sem abate, sem explosao
+
+                    pontos += DadosDoInimigo(inimigos[i].tipo).pontos;
                     inimigosDerrotados++;
                     RegistrarAbate();
 

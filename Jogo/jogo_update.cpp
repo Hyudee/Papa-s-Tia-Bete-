@@ -238,30 +238,13 @@ void Jogo::AtualizarSpawn() {
 
             for (int s = 0; s < quantidadeSpawn; s++)
             {
-                for (int i = 0; i < MAX_INIMIGOS; i++)
-                {
-                    if (!inimigos[i].ativo)
-                    {
-                        inimigos[i].ativo = true;
-                        inimigos[i].frame = 0;
-                        inimigos[i].ultimoFrame = SDL_GetTicks();
+                TipoInimigo tipo = SortearTipoInimigo(ondas);
+                float altura = tamanhoInimigo * DadosDoInimigo(tipo).fatorTamanho;
 
-                        inimigos[i].rect.w = tamanhoInimigo;
-                        inimigos[i].rect.h = tamanhoInimigo;
+                float x = larguraTela + (s * 70) + (rand() % 20);
+                float y = (float)(rand() % (alturaTela - (int)altura));
 
-                        inimigos[i].speed = VelocidadeInimigo(ondas) * escalaJogo;
-
-                        inimigos[i].rect.x = larguraTela + (s * 70) + (rand() % 20);
-
-                        inimigos[i].rect.y =
-                            (rand() % (alturaTela - (int)inimigos[i].rect.h));
-
-                        if (spam)
-                            inimigos[i].speed += 0.5f * escalaJogo;
-
-                        break;
-                    }
-                }
+                SpawnarInimigo(tipo, x, y);
             }
         }
         // Spawn do coração (powerup de vida)
@@ -417,6 +400,40 @@ void Jogo::AtualizarProjeteis() {
             }
         }
     }
+}
+
+bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
+{
+    const DadosInimigo& dados = DadosDoInimigo(tipo);
+
+    for (int i = 0; i < MAX_INIMIGOS; i++)
+    {
+        if (inimigos[i].ativo)
+            continue;
+
+        inimigos[i].ativo = true;
+        inimigos[i].morrendo = false;
+        inimigos[i].tipo = tipo;
+        inimigos[i].vida = dados.vida;
+        inimigos[i].vidaMax = dados.vida;
+        inimigos[i].hitInicio = 0;
+        inimigos[i].frame = 0;
+        inimigos[i].ultimoFrame = SDL_GetTicks();
+
+        inimigos[i].rect.w = tamanhoInimigo * dados.fatorTamanho;
+        inimigos[i].rect.h = tamanhoInimigo * dados.fatorTamanho;
+        inimigos[i].rect.x = x;
+        inimigos[i].rect.y = y;
+
+        inimigos[i].speed = VelocidadeInimigo(ondas) * dados.fatorVelocidade * escalaJogo;
+
+        if (spam)
+            inimigos[i].speed += 0.5f * escalaJogo;
+
+        return true;
+    }
+
+    return false;
 }
 
 void Jogo::AtualizarInimigos() {

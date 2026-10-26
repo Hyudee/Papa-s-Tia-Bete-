@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include "inimigos.h"
 
 // Enums e structs do jogo
 
@@ -31,6 +32,11 @@ typedef struct
 
     bool   morrendo;
     Uint64 flashInicio;
+
+    TipoInimigo tipo;       // 0 = comum (precisa ser zero por causa do memset)
+    int    vida;            // golpes que ainda aguenta
+    int    vidaMax;
+    Uint64 hitInicio;       // instante do ultimo golpe que NAO matou (flash de acerto, Lote 13b)
 } Inimigo;
 
 typedef struct

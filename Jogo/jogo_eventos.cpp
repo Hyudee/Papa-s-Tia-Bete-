@@ -583,8 +583,8 @@ void Jogo::ProcessarEventos()
             {
                 if (inimigos[i].ativo)
                 {
-                    inimigos[i].rect.w = tamanhoInimigo;
-                    inimigos[i].rect.h = tamanhoInimigo;
+                    inimigos[i].rect.w = tamanhoInimigo * DadosDoInimigo(inimigos[i].tipo).fatorTamanho;
+                    inimigos[i].rect.h = tamanhoInimigo * DadosDoInimigo(inimigos[i].tipo).fatorTamanho;
                     inimigos[i].rect.x -= inimigos[i].speed;
 
                 }

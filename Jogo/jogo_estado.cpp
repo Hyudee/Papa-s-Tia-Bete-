@@ -214,6 +214,7 @@ void Jogo::ExplodirAcucar(float centroX, float centroY)
         {
             inimigos[i].morrendo = true;
             inimigos[i].flashInicio = agora;
+            inimigos[i].vida = 0;   // a explosao mata qualquer tipo
         }
     }
 
@@ -298,6 +299,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
     {
         inimigos[i].ultimoFrame += delta;
         inimigos[i].flashInicio += delta;
+        inimigos[i].hitInicio += delta;
     }
 
     for (int i = 0; i < MAX_PROJETEIS; i++)
