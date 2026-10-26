@@ -31,13 +31,13 @@ void Jogo::MoverJogador() {
 
             if (key[SDL_SCANCODE_A])
             {
-                player.x -= speed;
+                player.x -= speed * velocidadeJogadorPercent / 100.0f;
                 olhandoDireita = false;
             }
 
             if (key[SDL_SCANCODE_D])
             {
-                player.x += speed;
+                player.x += speed * velocidadeJogadorPercent / 100.0f;
                 olhandoDireita = true;
             }
 
@@ -243,12 +243,12 @@ void Jogo::ColisaoJogadorObstaculos() {
                     // Aplica knockback
                     if (olhandoDireita)
                     {
-                        player.x -= 35.0f;
+                        player.x -= 35.0f * knockbackPercent / 100.0f;
                         velocidadeY = -3.5f;
                     }
                     else
                     {
-                        player.x += 35.0f;
+                        player.x += 35.0f * knockbackPercent / 100.0f;
                         velocidadeY = -3.5f;
                     }
 
@@ -318,7 +318,8 @@ void Jogo::AtualizarTexturaPontos() {
 
 void Jogo::SpawnarBoss() {
     if (estado == JOGAR) {
-        if (!boss.ativo && pontos >= spawnBoss) {
+        if (!boss.ativo && pontos >= spawnBoss &&
+            SDL_GetTicks() - fimUltimoBoss >= INTERVALO_MINIMO_BOSS) {
             boss.ativo = true;
 
             shakeDuracao = 600.0f;
@@ -334,13 +335,14 @@ void Jogo::SpawnarBoss() {
             if (maxYBoss < 0) maxYBoss = 0;
             boss.rect.y = (float)(rand() % (int)(maxYBoss + 1));
 
-            boss.speed = 1.5f + (bossAtivados * 0.5f) * escalaJogo;
+            boss.speed = 1.5f + BossVelocidadeExtra(bossAtivados) * escalaJogo;
 
-            boss.vidaMax = 60 + (bossAtivados * 5);
+            boss.vidaMax = BossVidaMax(bossAtivados);
             boss.vida = boss.vidaMax;
 
             boss.frame = 0;
             boss.ultimoFrame = SDL_GetTicks();
+            boss.lentidaoFim = 0;
             spawnBoss += 1000;
         }
     }

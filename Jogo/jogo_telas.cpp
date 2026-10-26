@@ -45,8 +45,19 @@ bool Jogo::TelaMenu()
         SDL_RenderTexture(renderer, creditos, NULL, &botaoCreditos);
         SDL_RenderTexture(renderer, sair, NULL, &botaoSair);
 
+        // Destaque arredondado do item (teclado ou mouse)
+        const SDL_FRect* destaque = RetanguloItemMenu(itemMenu);
+
+        if (destaque)
+        {
+            if (itemMenu < 3)
+                DesenharDestaque(*destaque, 8.0f, 6.0f, corDestaqueOuro);   // botões
+            else
+                DesenharDestaque(*destaque, 4.0f, 4.0f, corDestaqueOuro);   // abas
+        }
+
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -59,7 +70,17 @@ bool Jogo::TelaCreditos()
 
         SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
 
-        yCreditos -= 1.0f;
+        // Rolagem rápida: segurar Espaço ou seta para baixo
+        const bool* teclasCreditos = SDL_GetKeyboardState(NULL);
+        float velocidadeCreditos = 1.0f;
+
+        if (teclasCreditos[SDL_SCANCODE_SPACE] ||
+            teclasCreditos[SDL_SCANCODE_DOWN])
+        {
+            velocidadeCreditos = 4.0f;
+        }
+
+        yCreditos -= velocidadeCreditos;
 
         // Textos
 
@@ -160,7 +181,7 @@ bool Jogo::TelaCreditos()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -200,7 +221,7 @@ bool Jogo::TelaRanking()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -231,10 +252,114 @@ bool Jogo::TelaDigitarNome()
             (float)(larguraTela / 2), 260);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
+}
+
+// Limpa a janela inteira de preto (inclusive as tarjas do letterbox) e depois pinta
+// a área do jogo com a cor de desenho atual, como o SDL_RenderClear fazia antes.
+void Jogo::LimparTela()
+{
+    Uint8 corR, corG, corB, corA;
+    SDL_GetRenderDrawColor(renderer, &corR, &corG, &corB, &corA);
+
+    SDL_BlendMode modoBlend;
+    SDL_GetRenderDrawBlendMode(renderer, &modoBlend);
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_FRect areaJogo = { 0.0f, 0.0f, (float)larguraTela, (float)alturaTela };
+
+    SDL_SetRenderDrawColor(renderer, corR, corG, corB, corA);
+    SDL_RenderFillRect(renderer, &areaJogo);
+
+    SDL_SetRenderDrawBlendMode(renderer, modoBlend);
+}
+
+// Retângulo arredondado translúcido atrás de uma opção (textura gerada em código)
+void Jogo::DesenharDestaque(const SDL_FRect& alvo, float margemX, float margemY, SDL_Color cor) const
+{
+    SDL_Texture* textura = assets.pilulaDestaque.get();
+
+    if (!textura)
+        return;
+
+    SDL_FRect destino = {
+        alvo.x - margemX,
+        alvo.y - margemY,
+        alvo.w + 2.0f * margemX,
+        alvo.h + 2.0f * margemY
+    };
+
+    // O raio dos cantos diminui em alvos finos (ex.: abas) para não se sobrepor
+    float canto = SDL_min(24.0f, SDL_min(destino.w, destino.h) / 2.0f);
+
+    // Pulso suave de opacidade
+    float pulso = 0.5f + 0.5f * SDL_sinf((float)SDL_GetTicks() * 0.006f);
+
+    SDL_SetTextureColorMod(textura, cor.r, cor.g, cor.b);
+    SDL_SetTextureAlphaMod(textura, (Uint8)(115.0f + 40.0f * pulso));
+
+    SDL_RenderTexture9Grid(renderer, textura, NULL,
+        24.0f, 24.0f, 24.0f, 24.0f, canto / 24.0f, &destino);
+}
+
+// O clique vale na área do destaque (texto + margens)
+bool Jogo::MouseNaOpcao(float x, float y, const SDL_FRect& textoOpcao) const
+{
+    SDL_FRect area = {
+        textoOpcao.x - margemDestaqueX,
+        textoOpcao.y - margemDestaqueY,
+        textoOpcao.w + 2.0f * margemDestaqueX,
+        textoOpcao.h + 2.0f * margemDestaqueY
+    };
+
+    return MouseNoBotao(x, y, area);
+}
+
+SDL_FRect Jogo::RetanguloOpcaoPause(int i) const
+{
+    // Mesma posição usada para desenhar o texto em RenderizarPause
+    return MedirTextoCentrado(font, opcoesPause[i],
+        larguraTela * 0.5f,
+        alturaTela * 0.18f + 120.0f + i * 70.0f);
+}
+
+void Jogo::TextoOpcaoConfig(int i, char* destino, size_t tamanho) const
+{
+    switch (i)
+    {
+    case 0:
+        sprintf_s(destino, tamanho, "Tela cheia: %s", telaCheia ? "ON" : "OFF");
+        break;
+    case 1:
+        sprintf_s(destino, tamanho, "Musica: %s", musicaLigada ? "ON" : "OFF");
+        break;
+    default:
+        sprintf_s(destino, tamanho, "Efeitos sonoros: %s", efeitosLigados ? "ON" : "OFF");
+        break;
+    }
+}
+
+SDL_FRect Jogo::RetanguloOpcaoConfig(int i) const
+{
+    char texto[50];
+    TextoOpcaoConfig(i, texto, sizeof(texto));
+
+    return MedirTextoCentrado(fontHud, texto,
+        larguraTela / 2.0f,
+        alturaTela * (0.30f + 0.10f * i));
+}
+
+SDL_FRect Jogo::RetanguloBotaoResultado() const
+{
+    return MedirTextoCentrado(fontHud, "ENTER - Continuar",
+        larguraTela / 2.0f,
+        alturaTela * 0.82f);
 }
 
 bool Jogo::TelaConfiguracoes()
@@ -245,56 +370,32 @@ bool Jogo::TelaConfiguracoes()
 
         SDL_SetRenderDrawColor(renderer, 239, 194, 153, 1);
 
-        // textos
-
-        char texto[50];
-
         DesenharTextoCentrado(renderer, font, "CONFIGURAÇÕES", preto,
             (float)(larguraTela / 2), 50);
 
         // Tela cheia
+        
+        // Opções (o destaque arredondado marca a selecionada)
+        for (int i = 0; i < 3; i++)
+        {
+            char textoOpcao[50];
+            TextoOpcaoConfig(i, textoOpcao, sizeof(textoOpcao));
 
-        sprintf_s(
-            texto,
-            sizeof(texto),
-            "%s Tela cheia: %s",
-            opcaoConfig == 0 ? ">" : " ",
-            telaCheia ? "ON" : "OFF"
-        );
+            SDL_FRect rect = RetanguloOpcaoConfig(i);
 
-        DesenharTextoCentrado(renderer, fontHud, texto, preto,
-            (float)(larguraTela / 2), alturaTela * 0.30f);
+            if (i == opcaoConfig)
+                DesenharDestaque(rect, margemDestaqueX, margemDestaqueY, corDestaqueMarrom);
 
-        // Musica
-        sprintf_s(
-            texto,
-            sizeof(texto),
-            "%s Musica: %s",
-            opcaoConfig == 1 ? ">" : " ",
-            musicaLigada ? "ON" : "OFF"
-        );
-
-        DesenharTextoCentrado(renderer, fontHud, texto, preto,
-            (float)(larguraTela / 2), alturaTela * 0.40f);
-
-        // EFeitos Sonoros
-        sprintf_s(
-            texto,
-            sizeof(texto),
-            "%s Efeitos sonoros: %s",
-            opcaoConfig == 2 ? ">" : " ",
-            efeitosLigados ? "ON" : "OFF"
-        );
-
-        DesenharTextoCentrado(renderer, fontHud, texto, preto,
-            (float)(larguraTela / 2), alturaTela * 0.50f);
+            DesenharTextoCentrado(renderer, fontHud, textoOpcao, preto,
+                rect.x + rect.w / 2, rect.y);
+        }
 
         // Voltar
         DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -334,7 +435,7 @@ bool Jogo::TelaControles()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -388,7 +489,7 @@ bool Jogo::TelaAjuda()
             20, (float)(alturaTela - 50));
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -428,9 +529,10 @@ bool Jogo::TelaGameOver()
         if (SDL_GetTicks() - tempoAtual >= 3000)
         {
             estado = RESULTADO;
+            inicioResultado = SDL_GetTicks();
         }
 
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;
@@ -467,10 +569,12 @@ bool Jogo::TelaResultado()
         sprintf_s(buf, sizeof(buf), "Bosses derrotados:   %d", bossAtivados);
         DesenharTextoCentrado(renderer, fontHud, buf, cinza, larguraTela / 2.0f, cy + esp * 3.6f);
 
+        // Botão "Continuar": Enter ou clique esquerdo
+        DesenharDestaque(RetanguloBotaoResultado(), margemDestaqueX, margemDestaqueY, corDestaqueOuro);
         DesenharTextoCentrado(renderer, fontHud, "ENTER - Continuar", branco, larguraTela / 2.0f, alturaTela * 0.82f);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
         return true;
     }
     return false;

@@ -75,7 +75,7 @@ bool Jogo::Iniciar()
     {
         SDL_Log("Falha ao criar o renderer: %s", SDL_GetError());
         return false;
-    }
+    }   
 
     if (!TTF_Init()) {
         SDL_Log("Falha ao iniciar o SDL_ttf: %s", SDL_GetError());
@@ -172,6 +172,16 @@ bool Jogo::Iniciar()
     upgradeImgBalas = assets.upgradeImgBalas.get();
     upgradeImgDuplo = assets.upgradeImgDuplo.get();
     upgradeImgCacador = assets.upgradeImgCacador.get();
+    upgradeImgCadencia = assets.upgradeImgCadencia.get();
+    upgradeImgBalaPesada = assets.upgradeImgBalaPesada.get();
+    upgradeImgPernas = assets.upgradeImgPernas.get();
+    upgradeImgDoceSorte = assets.upgradeImgDoceSorte.get();
+    upgradeImgGlace = assets.upgradeImgGlace.get();
+    upgradeImgPerfurante = assets.upgradeImgPerfurante.get();
+    upgradeImgBarreira = assets.upgradeImgBarreira.get();
+    upgradeImgExplosao = assets.upgradeImgExplosao.get();
+    upgradeImgFuria = assets.upgradeImgFuria.get();
+    upgradeImgPacto = assets.upgradeImgPacto.get();
 
     // Cursor
 
@@ -256,7 +266,7 @@ bool Jogo::Iniciar()
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
     // ----------------------------------------------------------
 
-    intervaloSpawn = 2000 - (ondas * 150);
+    intervaloSpawn = IntervaloSpawn(ondas);
     ultimoSpawn = SDL_GetTicks();
     ultimoSpawnPowerUp = SDL_GetTicks();
     ultimoSpawnAtq = SDL_GetTicks();
@@ -266,6 +276,29 @@ bool Jogo::Iniciar()
     inicioSpam = SDL_GetTicks();
 
     return true;
+}
+
+// Segura o laço em FPS_ALVO quadros por segundo, qualquer que seja o tempo gasto no quadro.
+// Substitui o SDL_Delay(16), que somava 16 ms ao tempo do quadro (FPS dependia da máquina).
+void Jogo::EsperarProximoFrame()
+{
+    const Uint64 duracaoFrameNs = 1000000000ULL / FPS_ALVO;
+    Uint64 agora = SDL_GetTicksNS();
+
+    if (proximoFrameNs == 0)
+        proximoFrameNs = agora;
+
+    proximoFrameNs += duracaoFrameNs;
+
+    if (agora < proximoFrameNs)
+    {
+        SDL_DelayPrecise(proximoFrameNs - agora);
+    }
+    else if (agora - proximoFrameNs > 5 * duracaoFrameNs)
+    {
+        // Atrasou muito (janela arrastada, carregamento): não tenta recuperar os quadros perdidos
+        proximoFrameNs = agora;
+    }
 }
 
 void Jogo::Executar()
@@ -284,6 +317,7 @@ void Jogo::Executar()
         AtualizarHoverMenu();
         GerenciarMusica();
         AtualizarAnimacoes();
+        metricas.AtualizarFrame(estado == JOGAR);
 
         // ------------------------------------------------------
         // SISTEMA DE ONDAS
@@ -297,13 +331,7 @@ void Jogo::Executar()
             {
                 spam = false;
 
-                intervaloSpawn = 2000 - (ondas * 150);
-
-                if (intervaloSpawn < 500)
-                    intervaloSpawn = 500;
-
-                if (intervaloSpawn > 2000)
-                    intervaloSpawn = 2000;
+                intervaloSpawn = IntervaloSpawn(ondas);
             }
         }
 
@@ -372,6 +400,7 @@ void Jogo::Executar()
         // RENDERIZAÇÃO
         // ------------------------------------------------------
 
+        AtualizarUpgrade();
         CalcularShake();
         RenderizarMundo();
         RenderizarHud();
@@ -379,7 +408,7 @@ void Jogo::Executar()
         RenderizarPause();
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        EsperarProximoFrame();
 
 } // fim do loop principal
 

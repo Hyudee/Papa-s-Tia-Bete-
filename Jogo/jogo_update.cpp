@@ -18,7 +18,7 @@
 #include "botoes.h"
 #include "jogo.h"
 
-void Jogo::AtualizarHoverMenu() 
+void Jogo::AtualizarHoverMenu()
 {
     if (estado == MENU)
     {
@@ -38,6 +38,7 @@ void Jogo::AtualizarHoverMenu()
             novoHoverBotao != -1)
         {
             TocarEfeito(somHoverBotao);
+            itemMenu = novoHoverBotao; // 0 a 2 coincidem com os botões
         }
 
         hoverBotaoAtual = novoHoverBotao;
@@ -57,6 +58,10 @@ void Jogo::AtualizarHoverMenu()
             novoHoverAba != -1)
         {
             TocarEfeito(somHoverAbas);
+
+            // Ranking, Engrenagem, Controles, Ajuda -> itens do menu
+            const int itemPorAba[4] = { 5, 3, 4, 6 };
+            itemMenu = itemPorAba[novoHoverAba];
         }
 
         hoverAbaAtual = novoHoverAba;
@@ -189,6 +194,8 @@ void Jogo::AtualizarAnimacoes()
 
 void Jogo::AtualizarOndasEBuffs()
 {
+    AtualizarEfeitosDasCartas();
+
     if (estado == JOGAR && SDL_GetTicks() - inicioOnda >= 30000)
     {
         ondas++;
@@ -197,23 +204,10 @@ void Jogo::AtualizarOndasEBuffs()
 
         spam = true;
         inicioSpam = SDL_GetTicks();
-        inimigosAtivos += 2;
 
-        if (inimigosAtivos > MAX_INIMIGOS)
-            inimigosAtivos = MAX_INIMIGOS;
+        inimigosAtivos = MaximoInimigosVivos(ondas);
 
-        if (intervaloSpawn > 150)
-            intervaloSpawn -= 150;
-        else
-            intervaloSpawn = 500;
-
-        if (intervaloSpawn < 500)
-            intervaloSpawn = 500;
-
-        if (inimigosAtivos > MAX_INIMIGOS)
-        {
-            inimigosAtivos = MAX_INIMIGOS;
-        }
+        intervaloSpawn = IntervaloSpawn(ondas);
     }
 }
 
@@ -236,11 +230,11 @@ void Jogo::AtualizarSpawn() {
         {
             ultimoSpawn = tempoAtual;
 
-            int quantidadeSpawn = 1;
+            int quantidadeSpawn = QuantidadePorSpawn(ondas);
 
-            if (ondas >= 10) quantidadeSpawn = 2;
-            if (ondas >= 20) quantidadeSpawn = 3;
-            if (ondas >= 30) quantidadeSpawn = 4;
+            // Não passa do máximo de inimigos vivos
+            if (quantidadeSpawn > inimigosAtivos - vivos)
+                quantidadeSpawn = inimigosAtivos - vivos;
 
             for (int s = 0; s < quantidadeSpawn; s++)
             {
@@ -255,10 +249,7 @@ void Jogo::AtualizarSpawn() {
                         inimigos[i].rect.w = tamanhoInimigo;
                         inimigos[i].rect.h = tamanhoInimigo;
 
-                        inimigos[i].speed = (2.0f + (ondas * 0.2f)) * escalaJogo;
-
-                        if (inimigos[i].speed > 6.0f * escalaJogo)
-                            inimigos[i].speed = 6.0f * escalaJogo;
+                        inimigos[i].speed = VelocidadeInimigo(ondas) * escalaJogo;
 
                         inimigos[i].rect.x = larguraTela + (s * 70) + (rand() % 20);
 
@@ -266,19 +257,25 @@ void Jogo::AtualizarSpawn() {
                             (rand() % (alturaTela - (int)inimigos[i].rect.h));
 
                         if (spam)
-                            inimigos[i].speed += 0.5f;
+                            inimigos[i].speed += 0.5f * escalaJogo;
 
                         break;
                     }
                 }
             }
         }
-        // Spawn de powerups
+        // Spawn do coração (powerup de vida)
+        // O relógio roda sempre, com a vida cheia ou não. Quando o tempo sorteado passa, ele
+        // recomeça com um novo sorteio (70% a 130% do intervalo) e o coração só nasce se a vida
+        // estiver abaixo do máximo. Assim, tomar dano não faz o coração nascer na hora.
+        Uint64 esperaCoracao = intervaloSpawnPowerUp * sorteioIntervaloCoracao / 100
+            * intervaloCoracaoPercent / 100;
 
-        if (tempoAtual - ultimoSpawnPowerUp >= intervaloSpawnPowerUp && (vidas < vidaMaxima)) {
+        if (tempoAtual - ultimoSpawnPowerUp >= esperaCoracao) {
             ultimoSpawnPowerUp = tempoAtual;
+            sorteioIntervaloCoracao = 70 + rand() % 61;
 
-            for (int i = 0; i < MAX_POWERUPS; i++) {
+            for (int i = 0; vidas < vidaMaxima && i < MAX_POWERUPS; i++) {
                 if (!vidasPowerup[i].ativo) {
                     vidasPowerup[i].ativo = true;
                     vidasPowerup[i].frame = 0;
@@ -293,7 +290,7 @@ void Jogo::AtualizarSpawn() {
                     vidasPowerup[i].rect.y =
                         rand() % (alturaTela - (int)vidasPowerup[i].rect.h);
 
-                    vidasPowerup[i].speed = 7.0f * escalaJogo;
+                    vidasPowerup[i].speed = 7.0f * escalaJogo * velocidadeCoracaoPercent / 100.0f;
 
                     break;
                 }
@@ -494,22 +491,28 @@ void Jogo::AtualizarPowerups() {
     }
 }
 
-void Jogo::AtualizarBoss (){
+void Jogo::AtualizarBoss() {
     if (estado == JOGAR) {
-            if (boss.ativo)
+        if (boss.ativo)
+        {
+            // Glacê Pegajoso: enquanto a lentidão durar, o boss anda mais devagar
+            float fatorBoss = 1.0f;
+
+            if (SDL_GetTicks() < boss.lentidaoFim)
+                fatorBoss = (100 - boss.lentidaoPercent) / 100.0f;
+
+            boss.rect.x -= boss.speed * fatorBoss;
+
+            if (SDL_GetTicks() - boss.ultimoFrame > 120)
             {
-                boss.rect.x -= boss.speed;
+                boss.frame++;
 
-                if (SDL_GetTicks() - boss.ultimoFrame > 120)
-                {
-                    boss.frame++;
+                if (boss.frame >= 6)
+                    boss.frame = 0;
 
-                    if (boss.frame >= 6)
-                        boss.frame = 0;
-
-                    boss.ultimoFrame = SDL_GetTicks();
-                }
+                boss.ultimoFrame = SDL_GetTicks();
             }
+        }
     }
 }
 

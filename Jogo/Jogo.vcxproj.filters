@@ -31,6 +31,9 @@
     <Filter Include="src\ui">
       <UniqueIdentifier>{f8d84f1c-af04-4f18-90fe-1392d1088c1d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\upgrades">
+      <UniqueIdentifier>{0de2ee2c-83ea-49a8-b076-dc8a07e964ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ranking.cpp">
@@ -75,6 +78,18 @@
     <ClCompile Include="jogo_estado.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="metricas.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="cartas.cpp">
+      <Filter>src\upgrades</Filter>
+    </ClCompile>
+    <ClCompile Include="anim_cartas.cpp">
+      <Filter>src\upgrades</Filter>
+    </ClCompile>
+    <ClCompile Include="jogo_upgrade.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -112,6 +127,18 @@
     </ClInclude>
     <ClInclude Include="jogo.h">
       <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="metricas.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="curva.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="cartas.h">
+      <Filter>src\upgrades</Filter>
+    </ClInclude>
+    <ClInclude Include="anim_cartas.h">
+      <Filter>src\upgrades</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

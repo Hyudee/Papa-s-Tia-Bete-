@@ -7,6 +7,10 @@
 #include "assets.h"
 #include "tipos.h"
 #include "audio.h"
+#include "metricas.h"
+#include "curva.h"
+#include "cartas.h"
+#include "anim_cartas.h"
 
 // Estado e lógica do jogo.
 // As variáveis que eram locais de main() agora são membros desta classe, na mesma ordem.
@@ -43,6 +47,10 @@ private:
 
     SDL_Color preto = { 0, 0, 0, 255 };
     SDL_Color branco = { 255, 255, 255, 255 };
+    SDL_Color corDestaqueOuro = { 255, 215, 0, 255 };
+    SDL_Color corDestaqueMarrom = { 200, 110, 20, 255 };
+    const float margemDestaqueX = 24.0f;
+    const float margemDestaqueY = 6.0f;
 
     // ADAPTAR A TELA
 
@@ -105,6 +113,16 @@ private:
     SDL_Texture* upgradeImgBalas;
     SDL_Texture* upgradeImgDuplo;
     SDL_Texture* upgradeImgCacador;
+    SDL_Texture* upgradeImgCadencia;
+    SDL_Texture* upgradeImgBalaPesada;
+    SDL_Texture* upgradeImgPernas;
+    SDL_Texture* upgradeImgDoceSorte;
+    SDL_Texture* upgradeImgGlace;
+    SDL_Texture* upgradeImgPerfurante;
+    SDL_Texture* upgradeImgBarreira;
+    SDL_Texture* upgradeImgExplosao;
+    SDL_Texture* upgradeImgFuria;
+    SDL_Texture* upgradeImgPacto;
     SdlPtr<SDL_Cursor> cursor;
 
     // VARIÁVEIS DO JOGADOR
@@ -130,7 +148,19 @@ private:
     const int alturaFramePowerUp = 64;
     bool noChao = true;
     bool tiroDuplo = false;
+    ColecaoCartas cartas;       // cartas escolhidas nesta partida
     bool cacadorBoss = false;
+    int cooldownTiro = COOLDOWN_TIRO_BASE;   // ms mínimos entre disparos (CADENCIA e BALA PESADA)
+    int velocidadeTiroPercent = 100;         // BALA PESADA
+    int velocidadeJogadorPercent = 100;      // PERNAS DE ACUCAR
+    int knockbackPercent = 100;              // PERNAS DE ACUCAR
+    int velocidadeCoracaoPercent = 100;      // DOCE SORTE
+    int intervaloCoracaoPercent = 100;       // DOCE SORTE
+    int lentidaoBossPercent = 0; // GLACÊ
+    int perfuracoesTiro = 0;                 // PERFURANTE4
+    int barreirasMax = 0;                    // BARREIRA DA BASE (cargas máximas)
+    int explosaoChancePercent = 0;           // EXPLOSAO ACUCARADA
+    int furiaDanoPercent = 0;                // FURIA DE COMBO
     bool atirando = false;
     bool pulando = false;
     bool aterrissando = false;
@@ -143,6 +173,31 @@ private:
 
     // Eventos
     void ProcessarEventos();
+
+    // Tiro
+    void DispararTiro(float mouseX, float mouseY);
+    int DisparosAtivos() const;
+
+    // Menu principal (Enter e clique esquerdo usam a mesma confirmação)
+    int ItemMenuSobMouse(float x, float y) const;
+    const SDL_FRect* RetanguloItemMenu(int item) const;
+    void MoverItemMenu(int vertical, int horizontal);
+    void ConfirmarItemMenu(int item);
+
+    // Limpa a janela (tarjas pretas) e pinta a área do jogo com a cor de desenho atual
+    void LimparTela();
+
+    // Destaque arredondado
+    void DesenharDestaque(const SDL_FRect& alvo, float margemX, float margemY, SDL_Color cor) const;
+
+    bool MouseNaOpcao(float x, float y, const SDL_FRect& textoOpcao) const;
+    SDL_FRect RetanguloOpcaoPause(int i) const;
+    SDL_FRect RetanguloOpcaoConfig(int i) const;
+    void TextoOpcaoConfig(int i, char* destino, size_t tamanho) const;
+    void ConfirmarOpcaoPause();
+    void AlternarOpcaoConfig();
+    SDL_FRect RetanguloBotaoResultado() const;
+    void ConfirmarResultado();
 
     // Atualização do jogo
     void AtualizarHoverMenu();
@@ -167,6 +222,22 @@ private:
     void ColisaoProjeteisObstaculos();
     void ColisaoProjeteisInimigos();
 
+    // Fim de partida
+    void RegistrarFimDePartida(const char* causa);
+    void EsperarProximoFrame();
+
+    // Cartas
+    void AplicarCartas();
+    void EscolherCarta(IdCarta id);
+    SDL_Texture* ImagemDaCarta(IdCarta id) const;
+    int RerollsDisponiveis() const;
+    void RefazerOferta();
+    void AtualizarEfeitosDasCartas();   // recarga da Barreira, fim da Furia e das explosoes
+    void ExplodirAcucar(float centroX, float centroY);
+    void RegistrarAbate();              // conta um abate para a Furia
+    void QuebrarSequenciaAbates();      // o jogador ou a base foi atingido
+    int DanoAtualDoTiro() const;        // dano do tiro agora (com a Furia, se ativa)
+
     // Teclado, movimento e física do jogador
     void LerTeclado();
     void MoverJogador();
@@ -186,6 +257,18 @@ private:
     void RenderizarHud();
     bool RenderizarUpgrade();   // true = tela de upgrade tratada neste frame
     void RenderizarPause();
+
+
+    // Tela de escolha de cartas (jogo_upgrade.cpp)
+    void IniciarTelaCartas();
+    void AtualizarUpgrade();
+    void ConstruirTexturasCartas();
+    void DesenharCartaNaTextura(SDL_Texture* alvo, IdCarta id, bool destacada);
+    void EncerrarTelaCartas();
+    void ConfirmarCarta(int indice);
+    void SelecionarCarta(int indice);
+    void DesenharBrilhoCarta(const SDL_FRect& destino, Raridade raridade, float alfa, Uint64 agora);
+    void DesenharBurstCarta(const SDL_FRect& destino, Raridade raridade, int quadro);
 
     // Telas de estado (true = tela tratada neste frame)
     bool TelaMenu();
@@ -210,6 +293,13 @@ private:
     const Uint64 DURACAO_SUJO = 5000;
     const Uint64 STUN_DURACAO = 1250;
     const Uint64 DURACAO_BUFF = 10000;
+    const Uint64 DURACAO_GLACE = 1500;   // ms de lentidão do boss depois de cada acerto com Glacê
+    const Uint64 RECARGA_BARREIRA = 25000;   // ms para recuperar 1 carga da Barreira
+    const Uint64 DURACAO_EXPLOSAO = 250;     // ms da animação da explosão
+    const Uint64 DURACAO_FURIA = 8000;       // ms de dano extra depois de completar a sequência
+    const int ABATES_FURIA = 10;             // abates seguidos para ativar a Fúria
+    const float RAIO_EXPLOSAO = 48.0f;       // raio da explosão, antes de multiplicar por escalaJogo
+    static const int MAX_EXPLOSOES = 8;      // explosões visíveis ao mesmo tempo
 
     // Variavéis da base
 
@@ -242,13 +332,14 @@ private:
     int inimigosDerrotados = 0;
     int inimigosAtivos = 5;
     int spawnBoss = 1000;
+    Uint64 fimUltimoBoss = 0;   // quando o último boss morreu ou chegou à base
     int bossAtivados = 0;
     int frameBase = 0;
     int opcaoConfig = 0;  // 0 = Tela cheia, 1 = Música, 2 = Efeitos
     int opcaoPause = 0;  // 0 = Continuar, 2 = Menu
     int opcaoUpgrade = 0;
-    bool upgradeTiroDuploDisponivel = false;
-    bool upgradeCacadordeBossDisponivel = false;
+    IdCarta ofertaCartas[NUM_CARTAS];   // cartas mostradas na tela de escolha
+    int totalOfertaCartas = 0;
     const char* opcoesPause[2] = { "Continuar", "Menu Principal" };
     float yCreditos = 0.0f;
     float shakeX = 0.0f;
@@ -286,6 +377,13 @@ private:
     bool spam = false;
     int hoverBotaoAtual = -1;
     int hoverAbaAtual = -1;
+    // Item destacado no menu principal (teclado ou mouse):
+    // 0 Jogar, 1 Créditos, 2 Sair, 3 Engrenagem, 4 Controles, 5 Troféu, 6 Ajuda
+    int itemMenu = 0;
+
+    Metricas metricas;            // FPS e registro das partidas (metricas.csv)
+    Uint64 proximoFrameNs = 0;    // limitador de quadros
+    Uint64 inicioResultado = 0; // quando a tela de resultado abriu
 
     // TEMPORIZAÇÃO DE SPAWN E ONDAS
 
@@ -294,6 +392,7 @@ private:
     Uint64 ultimoSpawnPowerUp;
     Uint64 ultimoSpawnAtq;
     Uint64 intervaloSpawnPowerUp;
+    int sorteioIntervaloCoracao = 100;   // 70 a 130: sorteio do tempo até o próximo coração (não é instante)
     Uint64 intervaloSpawnAtq = 40000;
     Uint64 ultimoSpawnObstaculo;
     Uint64 intervaloObstaculo = 15000;
@@ -309,4 +408,30 @@ private:
     const bool* key = nullptr;
     float playerXAnterior = 0.0f;
     float playerYAnterior = 0.0f;
+
+    int rerollsUsados = 0;      // trocas de cartas já gastas nesta partida
+
+    // Estado das cartas Barreira, Fúria e Explosão (os instantes entram em DeslocarTimers)
+    int barreiraCargas = 0;
+    Uint64 inicioRecargaBarreira = 0;
+    Explosao explosoes[MAX_EXPLOSOES] = { 0 };
+    int sequenciaAbates = 0;
+    bool furiaAtiva = false;
+    Uint64 furiaInicio = 0;
+
+    Uint64 ultimoTiro = 0;      // instante do último disparo (cooldown)
+    int proximoIdDisparo = 1;   // id do próximo disparo (não é tempo, não precisa de DeslocarTimers)
+
+
+    // Tela de escolha de cartas. Fica por último de propósito: as texturas precisam ser
+    // destruídas antes do renderer. Os instantes de animCartas NÃO entram em DeslocarTimers.
+    AnimCartas animCartas;
+    LayoutCartas layoutCartas = {};
+    bool cartasProntas = false;
+    int larguraCartasConstruida = 0;
+    int alturaCartasConstruida = 0;
+    SdlPtr<SDL_Texture> cartaNormal[CARTAS_POR_OFERTA];
+    SdlPtr<SDL_Texture> cartaDestacada[CARTAS_POR_OFERTA];
+    SdlPtr<SDL_Texture> textoTituloCartas;
+    SdlPtr<SDL_Texture> textoDicaCartas;
 };

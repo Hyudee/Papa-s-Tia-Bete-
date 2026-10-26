@@ -154,7 +154,11 @@ void Jogo::RenderizarMundo() {
             (float)alturaFrameTiro
         };
 
-        SDL_RenderTexture(renderer, projetil, &srcTiro, &projeteis[i].rect);
+        // Gira o sprite para a direção do tiro (a explosão não gira)
+        double anguloTiro = projeteis[i].explodindo ? 0.0 : (double)projeteis[i].angulo;
+
+        SDL_RenderTextureRotated(renderer, projetil, &srcTiro, &projeteis[i].rect,
+            anguloTiro, NULL, SDL_FLIP_NONE);
     }
 
     // Inimigos
@@ -278,7 +282,55 @@ void Jogo::RenderizarMundo() {
 
         SDL_RenderTexture(renderer, powerUpAtq, &src, &dest);
     }
-}
+
+    // Explosão Açucarada: disco translúcido que cresce e some
+    SDL_BlendMode modoAnterior;
+    SDL_GetRenderDrawBlendMode(renderer, &modoAnterior);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    for (int i = 0; i < MAX_EXPLOSOES; i++)
+    {
+        if (!explosoes[i].ativa)
+            continue;
+
+        float t = (float)(SDL_GetTicks() - explosoes[i].inicio) / (float)DURACAO_EXPLOSAO;
+
+        if (t > 1.0f)
+            t = 1.0f;
+
+        float raio = explosoes[i].raio * (0.3f + 0.7f * t);
+
+        const int SEGMENTOS = 24;
+        SDL_Vertex vertices[SEGMENTOS + 1];
+        int indices[SEGMENTOS * 3];
+        SDL_FColor cor = { 1.0f, 0.65f, 0.15f, 0.6f * (1.0f - t) };
+
+        vertices[0].position.x = explosoes[i].x;
+        vertices[0].position.y = explosoes[i].y;
+        vertices[0].color = cor;
+        vertices[0].tex_coord.x = 0.0f;
+        vertices[0].tex_coord.y = 0.0f;
+
+        for (int k = 0; k < SEGMENTOS; k++)
+        {
+            float angulo = 6.2831853f * k / SEGMENTOS;
+
+            vertices[k + 1].position.x = explosoes[i].x + SDL_cosf(angulo) * raio;
+            vertices[k + 1].position.y = explosoes[i].y + SDL_sinf(angulo) * raio;
+            vertices[k + 1].color = cor;
+            vertices[k + 1].tex_coord.x = 0.0f;
+            vertices[k + 1].tex_coord.y = 0.0f;
+
+            indices[k * 3] = 0;
+            indices[k * 3 + 1] = k + 1;
+            indices[k * 3 + 2] = (k + 1) % SEGMENTOS + 1;
+        }
+
+        SDL_RenderGeometry(renderer, NULL, vertices, SEGMENTOS + 1, indices, SEGMENTOS * 3);
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, modoAnterior);
+}    
 
 void Jogo::RenderizarHud() {
     SDL_SetRenderViewport(renderer, NULL);
@@ -345,6 +397,73 @@ void Jogo::RenderizarHud() {
         buffRect.y = 50;
         SDL_RenderTexture(renderer, texturaBuff, NULL, &buffRect);
     }
+
+
+    // Em Pause/Upgrade o relógio dos indicadores fica parado em inicioPausa
+    Uint64 agora = (estado == JOGAR) ? SDL_GetTicks() : inicioPausa;
+
+    // Barreira da Base: uma caixa por carga (azul = carregada) e barra de recarga
+    if (barreirasMax > 0)
+    {
+        for (int i = 0; i < barreirasMax; i++)
+        {
+            SDL_FRect caixa = { 10.0f + i * 34.0f, 90.0f, 28.0f, 14.0f };
+
+            if (i < barreiraCargas)
+                SDL_SetRenderDrawColor(renderer, 90, 170, 255, 255);
+            else
+                SDL_SetRenderDrawColor(renderer, 50, 60, 80, 255);
+
+            SDL_RenderFillRect(renderer, &caixa);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            SDL_RenderRect(renderer, &caixa);
+        }
+
+        if (barreiraCargas < barreirasMax)
+        {
+            float decorrido = (agora > inicioRecargaBarreira) ? (float)(agora - inicioRecargaBarreira) : 0.0f;
+            float progresso = SDL_min(1.0f, decorrido / (float)RECARGA_BARREIRA);
+            float larguraTotal = barreirasMax * 34.0f - 6.0f;
+
+            SDL_FRect fundo = { 10.0f, 108.0f, larguraTotal, 4.0f };
+            SDL_FRect cheio = { 10.0f, 108.0f, larguraTotal * progresso, 4.0f };
+
+            SDL_SetRenderDrawColor(renderer, 50, 60, 80, 255);
+            SDL_RenderFillRect(renderer, &fundo);
+            SDL_SetRenderDrawColor(renderer, 90, 170, 255, 255);
+            SDL_RenderFillRect(renderer, &cheio);
+        }
+    }
+
+
+    // Fúria de Combo: amarela enche com os abates; laranja esvazia enquanto está ativa
+    if (furiaDanoPercent > 0)
+    {
+        SDL_FRect fundo = { 10.0f, 120.0f, 100.0f, 10.0f };
+        SDL_Color corBarra;
+        float fracao;
+
+        if (furiaAtiva)
+        {
+            float decorrido = (agora > furiaInicio) ? (float)(agora - furiaInicio) : 0.0f;
+            fracao = SDL_max(0.0f, 1.0f - decorrido / (float)DURACAO_FURIA);
+            corBarra = { 255, 140, 0, 255 };
+        }
+        else
+        {
+            fracao = (float)sequenciaAbates / (float)ABATES_FURIA;
+            corBarra = { 230, 200, 60, 255 };
+        }
+
+        SDL_FRect cheio = { fundo.x, fundo.y, fundo.w * fracao, fundo.h };
+
+        SDL_SetRenderDrawColor(renderer, 60, 40, 20, 255);
+        SDL_RenderFillRect(renderer, &fundo);
+        SDL_SetRenderDrawColor(renderer, corBarra.r, corBarra.g, corBarra.b, 255);
+        SDL_RenderFillRect(renderer, &cheio);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderRect(renderer, &fundo);
+    }
 }
 
 void Jogo::RenderizarPause() {
@@ -380,177 +499,39 @@ void Jogo::RenderizarPause() {
 
         for (int i = 0; i < 2; i++)
         {
+            SDL_FRect rect = RetanguloOpcaoPause(i);
+
+            if (i == opcaoPause)
+                DesenharDestaque(rect, margemDestaqueX, margemDestaqueY, corDestaqueMarrom);
+
             SDL_Color cor = (i == opcaoPause) ? preto : branco;
             DesenharTextoCentrado(renderer, font, opcoesPause[i], cor,
-                painel.x + painel.w / 2, painel.y + 120 + i * 70);
+                rect.x + rect.w / 2, rect.y);
         }
     }
 }
 
-bool Jogo::RenderizarUpgrade() {
-    if (estado == UPGRADE)
+// Imagem de cada carta (as texturas pertencem ao Assets)
+SDL_Texture* Jogo::ImagemDaCarta(IdCarta id) const
+{
+    switch (id)
     {
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 170);
-        SDL_FRect telaInteira = { 0, 0, (float)larguraTela, (float)alturaTela };
-        SDL_RenderFillRect(renderer, &telaInteira);
+    case CARTA_MAIS_DANO:    return upgradeImgDano;
+    case CARTA_MAIS_VIDA:    return upgradeImgVida;
+    case CARTA_MAIS_BALAS:   return upgradeImgBalas;
+    case CARTA_TIRO_DUPLO:   return upgradeImgDuplo;
+    case CARTA_CACADOR_BOSS: return upgradeImgCacador;
+	case CARTA_CADENCIA:     return upgradeImgCadencia;
+    case CARTA_BALA_PESADA:  return upgradeImgBalaPesada;
+    case CARTA_PERNAS_ACUCAR:return upgradeImgPernas;
+    case CARTA_DOCE_SORTE:   return upgradeImgDoceSorte;
+    case CARTA_GLACE:        return upgradeImgGlace;
+    case CARTA_PERFURANTE:   return upgradeImgPerfurante;
+    case CARTA_BARREIRA:     return upgradeImgBarreira;
+    case CARTA_EXPLOSAO:     return upgradeImgExplosao;
+	case CARTA_FURIA:        return upgradeImgFuria;
+    case CARTA_PACTO_AMARGO: return upgradeImgPacto;
 
-        struct SlotUpgrade {
-            const char* label;
-            const char* desc;
-            SDL_Texture* img;
-        };
-
-        SlotUpgrade slots[5];
-        int totalSlots = 0;
-
-        slots[totalSlots++] = { "MAIS DANO",      "+1 de dano por tiro",      upgradeImgDano };
-        slots[totalSlots++] = { "MAIS VIDA",      "+1 de vida maxima",         upgradeImgVida };
-        slots[totalSlots++] = { "MAIS BALAS",     "+1 projetil simultaneo",    upgradeImgBalas };
-
-        if (upgradeTiroDuploDisponivel)
-            slots[totalSlots++] = { "TIRO DUPLO",      "Atira 2 projeteis por vez", upgradeImgDuplo };
-
-        if (upgradeCacadordeBossDisponivel)
-            slots[totalSlots++] = { "CACADOR DE BOSS", "+5 de dano nos bosses",     upgradeImgCacador };
-
-        const float CARTA_W = larguraTela * 0.14f;
-        const float CARTA_H = alturaTela * 0.62f;
-        const float CARTA_GAP = larguraTela * 0.025f;
-        const float IMG_H = CARTA_H * 0.42f;
-        const float BORDA = 4.0f;
-
-        float blocoW = totalSlots * CARTA_W + (totalSlots - 1) * CARTA_GAP;
-        float blocoX = larguraTela / 2.0f - blocoW / 2.0f;
-        float blocoY = alturaTela * 0.18f;
-
-        {
-            float titleY = blocoY - alturaTela * 0.09f;
-            if (opcaoUpgrade >= 0 && opcaoUpgrade < totalSlots)
-                titleY -= alturaTela * 0.04f;
-
-            SDL_Surface* s = TTF_RenderText_Blended(font, "ESCOLHA UMA MELHORIA", 0, branco);
-            SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
-            SDL_FRect r;
-            SDL_GetTextureSize(t, &r.w, &r.h);
-            r.x = larguraTela / 2.0f - r.w / 2.0f;
-            r.y = titleY;
-            SDL_RenderTexture(renderer, t, NULL, &r);
-            SDL_DestroySurface(s);
-            SDL_DestroyTexture(t);
-        }
-
-        for (int i = 0; i < totalSlots; i++)
-        {
-            bool selecionada = (i == opcaoUpgrade);
-
-            float cx = blocoX + i * (CARTA_W + CARTA_GAP);
-            float cy = selecionada ? blocoY - alturaTela * 0.04f : blocoY;
-
-            SDL_FRect cartaRect = { cx, cy, CARTA_W, CARTA_H };
-
-            SDL_FRect sombraRect = { cx + 6, cy + 6, CARTA_W, CARTA_H };
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 100);
-            SDL_RenderFillRect(renderer, &sombraRect);
-
-            SDL_Color corFundo = selecionada
-                ? SDL_Color{ 255, 230, 160, 255 }
-            : SDL_Color{ 40,  35,  50, 255 };
-
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-            SDL_SetRenderDrawColor(renderer, corFundo.r, corFundo.g, corFundo.b, 255);
-            SDL_RenderFillRect(renderer, &cartaRect);
-
-            SDL_Color corBorda = selecionada
-                ? SDL_Color{ 220, 160,  20, 255 }
-            : SDL_Color{ 100,  80, 130, 255 };
-
-            SDL_SetRenderDrawColor(renderer, corBorda.r, corBorda.g, corBorda.b, 255);
-            SDL_RenderRect(renderer, &cartaRect);
-
-            SDL_FRect bordaInterna = {
-                cartaRect.x + BORDA, cartaRect.y + BORDA,
-                cartaRect.w - BORDA * 2, cartaRect.h - BORDA * 2
-            };
-            SDL_RenderRect(renderer, &bordaInterna);
-
-            if (slots[i].img)
-            {
-                float imgPad = CARTA_W * 0.08f;
-                SDL_FRect imgRect = {
-                    cx + imgPad,
-                    cy + CARTA_H * 0.10f,
-                    CARTA_W - imgPad * 2,
-                    IMG_H
-                };
-                SDL_RenderTexture(renderer, slots[i].img, NULL, &imgRect);
-            }
-
-            {
-                SDL_Color corTxt = selecionada
-                    ? SDL_Color{ 20,  20,  20, 255 }
-                : SDL_Color{ 255, 255, 255, 255 };
-
-                SDL_Surface* s = TTF_RenderText_Blended(fontHud, slots[i].label, 0, corTxt);
-                SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
-                SDL_FRect r;
-                SDL_GetTextureSize(t, &r.w, &r.h);
-                float maxW = CARTA_W - 8.0f;
-                if (r.w > maxW) { float f = maxW / r.w; r.w *= f; r.h *= f; }
-                r.x = cx + CARTA_W / 2.0f - r.w / 2.0f;
-                r.y = cy + CARTA_H * 0.10f + IMG_H + CARTA_H * 0.04f;
-                SDL_RenderTexture(renderer, t, NULL, &r);
-                SDL_DestroySurface(s);
-                SDL_DestroyTexture(t);
-            }
-
-            {
-                SDL_Color corDesc = selecionada
-                    ? SDL_Color{ 60,  40,  10, 255 }
-                : SDL_Color{ 180, 160, 200, 255 };
-
-                SDL_Surface* s = TTF_RenderText_Blended(fontHud, slots[i].desc, 0, corDesc);
-                SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
-                SDL_FRect r;
-                SDL_GetTextureSize(t, &r.w, &r.h);
-                float maxW = CARTA_W - 8.0f;
-                if (r.w > maxW) { float f = maxW / r.w; r.w *= f; r.h *= f; }
-                r.x = cx + CARTA_W / 2.0f - r.w / 2.0f;
-                r.y = cy + CARTA_H * 0.10f + IMG_H + CARTA_H * 0.14f;
-                SDL_RenderTexture(renderer, t, NULL, &r);
-                SDL_DestroySurface(s);
-                SDL_DestroyTexture(t);
-            }
-
-            if (selecionada)
-            {
-                SDL_SetRenderDrawColor(renderer, 220, 160, 20, 255);
-                float ax = cx + CARTA_W / 2.0f;
-                float ay = cy - 18.0f;
-                SDL_RenderLine(renderer, ax - 10, ay, ax + 10, ay);
-                SDL_RenderLine(renderer, ax - 6, ay + 6, ax, ay + 12);
-                SDL_RenderLine(renderer, ax + 6, ay + 6, ax, ay + 12);
-            }
-        }
-
-        {
-            SDL_Surface* s = TTF_RenderText_Blended(fontHud,
-                "A / D  —  Navegar          ENTER  —  Confirmar", 0, branco);
-            SDL_Texture* t = SDL_CreateTextureFromSurface(renderer, s);
-            SDL_FRect r;
-            SDL_GetTextureSize(t, &r.w, &r.h);
-            r.x = larguraTela / 2.0f - r.w / 2.0f;
-            r.y = (float)alturaTela - r.h - 18.0f;
-            SDL_RenderTexture(renderer, t, NULL, &r);
-            SDL_DestroySurface(s);
-            SDL_DestroyTexture(t);
-        }
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16);
-        
-        return true;
+    default:                 return nullptr;
     }
-    return false;
 }

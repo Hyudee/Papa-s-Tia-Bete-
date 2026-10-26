@@ -39,3 +39,24 @@ void DesenharTextoEsquerda(SDL_Renderer* renderer,
 
     SDL_RenderTexture(renderer, texture.get(), NULL, &rect);
 }
+
+
+SDL_FRect MedirTextoCentrado(TTF_Font* fonte,
+    const char* texto,
+    float centroX,
+    float y)
+{
+    int largura = 0;
+    int altura = 0;
+
+    TTF_GetStringSize(fonte, texto, 0, &largura, &altura);
+
+    SDL_FRect rect;
+
+    rect.w = (float)largura;
+    rect.h = (float)altura;
+    rect.x = centroX - rect.w / 2;
+    rect.y = y;
+
+    return rect;
+}

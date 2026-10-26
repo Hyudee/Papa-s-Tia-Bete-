@@ -20,3 +20,10 @@ void DesenharTextoEsquerda(SDL_Renderer* renderer,
     SDL_Color cor,
     float x,
     float y);
+
+
+// Retângulo que DesenharTextoCentrado ocupa para este texto (mesma conta de x e y)
+SDL_FRect MedirTextoCentrado(TTF_Font* fonte,
+    const char* texto,
+    float centroX,
+    float y);

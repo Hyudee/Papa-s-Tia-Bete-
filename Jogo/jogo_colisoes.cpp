@@ -35,6 +35,8 @@ void Jogo::ColisaoPlayerInimigos() {
                     player.x -= 100.0f * escalaJogo;
                     player.y -= 50.0f * escalaJogo;
 
+                    QuebrarSequenciaAbates();
+
                     // Stun
                     stun = true;
                     stunStart = SDL_GetTicks();
@@ -146,19 +148,35 @@ void Jogo::ColisaoTiroBoss() {
                 projeteis[j].velY = 0;
                 projeteis[j].ultimoFrame = SDL_GetTicks();
 
-                boss.vida -= danoTiro;
+                boss.vida -= projeteis[j].dano;
+
+                // Glacê Pegajoso: cada acerto renova a lentidão do boss
+                if (lentidaoBossPercent > 0)
+                {
+                    boss.lentidaoPercent = lentidaoBossPercent;
+                    boss.lentidaoFim = SDL_GetTicks() + DURACAO_GLACE;
+                }
+
                 projeteis[j].ativo = false;
 
                 if (boss.vida <= 0)
                 {
                     boss.ativo = false;
-                    inicioPausa = SDL_GetTicks();
-                    estado = UPGRADE;
-                    upgradeTiroDuploDisponivel = !tiroDuplo && (rand() % 100 < 25);
-                    upgradeCacadordeBossDisponivel = !cacadorBoss && (rand() % 100 < 5);
-                    opcaoUpgrade = 0;
                     pontos += 100;
                     bossAtivados++;
+                    fimUltimoBoss = SDL_GetTicks();
+
+                    // A oferta já conta o boss que acabou de morrer
+                    totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
+                    opcaoUpgrade = 0;
+
+                    // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
+                    if (totalOfertaCartas > 0)
+                    {
+                        inicioPausa = SDL_GetTicks();
+                        estado = UPGRADE;
+                        IniciarTelaCartas();
+                    }
                 }
             }
         }
@@ -175,7 +193,22 @@ void Jogo::ColisaoBaseInimigos() {
                     &base,
                     &inimigos[i].rect))
                 {
+                    // Barreira da Base: gasta uma carga e o minion some sem ferir a base
+                    if (barreiraCargas > 0)
+                    {
+                        if (barreiraCargas == barreirasMax)
+                            inicioRecargaBarreira = SDL_GetTicks();   // começa a recarregar agora
+
+                        barreiraCargas--;
+                        flashBase = FLASH_CURA;
+                        tempoFlashBase = 0.2f;
+                        inimigos[i].ativo = false;
+                        TocarEfeito(somPowerup);
+                        continue;
+                    }
+
                     vidas--;
+                    QuebrarSequenciaAbates();
                     flashBase = FLASH_DANO;
                     tempoFlashBase = 0.2f; // 200 ms
                     inimigos[i].ativo = false;
@@ -184,6 +217,7 @@ void Jogo::ColisaoBaseInimigos() {
                     {
                         estado = GAMEOVER;
                         tempoAtual = SDL_GetTicks();
+                        RegistrarFimDePartida("inimigo_na_base");
                     }
                 }
             }
@@ -199,17 +233,43 @@ void Jogo::ColisaoBossBase() {
                 &boss.rect
             ))
             {
-                vidas -= 3;
-                if (vidas < 0) vidas = 0;
-                flashBase = FLASH_DANO;
+                // Barreira da Base: cada carga absorve 1 ponto do dano do boss
+                int danoBoss = DANO_BOSS_BASE;
+
+                if (barreiraCargas > 0)
+                {
+                    int absorvido = (barreiraCargas < danoBoss) ? barreiraCargas : danoBoss;
+
+                    if (barreiraCargas == barreirasMax)
+                        inicioRecargaBarreira = SDL_GetTicks();   // começa a recarregar agora
+
+                    barreiraCargas -= absorvido;
+                    danoBoss -= absorvido;
+                    TocarEfeito(somPowerup);
+                }
+
+                if (danoBoss > 0)
+                {
+                    vidas -= danoBoss;
+                    QuebrarSequenciaAbates();
+                    if (vidas < 0) vidas = 0;
+                    flashBase = FLASH_DANO;
+                }
+                else
+                {
+                    flashBase = FLASH_CURA;   // a barreira absorveu tudo
+                }
+
                 tempoFlashBase = 0.2f; // 200 ms
                 boss.ativo = false;
                 spawnBoss = pontos + 1000;
+                fimUltimoBoss = SDL_GetTicks();
 
                 if (vidas <= 0)
                 {
                     estado = GAMEOVER;
                     tempoAtual = SDL_GetTicks();
+                    RegistrarFimDePartida("boss_na_base");
                 }
             }
         }
@@ -262,13 +322,33 @@ void Jogo::ColisaoProjeteisInimigos() {
                 {
                     inimigos[i].morrendo = true;
                     inimigos[i].flashInicio = SDL_GetTicks();
-                    projeteis[j].explodindo = true;
-                    projeteis[j].frame = 3;
-                    projeteis[j].velX = 0;
-                    projeteis[j].velY = 0;
-                    projeteis[j].ultimoFrame = SDL_GetTicks();
+
+                    if (projeteis[j].perfuracoes > 0)
+                    {
+                        // Perfurante: a bala atravessa este minion e segue em frente
+                        projeteis[j].perfuracoes--;
+                    }
+                    else
+                    {
+                        projeteis[j].explodindo = true;
+                        projeteis[j].frame = 3;
+                        projeteis[j].velX = 0;
+                        projeteis[j].velY = 0;
+                        projeteis[j].ultimoFrame = SDL_GetTicks();
+                    }
                     pontos += 50;
                     inimigosDerrotados++;
+                    RegistrarAbate();
+
+
+                    // Explosão Açucarada: chance de explodir ao abater o minion
+                    if (explosaoChancePercent > 0 && rand() % 100 < explosaoChancePercent)
+                    {
+                        ExplodirAcucar(inimigos[i].rect.x + inimigos[i].rect.w / 2.0f,
+                            inimigos[i].rect.y + inimigos[i].rect.h / 2.0f);
+                    }
+
+                    break;
                 }
             }
         }

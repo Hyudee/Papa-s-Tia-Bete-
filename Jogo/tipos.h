@@ -63,6 +63,10 @@ typedef struct {
 
     int frame;
     Uint64 ultimoFrame;
+
+
+    Uint64 lentidaoFim;     // instante em que acaba a lentidão do Glacê (0 = sem lentidão)
+    int lentidaoPercent;    // quanto da velocidade ele perde enquanto durar
 }Boss;
 
 typedef struct
@@ -71,6 +75,10 @@ typedef struct
     bool      ativo;
     float     velX;
     float     velY;
+    float angulo;   // em graus; o sprite original aponta para a direita
+    int idDisparo;  // balas do mesmo clique têm o mesmo id (o Tiro Duplo conta como 1 disparo)
+    int dano;       // dano desta bala no boss, definido na hora do disparo
+    int perfuracoes;    // quantos minions esta bala ainda pode atravessar (Perfurante)
 
     int frame;
     Uint64 ultimoFrame;
@@ -107,6 +115,15 @@ typedef struct
     Uint64 inicioEstado;
 
 } Obstaculo;
+
+typedef struct
+{
+    bool   ativa;
+    float  x;       // centro da explosão
+    float  y;
+    float  raio;    // raio máximo, já multiplicado por escalaJogo
+    Uint64 inicio;
+} Explosao;
 
 enum FlashBase
 {
