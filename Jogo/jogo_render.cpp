@@ -173,8 +173,10 @@ void Jogo::RenderizarMundo() {
         SDL_Texture* textura = texturasInimigo[inimigos[i].tipo];
         bool arteProvisoria = (textura == NULL);
 
-        if (arteProvisoria)
-            textura = texturaInimigo;
+        if (inimigos[i].temCor)
+            SDL_SetTextureColorMod(textura, inimigos[i].corR, inimigos[i].corG, inimigos[i].corB);
+        else if (arteProvisoria)
+            SDL_SetTextureColorMod(textura, dados.corR, dados.corG, dados.corB);
 
         // A geometria da folha acompanha a textura realmente usada
         const DadosInimigo& folha = arteProvisoria ? DadosDoInimigo(INIMIGO_COMUM) : dados;
@@ -189,13 +191,31 @@ void Jogo::RenderizarMundo() {
             (float)folha.frameAltura
         };
 
-        if (arteProvisoria)
+        // Divisor morrendo: toca a animacao de divisao (3 quadros, uma vez), sem o tom vermelho
+        bool dividindo = inimigos[i].morrendo && inimigos[i].tipo == INIMIGO_DIVISOR &&
+            texturaDivisaoMarshmallow != NULL;
+
+        if (dividindo)
+        {
+            textura = texturaDivisaoMarshmallow;
+            arteProvisoria = false;
+
+            int frameDivisao = FrameDivisao(SDL_GetTicks() - inimigos[i].flashInicio, dados.msMorte);
+
+            src = { (float)(frameDivisao * 64), 0.0f, 64.0f, 64.0f };
+        }
+
+        if (inimigos[i].temCor)
+            SDL_SetTextureColorMod(textura, inimigos[i].corR, inimigos[i].corG, inimigos[i].corB);
+        else if (arteProvisoria)
             SDL_SetTextureColorMod(textura, dados.corR, dados.corG, dados.corB);
 
-        if (inimigos[i].morrendo)
+        if (inimigos[i].morrendo && !dividindo)
             SDL_SetTextureColorMod(textura, 255, 80, 80);
 
-        SDL_RenderTexture(renderer, textura, &src, &inimigos[i].rect);
+        // angulo = 0 para todos os tipos, menos o Caramelo (inclina junto com o zigue-zague)
+        SDL_RenderTextureRotated(renderer, textura, &src, &inimigos[i].rect,
+            inimigos[i].angulo, NULL, SDL_FLIP_NONE);
 
         // Flash branco de acerto (camada aditiva): so quando o tiro acertou e o minion sobreviveu
         if (!inimigos[i].morrendo && inimigos[i].hitInicio != 0 &&
@@ -206,7 +226,8 @@ void Jogo::RenderizarMundo() {
 
             SDL_SetTextureBlendMode(textura, SDL_BLENDMODE_ADD);
             SDL_SetTextureColorMod(textura, 255, 255, 255);
-            SDL_RenderTexture(renderer, textura, &src, &inimigos[i].rect);
+            SDL_RenderTextureRotated(renderer, textura, &src, &inimigos[i].rect,
+                inimigos[i].angulo, NULL, SDL_FLIP_NONE);
             SDL_SetTextureBlendMode(textura, modoAntigo);
         }
 

@@ -37,6 +37,15 @@ typedef struct
     int    vida;            // golpes que ainda aguenta
     int    vidaMax;
     Uint64 hitInicio;       // instante do ultimo golpe que NAO matou (flash de acerto, Lote 13b)
+
+    bool   temCor;          // true = usa a cor propria abaixo (Granulado); zero = sem cor propria
+    unsigned char corR, corG, corB;
+
+    int    ultimoIdDisparo; // id do ultimo disparo que acertou (tipos com golpesFixos); 0 = nenhum
+
+    float  yBase;           // Caramelo: linha central do zigue-zague
+    float  fase;            // Caramelo: fase da senoide, em radianos
+    float  angulo;          // inclinacao do sprite em graus (so o Caramelo usa; 0 nos demais)
 } Inimigo;
 
 typedef struct
@@ -85,6 +94,7 @@ typedef struct
     int idDisparo;  // balas do mesmo clique têm o mesmo id (o Tiro Duplo conta como 1 disparo)
     int dano;       // dano desta bala no boss, definido na hora do disparo
     int perfuracoes;    // quantos minions esta bala ainda pode atravessar (Perfurante)
+    int alvoAtravessado;    // minion (indice + 1) que a bala acabou de atravessar; 0 = nenhum (nao acerta o mesmo duas vezes)
 
     int frame;
     Uint64 ultimoFrame;

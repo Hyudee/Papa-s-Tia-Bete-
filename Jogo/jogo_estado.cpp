@@ -62,6 +62,8 @@ void Jogo::ReiniciarPartida()
 
     // Entidades
     memset(inimigos, 0, sizeof(inimigos));
+    tiposAtivos[0] = INIMIGO_COMUM;     // onda 1: so minion comum
+    totalTiposAtivos = 1;    
     memset(projeteis, 0, sizeof(projeteis));
     memset(vidasPowerup, 0, sizeof(vidasPowerup));
     memset(ataquePowerup, 0, sizeof(ataquePowerup));

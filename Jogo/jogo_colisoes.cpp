@@ -316,12 +316,23 @@ void Jogo::ColisaoProjeteisInimigos() {
                 if (!projeteis[j].ativo || projeteis[j].explodindo)
                     continue;
 
+                // Bala perfurante que acabou de atravessar este minion nao o acerta de novo
+                if (projeteis[j].alvoAtravessado == i + 1)
+                    continue;
+
                 if (SDL_HasRectIntersectionFloat(
                     &inimigos[i].rect,
                     &projeteis[j].rect))
                 {
-                    // O tiro causa dano; o minion so morre quando a vida chega a 0
-                    inimigos[i].vida -= projeteis[j].dano;
+                    // O tiro causa dano; o minion so morre quando a vida chega a 0.
+                    // Tipos com golpesFixos (Rapadura) perdem 1 de vida por DISPARO, qualquer que seja o dano.
+                    int danoNoMinion = DanoNoMinion(DadosDoInimigo(inimigos[i].tipo),
+                        projeteis[j].dano, projeteis[j].idDisparo, inimigos[i].ultimoIdDisparo);
+
+                    if (DadosDoInimigo(inimigos[i].tipo).golpesFixos)
+                        inimigos[i].ultimoIdDisparo = projeteis[j].idDisparo;
+
+                    inimigos[i].vida -= danoNoMinion;
                     bool morreu = inimigos[i].vida <= 0;
 
                     if (morreu)
@@ -329,7 +340,7 @@ void Jogo::ColisaoProjeteisInimigos() {
                         inimigos[i].morrendo = true;
                         inimigos[i].flashInicio = SDL_GetTicks();
                     }
-                    else
+                    else if (danoNoMinion > 0)
                     {
                         inimigos[i].hitInicio = SDL_GetTicks();
                     }
@@ -338,6 +349,7 @@ void Jogo::ColisaoProjeteisInimigos() {
                     {
                         // Perfurante: a bala atravessa este minion e segue em frente
                         projeteis[j].perfuracoes--;
+                        projeteis[j].alvoAtravessado = i + 1;
                     }
                     else
                     {

@@ -208,6 +208,9 @@ void Jogo::AtualizarOndasEBuffs()
         inimigosAtivos = MaximoInimigosVivos(ondas);
 
         intervaloSpawn = IntervaloSpawn(ondas);
+
+        // Libera os tipos de minion que ja podem nascer nesta onda (cada spawn sorteia entre eles)
+        totalTiposAtivos = ListarTiposLiberados(ondas, tiposAtivos);
     }
 }
 
@@ -236,17 +239,52 @@ void Jogo::AtualizarSpawn() {
             if (quantidadeSpawn > inimigosAtivos - vivos)
                 quantidadeSpawn = inimigosAtivos - vivos;
 
+            int criados = 0;            // quantos minions ja nasceram neste spawn (o bando conta cada membro)
+            int granuladosNoSpawn = 0;  // granulados deste spawn, somando todos os bandos (maximo MAX_GRANULADOS_POR_SPAWN)
+
             for (int s = 0; s < quantidadeSpawn; s++)
             {
-                TipoInimigo tipo = SortearTipoInimigo(ondas);
+                int vagas = VagasNoTeto(inimigosAtivos, vivos, criados);
+
+                if (vagas <= 0)
+                    break;
+
+                TipoInimigo tipo = SortearTipoInimigo(tiposAtivos, totalTiposAtivos);
+
+                // Granulado nasce em bando; os outros tipos nascem um por vez
+                int membros = 1;
+
+                if (tipo == INIMIGO_GRANULADO)
+                {
+                    // O bando nunca passa do teto de vivos nem do limite de granulados por spawn
+                    membros = MembrosDoBando(TamanhoBandoGranulado(), vagas, granuladosNoSpawn);
+
+                    if (membros <= 0)
+                        continue;   // ja nasceram granulados demais neste spawn
+                }
+
                 float altura = tamanhoInimigo * DadosDoInimigo(tipo).fatorTamanho;
+                int faixaY = alturaTela - (int)altura;
 
-                float x = larguraTela + (s * 70) + (rand() % 20);
-                float y = (float)(rand() % (alturaTela - (int)altura));
+                if (faixaY < 1)
+                    faixaY = 1;
 
-                SpawnarInimigo(tipo, x, y);
+                for (int m = 0; m < membros; m++)
+                {
+                    float x = larguraTela + (s * 70) + (m * 30) + (rand() % 20);
+                    float y = (float)(rand() % faixaY);   // cada membro nasce numa altura propria
+
+                    if (SpawnarInimigo(tipo, x, y))
+                    {
+                        criados++;
+
+                        if (tipo == INIMIGO_GRANULADO)
+                            granuladosNoSpawn++;
+                    }
+                }
             }
         }
+
         // Spawn do coração (powerup de vida)
         // O relógio roda sempre, com a vida cheia ou não. Quando o tempo sorteado passa, ele
         // recomeça com um novo sorteio (70% a 130% do intervalo) e o coração só nasce se a vida
@@ -417,13 +455,45 @@ bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
         inimigos[i].vida = dados.vida;
         inimigos[i].vidaMax = dados.vida;
         inimigos[i].hitInicio = 0;
+        inimigos[i].ultimoIdDisparo = 0;
+
+        // Cor propria so para o Granulado (a vaga pode ter sido de outro tipo: sempre reescrever)
+        inimigos[i].temCor = false;
+
+        if (tipo == INIMIGO_GRANULADO)
+        {
+            CorRGB cor = CorAleatoriaGranulado();
+
+            inimigos[i].temCor = true;
+            inimigos[i].corR = cor.r;
+            inimigos[i].corG = cor.g;
+            inimigos[i].corB = cor.b;
+        }
+
         inimigos[i].frame = 0;
         inimigos[i].ultimoFrame = SDL_GetTicks();
 
         inimigos[i].rect.w = tamanhoInimigo * dados.fatorTamanho;
         inimigos[i].rect.h = tamanhoInimigo * dados.fatorTamanho;
+        
         inimigos[i].rect.x = x;
         inimigos[i].rect.y = y;
+
+        inimigos[i].yBase = y;
+        inimigos[i].fase = 0.0f;
+        inimigos[i].angulo = 0.0f;
+
+        // Caramelo: zigue-zague em torno de uma linha central que deixa a onda inteira dentro da tela
+        if (tipo == INIMIGO_CARAMELO)
+        {
+            float amplitude = CARAMELO_AMPLITUDE * escalaJogo;
+
+            inimigos[i].yBase = YBaseCaramelo(y, amplitude, (float)alturaTela, inimigos[i].rect.h);
+            inimigos[i].fase = (float)(rand() % 628) / 100.0f;   // fase inicial aleatoria (0 a 2 pi)
+            inimigos[i].rect.y = CarameloY(inimigos[i].yBase, amplitude, inimigos[i].fase,
+                (float)alturaTela, inimigos[i].rect.h);
+            inimigos[i].angulo = CarameloAngulo(inimigos[i].fase);
+        }
 
         inimigos[i].speed = VelocidadeInimigo(ondas) * dados.fatorVelocidade * escalaJogo;
 
@@ -436,6 +506,23 @@ bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
     return false;
 }
 
+// O Divisor terminou a animacao de divisao: nascem os filhotes.
+// Os filhotes NAO contam no teto de vivos (inimigosAtivos); so a vaga no array limita.
+// Se faltar vaga, nasce so o que couber.
+void Jogo::DividirDivisor(SDL_FRect pai)
+{
+    float tamFilhote = tamanhoInimigo * DadosDoInimigo(INIMIGO_FILHOTE).fatorTamanho;
+
+    for (int k = 0; k < FILHOTES_POR_DIVISAO; k++)
+    {
+        float x, y;
+        PosicaoFilhote(pai.x, pai.y, pai.w, pai.h, tamFilhote, k, (float)alturaTela, &x, &y);
+
+        if (!SpawnarInimigo(INIMIGO_FILHOTE, x, y))
+            break;
+    }
+}
+
 void Jogo::AtualizarInimigos() {
     if (estado == JOGAR) {
         for (int i = 0; i < MAX_INIMIGOS; i++)
@@ -443,8 +530,15 @@ void Jogo::AtualizarInimigos() {
             if (inimigos[i].morrendo)
             {
                 if (SDL_GetTicks() - inimigos[i].flashInicio >= (Uint64)DadosDoInimigo(inimigos[i].tipo).msMorte) {
+                    SDL_FRect posicaoPai = inimigos[i].rect;
+                    bool eraDivisor = (inimigos[i].tipo == INIMIGO_DIVISOR);
+
+                    // Libera a vaga ANTES de criar os filhotes (um deles pode ocupar a vaga do pai)
                     inimigos[i].morrendo = false;
                     inimigos[i].ativo = false;
+
+                    if (eraDivisor)
+                        DividirDivisor(posicaoPai);
                 }
                 continue;
             }
@@ -460,7 +554,18 @@ void Jogo::AtualizarInimigos() {
 
                     inimigos[i].ultimoFrame = SDL_GetTicks();
                 }
+
                 inimigos[i].rect.x -= inimigos[i].speed;
+
+                // Caramelo: o y acompanha a senoide (sempre dentro da tela) e o sprite inclina
+                if (inimigos[i].tipo == INIMIGO_CARAMELO)
+                {
+                    inimigos[i].fase += AvancoFaseCaramelo(inimigos[i].speed, escalaJogo);
+
+                    inimigos[i].rect.y = CarameloY(inimigos[i].yBase, CARAMELO_AMPLITUDE * escalaJogo,
+                        inimigos[i].fase, (float)alturaTela, inimigos[i].rect.h);
+                    inimigos[i].angulo = CarameloAngulo(inimigos[i].fase);
+                }
 
                 if (inimigos[i].rect.x + inimigos[i].rect.w < 0)
                 {

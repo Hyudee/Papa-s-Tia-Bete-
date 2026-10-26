@@ -792,6 +792,7 @@ void Jogo::DispararTiro(float mouseX, float mouseY)
         projeteis[i].angulo = angulo;
         projeteis[i].dano = danoBala;
         projeteis[i].perfuracoes = perfuracoesTiro;
+        projeteis[i].alvoAtravessado = 0;
 
         float velocidade = 12.0f * escalaJogo * velocidadeTiroPercent / 100.0f;
 

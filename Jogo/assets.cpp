@@ -127,7 +127,7 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregarOpcional(texturasInimigo[INIMIGO_DIVISOR], "assets/minion_marshmallow.png");
     carregarOpcional(texturasInimigo[INIMIGO_FILHOTE], "assets/minion_marshmallow_filhote.png");
     carregarOpcional(texturasInimigo[INIMIGO_PIRULITO], "assets/minion_pirulito.png");
-
+    carregarOpcional(texturaDivisaoMarshmallow, "assets/minion_marshmallow_divisao.png");
     pilulaDestaque.reset(CriarTexturaDestaque(renderer));
 
     if (!pilulaDestaque)

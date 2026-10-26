@@ -93,6 +93,7 @@ private:
     SDL_Texture* sair;
     SDL_Texture* texturaInimigo;
     SDL_Texture* texturasInimigo[TOTAL_TIPOS_INIMIGO] = { 0 };   // por tipo; [0] = texturaInimigo
+    SDL_Texture* texturaDivisaoMarshmallow = NULL;   // animacao de divisao do Divisor
     SDL_Texture* texturaPlayer;
     SDL_Texture* texturaPlayerSujo;
     SDL_Texture* projetil;
@@ -212,7 +213,8 @@ private:
     void AtualizarSpawn();
     void AtualizarProjeteis();
     void AtualizarInimigos();
-    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga    
+    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga
+    void DividirDivisor(SDL_FRect pai);                        // cria os filhotes do Divisor que acabou de morrer
     void AtualizarPowerups();
     void AtualizarBoss();
     void AtualizarObstaculos();
@@ -324,6 +326,8 @@ private:
 
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo inimigos[MAX_INIMIGOS] = { 0 };
+    TipoInimigo tiposAtivos[TOTAL_TIPOS_INIMIGO] = { INIMIGO_COMUM };   // tipos que nascem nesta onda (Lote 13c)
+    int totalTiposAtivos = 1;    
     Boss boss = { 0 };
     PowerupVida vidasPowerup[MAX_POWERUPS] = { 0 };
     PowerupAtq ataquePowerup[MAX_POWERUPSATQ] = { 0 };

@@ -16,6 +16,7 @@ struct Assets
     SdlPtr<SDL_Texture> sair;
     SdlPtr<SDL_Texture> texturaInimigo;
     SdlPtr<SDL_Texture> texturasInimigo[TOTAL_TIPOS_INIMIGO];   // arte de cada tipo; [0] nao e usado (o comum e texturaInimigo)
+    SdlPtr<SDL_Texture> texturaDivisaoMarshmallow;   // animacao de divisao do Divisor (3 quadros de 64x64)
     SdlPtr<SDL_Texture> texturaPlayer;
     SdlPtr<SDL_Texture> texturaPlayerSujo;
     SdlPtr<SDL_Texture> projetil;

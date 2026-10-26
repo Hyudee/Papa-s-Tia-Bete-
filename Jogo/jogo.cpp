@@ -155,8 +155,8 @@ bool Jogo::Iniciar()
     texturasInimigo[INIMIGO_COMUM] = texturaInimigo;
     for (int t = INIMIGO_COMUM + 1; t < TOTAL_TIPOS_INIMIGO; t++)
         texturasInimigo[t] = assets.texturasInimigo[t].get();
-    texturaPlayer = assets.texturaPlayer.get();
-    texturaPlayerSujo = assets.texturaPlayerSujo.get();
+    texturaDivisaoMarshmallow = assets.texturaDivisaoMarshmallow.get();
+    texturaPlayer = assets.texturaPlayer.get();    texturaPlayerSujo = assets.texturaPlayerSujo.get();
     projetil = assets.projetil.get();
     gameover = assets.gameover.get();
     coracao = assets.coracao.get();
