@@ -172,6 +172,16 @@ bool Jogo::Iniciar()
     upgradeImgBalas = assets.upgradeImgBalas.get();
     upgradeImgDuplo = assets.upgradeImgDuplo.get();
     upgradeImgCacador = assets.upgradeImgCacador.get();
+    upgradeImgCadencia = assets.upgradeImgCadencia.get();
+    upgradeImgBalaPesada = assets.upgradeImgBalaPesada.get();
+    upgradeImgPernas = assets.upgradeImgPernas.get();
+    upgradeImgDoceSorte = assets.upgradeImgDoceSorte.get();
+    upgradeImgGlace = assets.upgradeImgGlace.get();
+    upgradeImgPerfurante = assets.upgradeImgPerfurante.get();
+    upgradeImgBarreira = assets.upgradeImgBarreira.get();
+    upgradeImgExplosao = assets.upgradeImgExplosao.get();
+    upgradeImgFuria = assets.upgradeImgFuria.get();
+    upgradeImgPacto = assets.upgradeImgPacto.get();
 
     // Cursor
 

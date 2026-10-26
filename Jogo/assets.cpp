@@ -103,6 +103,16 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregar(upgradeImgBalas, "assets/mais_balas.png");
     carregar(upgradeImgDuplo, "assets/tiro_duplo.png");
     carregar(upgradeImgCacador, "assets/matador_de_boss.png");
+    carregar(upgradeImgCadencia, "assets/cadencia.png");
+    carregar(upgradeImgBalaPesada, "assets/bala_pesada.png");
+    carregar(upgradeImgPernas, "assets/pernas_acucar.png");
+    carregar(upgradeImgDoceSorte, "assets/doce_sorte.png");
+    carregar(upgradeImgGlace, "assets/glace.png");
+    carregar(upgradeImgPerfurante, "assets/perfurante.png");
+    carregar(upgradeImgBarreira, "assets/barreira.png");
+    carregar(upgradeImgExplosao, "assets/explosao.png");
+    carregar(upgradeImgFuria, "assets/furia.png");
+    carregar(upgradeImgPacto, "assets/pacto_amargo.png");
     carregarOpcional(molduraCarta[0], "assets/carta_comum.png");
     carregarOpcional(molduraCarta[1], "assets/carta_rara.png");
     carregarOpcional(molduraCarta[2], "assets/carta_epica.png");

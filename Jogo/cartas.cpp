@@ -29,7 +29,7 @@ static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
     { CARTA_CADENCIA,     "CADENCIA",        "-20% tempo entre tiros",    RARIDADE_COMUM, MAX_CADENCIA,                    90,  0 },
     { CARTA_BALA_PESADA,  "BALA PESADA",     "+2 dano, tiro mais lento",  RARIDADE_COMUM, MAX_BALA_PESADA,                 80,  0 },
     { CARTA_PERNAS_ACUCAR,"PERNAS DE ACUCAR","+10% velocidade, mais recuo", RARIDADE_COMUM, MAX_PERNAS,                     80,  0 },
-    { CARTA_DOCE_SORTE,   "DOCE SORTE",      "Coracao lento e frequente", RARIDADE_COMUM, MAX_DOCE_SORTE,                  60,  0 },
+    { CARTA_DOCE_SORTE,   "DOCE SORTE",      "Maça lenta e frequente", RARIDADE_COMUM, MAX_DOCE_SORTE,                  60,  0 },
     { CARTA_GLACE,        "GLACE PEGAJOSO",  "Boss 15% mais lento, -1 dano", RARIDADE_RARA, MAX_GLACE,                     40,  0 },
     { CARTA_PERFURANTE,   "PERFURANTE",      "Atravessa +1 inimigo, tiro lento", RARIDADE_RARA, MAX_PERFURANTE,            40,  0 },
     { CARTA_BARREIRA,     "BARREIRA DA BASE", "Bloqueia 1 minion, recarga 25s", RARIDADE_RARA, MAX_BARREIRA,               35,  0 },

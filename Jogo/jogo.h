@@ -113,6 +113,16 @@ private:
     SDL_Texture* upgradeImgBalas;
     SDL_Texture* upgradeImgDuplo;
     SDL_Texture* upgradeImgCacador;
+    SDL_Texture* upgradeImgCadencia;
+    SDL_Texture* upgradeImgBalaPesada;
+    SDL_Texture* upgradeImgPernas;
+    SDL_Texture* upgradeImgDoceSorte;
+    SDL_Texture* upgradeImgGlace;
+    SDL_Texture* upgradeImgPerfurante;
+    SDL_Texture* upgradeImgBarreira;
+    SDL_Texture* upgradeImgExplosao;
+    SDL_Texture* upgradeImgFuria;
+    SDL_Texture* upgradeImgPacto;
     SdlPtr<SDL_Cursor> cursor;
 
     // VARIÁVEIS DO JOGADOR

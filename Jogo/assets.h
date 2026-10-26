@@ -34,6 +34,16 @@ struct Assets
     SdlPtr<SDL_Texture> upgradeImgBalas;
     SdlPtr<SDL_Texture> upgradeImgDuplo;
     SdlPtr<SDL_Texture> upgradeImgCacador;
+    SdlPtr<SDL_Texture> upgradeImgCadencia;
+    SdlPtr<SDL_Texture> upgradeImgBalaPesada;
+    SdlPtr<SDL_Texture> upgradeImgPernas;
+    SdlPtr<SDL_Texture> upgradeImgDoceSorte;
+    SdlPtr<SDL_Texture> upgradeImgGlace;
+    SdlPtr<SDL_Texture> upgradeImgPerfurante;
+    SdlPtr<SDL_Texture> upgradeImgBarreira;
+    SdlPtr<SDL_Texture> upgradeImgExplosao;
+    SdlPtr<SDL_Texture> upgradeImgFuria;
+    SdlPtr<SDL_Texture> upgradeImgPacto;
 
     // Arte opcional da tela de cartas: se o arquivo não existir, o jogo desenha formas simples no lugar
     SdlPtr<SDL_Texture> molduraCarta[3];   // comum, rara e épica (carta_comum.png, carta_rara.png, carta_epica.png)

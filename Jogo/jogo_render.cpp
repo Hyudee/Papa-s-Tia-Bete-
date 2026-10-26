@@ -521,6 +521,17 @@ SDL_Texture* Jogo::ImagemDaCarta(IdCarta id) const
     case CARTA_MAIS_BALAS:   return upgradeImgBalas;
     case CARTA_TIRO_DUPLO:   return upgradeImgDuplo;
     case CARTA_CACADOR_BOSS: return upgradeImgCacador;
+	case CARTA_CADENCIA:     return upgradeImgCadencia;
+    case CARTA_BALA_PESADA:  return upgradeImgBalaPesada;
+    case CARTA_PERNAS_ACUCAR:return upgradeImgPernas;
+    case CARTA_DOCE_SORTE:   return upgradeImgDoceSorte;
+    case CARTA_GLACE:        return upgradeImgGlace;
+    case CARTA_PERFURANTE:   return upgradeImgPerfurante;
+    case CARTA_BARREIRA:     return upgradeImgBarreira;
+    case CARTA_EXPLOSAO:     return upgradeImgExplosao;
+	case CARTA_FURIA:        return upgradeImgFuria;
+    case CARTA_PACTO_AMARGO: return upgradeImgPacto;
+
     default:                 return nullptr;
     }
 }
