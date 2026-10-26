@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sdl_raii.h"
+#include "inimigos.h"
 
 // Texturas do jogo (RAII)
 
@@ -14,6 +15,7 @@ struct Assets
     SdlPtr<SDL_Texture> creditos;
     SdlPtr<SDL_Texture> sair;
     SdlPtr<SDL_Texture> texturaInimigo;
+    SdlPtr<SDL_Texture> texturasInimigo[TOTAL_TIPOS_INIMIGO];   // arte de cada tipo; [0] nao e usado (o comum e texturaInimigo)
     SdlPtr<SDL_Texture> texturaPlayer;
     SdlPtr<SDL_Texture> texturaPlayerSujo;
     SdlPtr<SDL_Texture> projetil;

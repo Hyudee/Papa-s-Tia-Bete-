@@ -167,20 +167,51 @@ void Jogo::RenderizarMundo() {
         if (!inimigos[i].ativo && !inimigos[i].morrendo)
             continue;
 
-        if (inimigos[i].morrendo)
-            SDL_SetTextureColorMod(texturaInimigo, 255, 80, 80);
+        const DadosInimigo& dados = DadosDoInimigo(inimigos[i].tipo);
 
-        SDL_FRect src = {            // bloco dos inimigos
-            (float)(inimigos[i].frame * larguraFrameInimigo),
-            0,
-            (float)larguraFrameInimigo,
-            (float)alturaFrameInimigo
+        // Arte do tipo; se o arquivo nao existir, usa o cubo de acucar com a cor provisoria da tabela
+        SDL_Texture* textura = texturasInimigo[inimigos[i].tipo];
+        bool arteProvisoria = (textura == NULL);
+
+        if (arteProvisoria)
+            textura = texturaInimigo;
+
+        // A geometria da folha acompanha a textura realmente usada
+        const DadosInimigo& folha = arteProvisoria ? DadosDoInimigo(INIMIGO_COMUM) : dados;
+
+        int coluna = inimigos[i].frame % folha.framesAndar;
+        int linha = EstadoDeVida(folha, inimigos[i].vida, inimigos[i].vidaMax);
+
+        SDL_FRect src = {            // bloco dos inimigos: colunas = frames, linhas = estados de vida
+            (float)(coluna * folha.frameLargura),
+            (float)(linha * folha.frameAltura),
+            (float)folha.frameLargura,
+            (float)folha.frameAltura
         };
 
-        SDL_RenderTexture(renderer, texturaInimigo, &src, &inimigos[i].rect);
+        if (arteProvisoria)
+            SDL_SetTextureColorMod(textura, dados.corR, dados.corG, dados.corB);
 
         if (inimigos[i].morrendo)
-            SDL_SetTextureColorMod(texturaInimigo, 255, 255, 255);
+            SDL_SetTextureColorMod(textura, 255, 80, 80);
+
+        SDL_RenderTexture(renderer, textura, &src, &inimigos[i].rect);
+
+        // Flash branco de acerto (camada aditiva): so quando o tiro acertou e o minion sobreviveu
+        if (!inimigos[i].morrendo && inimigos[i].hitInicio != 0 &&
+            SDL_GetTicks() - inimigos[i].hitInicio < (Uint64)MS_FLASH_ACERTO)
+        {
+            SDL_BlendMode modoAntigo = SDL_BLENDMODE_BLEND;
+            SDL_GetTextureBlendMode(textura, &modoAntigo);
+
+            SDL_SetTextureBlendMode(textura, SDL_BLENDMODE_ADD);
+            SDL_SetTextureColorMod(textura, 255, 255, 255);
+            SDL_RenderTexture(renderer, textura, &src, &inimigos[i].rect);
+            SDL_SetTextureBlendMode(textura, modoAntigo);
+        }
+
+        // A textura e compartilhada: devolve a cor ao normal depois de cada minion
+        SDL_SetTextureColorMod(textura, 255, 255, 255);
     }
 
     // Obstáculos

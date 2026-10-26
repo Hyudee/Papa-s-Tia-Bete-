@@ -118,6 +118,16 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregarOpcional(molduraCarta[2], "assets/carta_epica.png");
     carregarOpcional(brilhoCarta, "assets/carta_brilho.png");
     carregarOpcional(burstCarta, "assets/carta_burst.png");
+    carregarOpcional(burstCarta, "assets/carta_burst.png");
+
+    // Arte dos minions por tipo: se faltar o arquivo, o jogo desenha o cubo de acucar com a cor provisoria da tabela
+    carregarOpcional(texturasInimigo[INIMIGO_RAPADURA], "assets/minion_rapadura.png");
+    carregarOpcional(texturasInimigo[INIMIGO_GRANULADO], "assets/minion_granulado.png");
+    carregarOpcional(texturasInimigo[INIMIGO_CARAMELO], "assets/minion_caramelo.png");
+    carregarOpcional(texturasInimigo[INIMIGO_DIVISOR], "assets/minion_marshmallow.png");
+    carregarOpcional(texturasInimigo[INIMIGO_FILHOTE], "assets/minion_marshmallow_filhote.png");
+    carregarOpcional(texturasInimigo[INIMIGO_PIRULITO], "assets/minion_pirulito.png");
+
     pilulaDestaque.reset(CriarTexturaDestaque(renderer));
 
     if (!pilulaDestaque)

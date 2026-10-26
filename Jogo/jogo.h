@@ -92,6 +92,7 @@ private:
     SDL_Texture* creditos;
     SDL_Texture* sair;
     SDL_Texture* texturaInimigo;
+    SDL_Texture* texturasInimigo[TOTAL_TIPOS_INIMIGO] = { 0 };   // por tipo; [0] = texturaInimigo
     SDL_Texture* texturaPlayer;
     SDL_Texture* texturaPlayerSujo;
     SDL_Texture* projetil;
@@ -111,6 +112,7 @@ private:
     // Texturas das cartas de upgrade
     SDL_Texture* 
         Dano;
+    SDL_Texture* upgradeImgDano;
     SDL_Texture* upgradeImgVida;
     SDL_Texture* upgradeImgBalas;
     SDL_Texture* upgradeImgDuplo;
@@ -210,7 +212,8 @@ private:
     void AtualizarSpawn();
     void AtualizarProjeteis();
     void AtualizarInimigos();
-    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga    void AtualizarPowerups();
+    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga    
+    void AtualizarPowerups();
     void AtualizarBoss();
     void AtualizarObstaculos();
 

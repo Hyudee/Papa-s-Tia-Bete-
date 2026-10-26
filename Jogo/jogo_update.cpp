@@ -442,8 +442,7 @@ void Jogo::AtualizarInimigos() {
         {
             if (inimigos[i].morrendo)
             {
-                if (SDL_GetTicks() - inimigos[i].flashInicio >= 120)
-                {
+                if (SDL_GetTicks() - inimigos[i].flashInicio >= (Uint64)DadosDoInimigo(inimigos[i].tipo).msMorte) {
                     inimigos[i].morrendo = false;
                     inimigos[i].ativo = false;
                 }
@@ -452,12 +451,10 @@ void Jogo::AtualizarInimigos() {
 
             if (inimigos[i].ativo)
             {
-                if (SDL_GetTicks() - inimigos[i].ultimoFrame > 150)
-                {
+                if (SDL_GetTicks() - inimigos[i].ultimoFrame > (Uint64)DadosDoInimigo(inimigos[i].tipo).msPorFrame) {
                     inimigos[i].frame++;
 
-                    if (inimigos[i].frame >= totalFramesInimigo)
-                    {
+                    if (inimigos[i].frame >= DadosDoInimigo(inimigos[i].tipo).framesAndar) {
                         inimigos[i].frame = 0;
                     }
 
