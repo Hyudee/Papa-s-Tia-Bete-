@@ -213,7 +213,7 @@ void Jogo::ColisaoTiroBoss() {
 
 void Jogo::AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto) {
     // Brownie com escudo (e nas transicoes): a bala ja foi consumida; nao tira vida,
-    // nao renova o Glace e o Cacador de Boss nao fura (P9). So solta a faisca.
+    // nao renova o Glace e o Cacador de Boss nao fura. So solta a faisca.
     if (BossInvulneravel(boss.tipo, boss.estado))
     {
         for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)

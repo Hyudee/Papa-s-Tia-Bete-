@@ -49,6 +49,7 @@ void Jogo::ReiniciarPartida()
     boss = { 0 };
     memset(faiscas, 0, sizeof(faiscas));
     spawnBoss = 1000;
+    ultimoTipoBoss = -1;
     bossAtivados = 0;
     fimUltimoBoss = SDL_GetTicks();
 

@@ -208,6 +208,9 @@ private:
     void ConfirmarOpcaoPause();
     void AlternarOpcaoConfig();
     SDL_FRect RetanguloBotaoResultado() const;
+    SDL_FRect RetanguloBotaoVoltar() const;
+    void DesenharBotaoVoltar(bool selecionado);
+    void VoltarDaConfiguracao();
     void ConfirmarResultado();
 
     // Atualização do jogo
@@ -345,7 +348,7 @@ private:
 
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo inimigos[MAX_INIMIGOS] = { 0 };
-    TipoInimigo tiposAtivos[TOTAL_TIPOS_INIMIGO] = { INIMIGO_COMUM };   // tipos que nascem nesta onda (Lote 13c)
+    TipoInimigo tiposAtivos[TOTAL_TIPOS_INIMIGO] = { INIMIGO_COMUM };   // tipos que nascem nesta onda
     int totalTiposAtivos = 1;  
     TiroInimigo tirosInimigos[MAX_TIROS_INIMIGOS] = { 0 };   // tiros do Pirulito
     Boss boss = { 0 };
@@ -363,14 +366,15 @@ private:
     int spawnBoss = 1000;
     Uint64 fimUltimoBoss = 0;   // quando o último boss morreu ou chegou à base
     int bossAtivados = 0;
+    int ultimoTipoBoss = -1;   // tipo do último boss sorteado (-1 = nenhum)
     int frameBase = 0;
     int opcaoConfig = 0;  // 0 = Tela cheia, 1 = Música, 2 = Efeitos
     int opcaoPause = 0;  // 0 = Continuar, 2 = Menu
+    Sistema telaAnteriorConfig = MENU;   // para onde a tela de Configurações volta (MENU ou PAUSE)
     int opcaoUpgrade = 0;
     IdCarta ofertaCartas[NUM_CARTAS];   // cartas mostradas na tela de escolha
     int totalOfertaCartas = 0;
-    const char* opcoesPause[2] = { "Continuar", "Menu Principal" };
-    float yCreditos = 0.0f;
+    const char* opcoesPause[3] = { "Continuar", "Configurações", "Menu Principal" };    float yCreditos = 0.0f;
     float shakeX = 0.0f;
     float shakeY = 0.0f;
     float shakeDuracao = 0.0f;

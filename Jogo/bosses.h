@@ -21,12 +21,12 @@ enum TipoBoss
 enum EstadoBoss
 {
     BOSS_ANDANDO = 0,       // estado normal (todos os tipos)
-    BOSS_AVISANDO,          // Touro: para e treme antes de investir (13g)
-    BOSS_INVESTINDO,        // Touro: corrida em linha reta (13g)
-    BOSS_INVOCANDO,         // Churros: para e invoca (13h)
-    BOSS_ESCUDO_ENTRANDO,   // Brownie: transicao vulneravel -> escudo (13i)
-    BOSS_ESCUDO,            // Brownie: invulneravel e lento (13i)
-    BOSS_ESCUDO_SAINDO,      // Brownie: transicao escudo -> vulneravel (13i)
+    BOSS_AVISANDO,          // Touro: para e treme antes de investir 
+    BOSS_INVESTINDO,        // Touro: corrida em linha reta
+    BOSS_INVOCANDO,         // Churros: para e invoca
+    BOSS_ESCUDO_ENTRANDO,   // Brownie: transicao vulneravel -> escudo
+    BOSS_ESCUDO,            // Brownie: invulneravel e lento
+    BOSS_ESCUDO_SAINDO,      // Brownie: transicao escudo -> vulneravel
     BOSS_ARREMESSANDO,      // Chocolate: arranca e arremessa um pedaco (anda enquanto isso)
     BOSS_DERRETENDO         // Chocolate: transicao entre estagios de arte
 };
@@ -75,7 +75,8 @@ inline constexpr AnimBoss TABELA_ANIM_BOSS[TOTAL_ANIM_BOSS] =
     { 6, 120,  255, 255, 255 },   // CHOCOLATE E3 andar
     { 6, 100,  255, 255, 255 },   // CHOCOLATE E3 arremesso
     { 4, 120,  255, 255, 255 },   // CHOCOLATE transicao 1-2
-    { 4, 120,  255, 255, 255 },   // CHOCOLATE transicao 2-3    { 6, 120,  230, 190, 120 },   // TOURO andar
+    { 4, 120,  255, 255, 255 },   // CHOCOLATE transicao 2-3    
+    { 6, 120,  230, 190, 120 },   // TOURO andar
     { 4, 120,  230, 120,  80 },   // TOURO carregar
     { 4, 120,  230, 120,  80 },   // TOURO investida
     { 6, 120,  240, 200, 120 },   // CHURROS andar
@@ -85,20 +86,24 @@ inline constexpr AnimBoss TABELA_ANIM_BOSS[TOTAL_ANIM_BOSS] =
     { 6, 200,  140,  90,  60 },   // BROWNIE escudo (animacao mais lenta que o andar)
 };
 
-// Quantos tipos entram no sorteio (os primeiros do enum). Sobe a cada boss
-// que ganha comportamento: 13g -> 2 (Touro, pronto), 13h -> 3 (Churros, pronto), 13i -> 4 (Brownie, pronto).
 inline constexpr int BOSSES_LIBERADOS = 4;
 
 // Sorteio a cada spawn de boss: qualquer tipo liberado, sem restricao por onda
-// e sem rotacao (P7). 'aleatorio' existe so para o teste (nullptr = rand()).
-inline TipoBoss SortearTipoBoss(int liberados = BOSSES_LIBERADOS, int (*aleatorio)(int limite) = nullptr)
+// e sem rotacao 'aleatorio' existe so para o teste (nullptr = rand()).
+inline TipoBoss SortearTipoBoss(int liberados = BOSSES_LIBERADOS, int (*aleatorio)(int limite) = nullptr, int ultimo = -1)
 {
     if (liberados < 1) liberados = 1;
     if (liberados > TOTAL_TIPOS_BOSS) liberados = TOTAL_TIPOS_BOSS;
 
-    int n = aleatorio ? aleatorio(liberados) : rand() % liberados;
+    // Sem repetir o tipo do boss anterior
+    bool evitar = (ultimo >= 0 && ultimo < liberados && liberados > 1);
+    int opcoes = evitar ? liberados - 1 : liberados;
+
+    int n = aleatorio ? aleatorio(opcoes) : rand() % opcoes;
     if (n < 0) n = 0;
-    if (n >= liberados) n = liberados - 1;
+    if (n >= opcoes) n = opcoes - 1;
+
+    if (evitar && n >= ultimo) n++;
 
     return (TipoBoss)n;
 }
@@ -134,7 +139,7 @@ inline AnimBossId AnimacaoDoBoss(TipoBoss tipo, EstadoBoss estado, int estagioAr
 }
 
 
-// ---- Touro de Goma: investida (Lote 13g) ----
+// ---- Touro de Goma: investida ----
 inline constexpr float TOURO_GATILHO_PROGRESSO = 0.35f;   // investe ao passar de 35% do caminho ate a base
 inline constexpr unsigned long long TOURO_MS_AVISO = 800;    // parado e tremendo
 inline constexpr unsigned long long TOURO_MS_INVESTIDA = 1000;   // duracao da corrida; depois anda normal
@@ -176,9 +181,9 @@ inline EstadoBoss TransicaoTouro(EstadoBoss estado, bool jaInvestiu, float progr
     }
 }
 
-// ---- Brownie: escudo (Lote 13i) ----
+// ---- Brownie: escudo ----
 inline constexpr unsigned long long BROWNIE_MS_VULNERAVEL = 6000;   // andando e vulneravel
-inline constexpr unsigned long long BROWNIE_MS_ESCUDO = 4000;   // escudo ativo (sem contar as transicoes)
+inline constexpr unsigned long long BROWNIE_MS_ESCUDO = 2400;   // escudo ativo (sem contar as transicoes)
 inline constexpr float BROWNIE_FATOR_ESCUDO = 0.3f;                 // velocidade com escudo e nas transicoes (30%)
 
 inline constexpr int   FAISCA_FRAMES = 3;      // assets/fx_faisca_escudo.png: 96x32 = 3 frames de 32x32
@@ -362,7 +367,7 @@ inline float FatorVelocidadeBoss(TipoBoss tipo, EstadoBoss estado, float fracaoV
 }
 
 
-// ---- Churros Mago: invocacao (Lote 13h) ----
+// ---- Churros Mago: invocacao ----
 inline constexpr unsigned long long CHURROS_MS_PRIMEIRA = 2000;   // 1a invocacao, depois do nascimento
 inline constexpr unsigned long long CHURROS_MS_INTERVALO = 6000;   // espera entre o fim de uma invocacao e a proxima
 inline constexpr int CHURROS_QTD_INVOCACAO = 2;    // minions por invocacao

@@ -180,6 +180,12 @@ bool Jogo::TelaCreditos()
         DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
             20, (float)(alturaTela - 50));
 
+        // Dica de rolagem rápida (canto inferior direito)
+        SDL_FRect medidaDica = MedirTextoCentrado(fontHud, "ESPAÇO - Acelerar", 0.0f, 0.0f);
+
+        DesenharTextoEsquerda(renderer, fontHud, "ESPAÇO - Acelerar", preto,
+            larguraTela - medidaDica.w - 20.0f, (float)(alturaTela - 50));
+
         SDL_RenderPresent(renderer);
         EsperarProximoFrame();
         return true;
@@ -216,9 +222,8 @@ bool Jogo::TelaRanking()
                 (float)(larguraTela / 2), (float)(150 + i * 80));
         }
 
-        // Voltar
-        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
-            20, (float)(alturaTela - 50));
+                // Voltar (ESC ou clique)
+        DesenharBotaoVoltar(true);
 
         SDL_RenderPresent(renderer);
         EsperarProximoFrame();
@@ -362,6 +367,35 @@ SDL_FRect Jogo::RetanguloBotaoResultado() const
         alturaTela * 0.82f);
 }
 
+// Botão "Voltar" no canto inferior esquerdo (deixa espaço para o destaque não sair da tela)
+SDL_FRect Jogo::RetanguloBotaoVoltar() const
+{
+    SDL_FRect medida = MedirTextoCentrado(fontHud, "ESC - Voltar", 0.0f, 0.0f);
+
+    return MedirTextoCentrado(fontHud, "ESC - Voltar",
+        20.0f + margemDestaqueX + medida.w / 2.0f,
+        (float)(alturaTela - 50));
+}
+
+void Jogo::DesenharBotaoVoltar(bool selecionado)
+{
+    SDL_FRect rect = RetanguloBotaoVoltar();
+
+    if (selecionado)
+        DesenharDestaque(rect, margemDestaqueX, margemDestaqueY, corDestaqueMarrom);
+
+    DesenharTextoCentrado(renderer, fontHud, "ESC - Voltar", preto,
+        rect.x + rect.w / 2, rect.y);
+}
+
+// Configurações volta para a tela de onde foi aberta (Menu ou Pause)
+void Jogo::VoltarDaConfiguracao()
+{
+    estado = telaAnteriorConfig;
+    telaAnteriorConfig = MENU;
+    opcaoConfig = 0;
+}
+
 bool Jogo::TelaConfiguracoes()
 {
     if (estado == CONFIGURACOES)
@@ -390,9 +424,8 @@ bool Jogo::TelaConfiguracoes()
                 rect.x + rect.w / 2, rect.y);
         }
 
-        // Voltar
-        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
-            20, (float)(alturaTela - 50));
+        // Voltar (ESC ou clique); destacado quando selecionado
+        DesenharBotaoVoltar(opcaoConfig == 3);
 
         SDL_RenderPresent(renderer);
         EsperarProximoFrame();
@@ -430,9 +463,8 @@ bool Jogo::TelaControles()
         DesenharTextoCentrado(renderer, fontHud, "ESC - Pausar / Voltar", preto,
             (float)(larguraTela / 2), yInicial + espacamento * 3);
 
-        // Voltar
-        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
-            20, (float)(alturaTela - 50));
+        // Voltar (ESC ou clique)
+        DesenharBotaoVoltar(true);
 
         SDL_RenderPresent(renderer);
         EsperarProximoFrame();
@@ -484,9 +516,8 @@ bool Jogo::TelaAjuda()
         DesenharTextoCentrado(renderer, fontHud, "Se a base perder todas as vidas, o jogo termina.", preto,
             (float)(larguraTela / 2), yInicial + espacamento * 11);
 
-        // Voltar
-        DesenharTextoEsquerda(renderer, fontHud, "ESC - Voltar", preto,
-            20, (float)(alturaTela - 50));
+        // Voltar (ESC ou clique)
+        DesenharBotaoVoltar(true);
 
         SDL_RenderPresent(renderer);
         EsperarProximoFrame();

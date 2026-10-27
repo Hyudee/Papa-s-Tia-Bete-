@@ -99,6 +99,7 @@ void Jogo::ConfirmarItemMenu(int item)
 
     case 3: // Engrenagem
         TocarEfeito(somConfirm);
+        telaAnteriorConfig = MENU;
         estado = CONFIGURACOES;
         break;
 
@@ -128,7 +129,14 @@ void Jogo::ConfirmarOpcaoPause()
         estado = JOGAR;
         break;
 
-    case 1: // Menu Principal
+    case 1: // Configurações (volta para o Pause)
+        TocarEfeito(somConfirm);
+        telaAnteriorConfig = PAUSE;
+        opcaoConfig = 0;
+        estado = CONFIGURACOES;
+        break;
+
+    case 2: // Menu Principal
         estado = MENU;
         break;
     }
@@ -308,6 +316,23 @@ void Jogo::ProcessarEventos()
             }
         }
 
+        // Botão "Voltar": clique esquerdo (Ranking, Controles, Ajuda e Configurações)
+        if ((estado == RANKING || estado == CONTROLES ||
+            estado == AJUDA || estado == CONFIGURACOES) &&
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT &&
+            MouseNaOpcao(event.button.x, event.button.y, RetanguloBotaoVoltar()))
+        {
+            TocarEfeito(somConfirm);
+
+            if (estado == CONFIGURACOES)
+                VoltarDaConfiguracao();
+            else
+                estado = MENU;
+
+            continue;
+        }
+
         if (estado == RANKING &&
             event.type == SDL_EVENT_KEY_DOWN)
         {
@@ -323,6 +348,9 @@ void Jogo::ProcessarEventos()
         {
             for (int i = 0; i < 3; i++)
             {
+                if (MouseNaOpcao(event.motion.x, event.motion.y, RetanguloBotaoVoltar()))
+                    opcaoConfig = 3;
+
                 if (MouseNaOpcao(event.motion.x, event.motion.y, RetanguloOpcaoConfig(i)))
                 {
                     opcaoConfig = i;
@@ -359,8 +387,8 @@ void Jogo::ProcessarEventos()
             switch (event.key.key)
             {
             case SDLK_ESCAPE:
-                estado = MENU;
-                break;
+                VoltarDaConfiguracao();
+                continue;
 
             case SDLK_W:
             case SDLK_UP:
@@ -370,12 +398,17 @@ void Jogo::ProcessarEventos()
 
             case SDLK_S:
             case SDLK_DOWN:
-                if (opcaoConfig < 2)
+                if (opcaoConfig < 3)
                     opcaoConfig++;
                 break;
 
             case SDLK_RETURN:
             case SDLK_KP_ENTER:
+                if (opcaoConfig == 3)
+                {
+                    VoltarDaConfiguracao();
+                    continue;
+                }
                 AlternarOpcaoConfig();
                 break;
             }
@@ -385,7 +418,7 @@ void Jogo::ProcessarEventos()
         if (estado == PAUSE &&
             event.type == SDL_EVENT_MOUSE_MOTION)
         {
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 if (MouseNaOpcao(event.motion.x, event.motion.y, RetanguloOpcaoPause(i)))
                 {
@@ -401,7 +434,7 @@ void Jogo::ProcessarEventos()
         {
             bool clicou = false;
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 if (MouseNaOpcao(event.button.x, event.button.y, RetanguloOpcaoPause(i)))
                 {
@@ -431,7 +464,7 @@ void Jogo::ProcessarEventos()
 
             case SDLK_S:
             case SDLK_DOWN:
-                if (opcaoPause < 1)
+                if (opcaoPause < 2)
                     opcaoPause++;
                 break;
 

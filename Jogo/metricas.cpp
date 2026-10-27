@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "metricas.h"
 
-// Formato v2 (Lote 13j): colunas novas no fim. Arquivo novo para nao misturar com o metricas.csv antigo.
 #define ARQUIVO_METRICAS "metricas_v2.csv"
 
 static_assert(TOTAL_TIPOS_INIMIGO == 7, "atualize NOMES_TIPO_INIMIGO em metricas.cpp");

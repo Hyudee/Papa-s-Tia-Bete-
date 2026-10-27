@@ -37,7 +37,7 @@ typedef struct
     TipoInimigo tipo;       // 0 = comum (precisa ser zero por causa do memset)
     int    vida;            // golpes que ainda aguenta
     int    vidaMax;
-    Uint64 hitInicio;       // instante do ultimo golpe que NAO matou (flash de acerto, Lote 13b)
+    Uint64 hitInicio;       // instante do ultimo golpe que NAO matou (flash de acerto)
 
     bool   temCor;          // true = usa a cor propria abaixo (Granulado); zero = sem cor propria
     unsigned char corR, corG, corB;
