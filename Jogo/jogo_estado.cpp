@@ -335,6 +335,7 @@ void Jogo::DeslocarTimers(Uint64 delta)
     boss.lentidaoFim += delta;    
     boss.estadoInicio += delta;
     boss.proximaInvocacao += delta;
+    boss.proximoArremesso += delta;
 
     for (int i = 0; i < MAX_EXPLOSOES; i++)
         explosoes[i].inicio += delta;

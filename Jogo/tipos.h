@@ -65,6 +65,7 @@ typedef struct
     int    frame;
     Uint64 ultimoFrame;
     bool   impacto;         // true = acertou o jogador e toca a animacao de impacto (parado, sem colisao)
+    int    tipo;            // TipoTiroInimigo
 } TiroInimigo;
 
 typedef struct
@@ -105,9 +106,12 @@ typedef struct {
     TipoBoss   tipo;        // 0 = chocolate (precisa ser zero por causa do boss = { 0 })
     EstadoBoss estado;      // 0 = andando
     Uint64 estadoInicio;    // instante em que entrou no estado atual
-    Uint64 proximaInvocacao;// Churros: instante da proxima invocacao (13h)
-    bool   investiu;        // Touro: ja fez a investida deste boss (13g)
-    bool   invocou;         // Churros: a invocacao da animacao atual ja saiu (13h)
+    Uint64 proximaInvocacao;// Churros: instante da proxima invocacao
+    bool   investiu;        // Touro: ja fez a investida deste boss
+    bool   invocou;         // Churros: a invocacao da animacao atual ja saiu
+    int    estagioArte;         // Chocolate: 0 = inteiro, 1 = amolecido, 2 = derretido
+    Uint64 proximoArremesso;    // Chocolate: instante do proximo arremesso
+    bool   arremessou;          // Chocolate: o pedaco da animacao atual ja saiu
 }Boss;
 
 typedef struct

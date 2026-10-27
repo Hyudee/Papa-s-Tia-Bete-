@@ -80,12 +80,14 @@ void Jogo::ColisaoTirosInimigosPlayer() {
 
         if (SDL_HasRectIntersectionFloat(&player, &tirosInimigos[k].rect))
         {
-            if (texturaTiroCaldaImpacto != NULL)
+            bool pedaco = (tirosInimigos[k].tipo == TIRO_PEDACO_CHOCOLATE);
+            SDL_Texture* texImpacto = pedaco ? texturaPedacoImpacto : texturaTiroCaldaImpacto;
+
+            if (texImpacto != NULL)
             {
-                // Toca a animacao de impacto no ponto do acerto (o tiro para e deixa de colidir)
                 float cx = tirosInimigos[k].rect.x + tirosInimigos[k].rect.w / 2.0f;
                 float cy = tirosInimigos[k].rect.y + tirosInimigos[k].rect.h / 2.0f;
-                float t = TIRO_IMPACTO_TAMANHO * escalaJogo;
+                float t = (pedaco ? CHOCOLATE_IMPACTO_TAMANHO : TIRO_IMPACTO_TAMANHO) * escalaJogo;
 
                 tirosInimigos[k].rect = { cx - t / 2.0f, cy - t / 2.0f, t, t };
                 tirosInimigos[k].velX = 0.0f;
@@ -240,6 +242,7 @@ void Jogo::AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto) {
     if (boss.vida <= 0)
     {
         boss.ativo = false;
+        LimparPedacosChocolate();
         contadores.bossesDerrotados[boss.tipo]++;
         pontos += 100;
         bossAtivados++;
@@ -338,6 +341,7 @@ void Jogo::ColisaoBossBase() {
 
                 tempoFlashBase = 0.2f; // 200 ms
                 boss.ativo = false;
+                LimparPedacosChocolate();
                 spawnBoss = pontos + 1000;
                 fimUltimoBoss = SDL_GetTicks();
 

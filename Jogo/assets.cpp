@@ -118,7 +118,6 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregarOpcional(molduraCarta[2], "assets/carta_epica.png");
     carregarOpcional(brilhoCarta, "assets/carta_brilho.png");
     carregarOpcional(burstCarta, "assets/carta_burst.png");
-    carregarOpcional(burstCarta, "assets/carta_burst.png");
 
     // Arte dos minions por tipo: se faltar o arquivo, o jogo desenha o cubo de acucar com a cor provisoria da tabela
     carregarOpcional(texturasInimigo[INIMIGO_RAPADURA], "assets/minion_rapadura.png");
@@ -132,8 +131,18 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregarOpcional(texturaTiroCalda, "assets/tiro_calda.png");
     carregarOpcional(texturaTiroCaldaImpacto, "assets/tiro_calda_impacto.png");
     carregarOpcional(texturaFaiscaEscudo, "assets/fx_faisca_escudo.png");
+    carregarOpcional(texturaPedacoChocolate, "assets/fx_pedaco_chocolate.png");
+    carregarOpcional(texturaPedacoImpacto, "assets/fx_pedaco_impacto.png");
 
-    // Bosses (Lote 13f): o chocolate usa texturaBoss; os demais sao opcionais
+    // Bosses: o chocolate usa texturaBoss; os demais sao opcionais
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_E1_ANDAR], "assets/boss_chocolate_e1_andar.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_E1_ARREMESSO], "assets/boss_chocolate_e1_arremesso.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_E2_ANDAR], "assets/boss_chocolate_e2_andar.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_E2_ARREMESSO], "assets/boss_chocolate_e2_arremesso.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_E3_ANDAR], "assets/boss_chocolate_e3_andar.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_E3_ARREMESSO], "assets/boss_chocolate_e3_arremesso.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_TRANSICAO_1_2], "assets/boss_chocolate_transicao_1_2.png");
+    carregarOpcional(texturasBoss[ANIM_CHOCOLATE_TRANSICAO_2_3], "assets/boss_chocolate_transicao_2_3.png");
     carregarOpcional(texturasBoss[ANIM_TOURO_ANDAR], "assets/boss_touro_andar.png");
     carregarOpcional(texturasBoss[ANIM_TOURO_CARREGAR], "assets/boss_touro_carregar.png");
     carregarOpcional(texturasBoss[ANIM_TOURO_INVESTIDA], "assets/boss_touro_investida.png");

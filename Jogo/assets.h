@@ -17,6 +17,8 @@ struct Assets
     SdlPtr<SDL_Texture> sair;
     SdlPtr<SDL_Texture> texturaTiroCalda;           // tiro do Pirulito: 4 quadros de 24x24
     SdlPtr<SDL_Texture> texturaTiroCaldaImpacto;    // impacto do tiro do Pirulito: 3 quadros de 32x32
+    SdlPtr<SDL_Texture> texturaPedacoChocolate;     // projetil do boss Chocolate: 4 quadros de 28x28
+    SdlPtr<SDL_Texture> texturaPedacoImpacto;       // impacto do pedaco: 4 quadros de 32x32
     SdlPtr<SDL_Texture> texturaFaiscaEscudo;        // bloqueio do escudo do Brownie: 3 quadros de 32x32
     SdlPtr<SDL_Texture> texturaInimigo;
     SdlPtr<SDL_Texture> texturasInimigo[TOTAL_TIPOS_INIMIGO];   // arte de cada tipo; [0] nao e usado (o comum e texturaInimigo)

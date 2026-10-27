@@ -26,14 +26,23 @@ enum EstadoBoss
     BOSS_INVOCANDO,         // Churros: para e invoca (13h)
     BOSS_ESCUDO_ENTRANDO,   // Brownie: transicao vulneravel -> escudo (13i)
     BOSS_ESCUDO,            // Brownie: invulneravel e lento (13i)
-    BOSS_ESCUDO_SAINDO      // Brownie: transicao escudo -> vulneravel (13i)
+    BOSS_ESCUDO_SAINDO,      // Brownie: transicao escudo -> vulneravel (13i)
+    BOSS_ARREMESSANDO,      // Chocolate: arranca e arremessa um pedaco (anda enquanto isso)
+    BOSS_DERRETENDO         // Chocolate: transicao entre estagios de arte
 };
 
 // Uma folha de arte por animacao (linha unica, frames de 128x128)
 enum AnimBossId
 {
     ANIM_BOSS_NENHUMA = 0,          // [0] nao e usado
-    ANIM_CHOCOLATE_ANDAR,           // assets/boss.png
+    ANIM_CHOCOLATE_E1_ANDAR,        // assets/boss_chocolate_e1_andar.png
+    ANIM_CHOCOLATE_E1_ARREMESSO,    // assets/boss_chocolate_e1_arremesso.png
+    ANIM_CHOCOLATE_E2_ANDAR,        // assets/boss_chocolate_e2_andar.png
+    ANIM_CHOCOLATE_E2_ARREMESSO,    // assets/boss_chocolate_e2_arremesso.png
+    ANIM_CHOCOLATE_E3_ANDAR,        // assets/boss_chocolate_e3_andar.png
+    ANIM_CHOCOLATE_E3_ARREMESSO,    // assets/boss_chocolate_e3_arremesso.png
+    ANIM_CHOCOLATE_TRANSICAO_1_2,   // assets/boss_chocolate_transicao_1_2.png
+    ANIM_CHOCOLATE_TRANSICAO_2_3,   // assets/boss_chocolate_transicao_2_3.png
     ANIM_TOURO_ANDAR,               // assets/boss_touro_andar.png
     ANIM_TOURO_CARREGAR,            // assets/boss_touro_carregar.png
     ANIM_TOURO_INVESTIDA,           // assets/boss_touro_investida.png
@@ -59,8 +68,14 @@ inline constexpr AnimBoss TABELA_ANIM_BOSS[TOTAL_ANIM_BOSS] =
 {
     // frames msFrame  cor provisoria
     { 1, 120,  255, 255, 255 },   // NENHUMA (nao usada)
-    { 6, 120,  255, 255, 255 },   // CHOCOLATE andar (velocidade original: 120 ms)
-    { 6, 120,  230, 190, 120 },   // TOURO andar
+    { 6, 120,  255, 255, 255 },   // CHOCOLATE E1 andar
+    { 6, 100,  255, 255, 255 },   // CHOCOLATE E1 arremesso
+    { 6, 120,  255, 255, 255 },   // CHOCOLATE E2 andar
+    { 6, 100,  255, 255, 255 },   // CHOCOLATE E2 arremesso
+    { 6, 120,  255, 255, 255 },   // CHOCOLATE E3 andar
+    { 6, 100,  255, 255, 255 },   // CHOCOLATE E3 arremesso
+    { 4, 120,  255, 255, 255 },   // CHOCOLATE transicao 1-2
+    { 4, 120,  255, 255, 255 },   // CHOCOLATE transicao 2-3    { 6, 120,  230, 190, 120 },   // TOURO andar
     { 4, 120,  230, 120,  80 },   // TOURO carregar
     { 4, 120,  230, 120,  80 },   // TOURO investida
     { 6, 120,  240, 200, 120 },   // CHURROS andar
@@ -89,7 +104,7 @@ inline TipoBoss SortearTipoBoss(int liberados = BOSSES_LIBERADOS, int (*aleatori
 }
 
 // Qual folha de arte desenhar para este tipo e estado
-inline AnimBossId AnimacaoDoBoss(TipoBoss tipo, EstadoBoss estado)
+inline AnimBossId AnimacaoDoBoss(TipoBoss tipo, EstadoBoss estado, int estagioArte = 0)
 {
     switch (tipo)
     {
@@ -107,8 +122,14 @@ inline AnimBossId AnimacaoDoBoss(TipoBoss tipo, EstadoBoss estado)
         if (estado == BOSS_ESCUDO)     return ANIM_BROWNIE_ESCUDO;
         return ANIM_BROWNIE_ANDAR;
 
-    default:
-        return ANIM_CHOCOLATE_ANDAR;
+    default:    // BOSS_CHOCOLATE
+        if (estagioArte < 0) estagioArte = 0;
+        if (estagioArte > 2) estagioArte = 2;
+
+        if (estado == BOSS_DERRETENDO)
+            return (estagioArte == 0) ? ANIM_CHOCOLATE_TRANSICAO_1_2 : ANIM_CHOCOLATE_TRANSICAO_2_3;
+
+        return (AnimBossId)(ANIM_CHOCOLATE_E1_ANDAR + estagioArte * 2 + (estado == BOSS_ARREMESSANDO ? 1 : 0));
     }
 }
 
@@ -179,7 +200,8 @@ inline bool BossInvulneravel(TipoBoss tipo, EstadoBoss estado)
 // Animacao em loop? As transicoes tocam uma vez e seguram o ultimo frame
 inline bool AnimacaoBossEmLoop(EstadoBoss estado)
 {
-    return estado != BOSS_ESCUDO_ENTRANDO && estado != BOSS_ESCUDO_SAINDO;
+    return estado != BOSS_ESCUDO_ENTRANDO && estado != BOSS_ESCUDO_SAINDO
+        && estado != BOSS_ARREMESSANDO && estado != BOSS_DERRETENDO;
 }
 
 // Frame a desenhar: a saida do escudo toca a transicao de tras para frente
@@ -210,8 +232,112 @@ inline EstadoBoss TransicaoBrownie(EstadoBoss estado, unsigned long long agora, 
     }
 }
 
+// ---- Chocolate: arremesso + derretimento ----
+inline constexpr unsigned long long CHOCOLATE_ARREMESSO_PRIMEIRO_MS = 1800;
+inline constexpr unsigned long long CHOCOLATE_ARREMESSO_INTERVALO_MS = 2600;
+inline constexpr int   CHOCOLATE_FRAME_SOLTA = 3;
+inline constexpr int   CHOCOLATE_MAX_PEDACOS_VOO = 2;
+inline constexpr float CHOCOLATE_PEDACO_TAMANHO = 28.0f;
+inline constexpr float CHOCOLATE_PEDACO_VELOCIDADE = 5.5f;
+inline constexpr int   CHOCOLATE_PEDACO_FRAMES = 4;
+inline constexpr int   CHOCOLATE_PEDACO_MS_FRAME = 80;
+inline constexpr float CHOCOLATE_IMPACTO_TAMANHO = 32.0f;
+inline constexpr int   CHOCOLATE_IMPACTO_FRAMES = 4;
+inline constexpr int   CHOCOLATE_IMPACTO_MS_FRAME = 80;
+inline constexpr float CHOCOLATE_BOCA_X = 8.0f / 128.0f;
+inline constexpr float CHOCOLATE_BOCA_Y = 38.0f / 128.0f;
+
+inline constexpr float CHOCOLATE_ESCALA_MINIMA = 0.65f;
+inline constexpr float CHOCOLATE_VELOCIDADE_EXTRA = 0.15f;
+inline constexpr float CHOCOLATE_LIMITE_E2 = 0.66f;
+inline constexpr float CHOCOLATE_LIMITE_E3 = 0.33f;
+
+// Tipo do tiro inimigo (0 = calda do Pirulito, precisa ser zero por causa do memset)
+enum TipoTiroInimigo
+{
+    TIRO_CALDA = 0,
+    TIRO_PEDACO_CHOCOLATE
+};
+
+inline float FracaoVidaBoss(int vida, int vidaMax)
+{
+    if (vidaMax <= 0) return 1.0f;
+    float f = (float)vida / (float)vidaMax;
+    if (f < 0.0f) f = 0.0f;
+    if (f > 1.0f) f = 1.0f;
+    return f;
+}
+
+inline float EscalaChocolate(float fracao)
+{
+    return CHOCOLATE_ESCALA_MINIMA + (1.0f - CHOCOLATE_ESCALA_MINIMA) * fracao;
+}
+
+// 0 = inteiro, 1 = amolecido, 2 = derretido
+inline int EstagioChocolate(float fracao)
+{
+    if (fracao > CHOCOLATE_LIMITE_E2) return 0;
+    if (fracao > CHOCOLATE_LIMITE_E3) return 1;
+    return 2;
+}
+
+inline unsigned long long ChocolateMsArremesso()
+{
+    return (unsigned long long)TABELA_ANIM_BOSS[ANIM_CHOCOLATE_E1_ARREMESSO].frames
+        * (unsigned long long)TABELA_ANIM_BOSS[ANIM_CHOCOLATE_E1_ARREMESSO].msFrame;
+}
+
+inline unsigned long long ChocolateMsTransicao()
+{
+    return (unsigned long long)TABELA_ANIM_BOSS[ANIM_CHOCOLATE_TRANSICAO_1_2].frames
+        * (unsigned long long)TABELA_ANIM_BOSS[ANIM_CHOCOLATE_TRANSICAO_1_2].msFrame;
+}
+
+// Condicoes 2, 3, 4 e 6 do arremesso. frameAndar == 0 evita pulo nas pernas (arremesso comeca no frame 0 da caminhada).
+inline bool ChocolatePodeArremessar(float bossX, float bossW, float larguraTela,
+    float bossCentroX, float jogadorCentroX, bool jogadorAtordoado, int pedacosNoAr, int frameAndar)
+{
+    return bossX + bossW <= larguraTela
+        && jogadorCentroX < bossCentroX
+        && !jogadorAtordoado
+        && pedacosNoAr < CHOCOLATE_MAX_PEDACOS_VOO
+        && frameAndar == 0;
+}
+
+// ANDANDO -> DERRETENDO (tem prioridade) | ARREMESSANDO -> ANDANDO
+inline EstadoBoss TransicaoChocolate(EstadoBoss estado, int estagioArte, float fracaoVida,
+    unsigned long long agora, unsigned long long estadoInicio,
+    unsigned long long proximoArremesso, bool podeArremessar)
+{
+    switch (estado)
+    {
+    case BOSS_ANDANDO:
+        if (EstagioChocolate(fracaoVida) > estagioArte) return BOSS_DERRETENDO;
+        if (agora >= proximoArremesso && podeArremessar) return BOSS_ARREMESSANDO;
+        return BOSS_ANDANDO;
+
+    case BOSS_ARREMESSANDO:
+        if (agora - estadoInicio >= ChocolateMsArremesso()) return BOSS_ANDANDO;
+        return BOSS_ARREMESSANDO;
+
+    case BOSS_DERRETENDO:
+        if (agora - estadoInicio >= ChocolateMsTransicao()) return BOSS_ANDANDO;
+        return BOSS_DERRETENDO;
+
+    default:
+        return estado;
+    }
+}
+
+// Ja chegou o frame em que o pedaco sai da mao?
+inline bool ArremessoPronto(unsigned long long agora, unsigned long long estadoInicio)
+{
+    return agora - estadoInicio >= (unsigned long long)CHOCOLATE_FRAME_SOLTA
+        * (unsigned long long)TABELA_ANIM_BOSS[ANIM_CHOCOLATE_E1_ARREMESSO].msFrame;
+}
+
 // Fator de velocidade por tipo e estado (antes do Glace)
-inline float FatorVelocidadeBoss(TipoBoss tipo, EstadoBoss estado)
+inline float FatorVelocidadeBoss(TipoBoss tipo, EstadoBoss estado, float fracaoVida = 1.0f)
 {
     if (tipo == BOSS_TOURO)
     {
@@ -220,10 +346,17 @@ inline float FatorVelocidadeBoss(TipoBoss tipo, EstadoBoss estado)
     }
 
     if (tipo == BOSS_CHURROS && estado == BOSS_INVOCANDO)
-        return 0.0f;    // para enquanto invoca
+        return 0.0f;
 
     if (tipo == BOSS_BROWNIE && BossComEscudo(estado))
         return BROWNIE_FATOR_ESCUDO;
+
+    if (tipo == BOSS_CHOCOLATE)
+    {
+        if (fracaoVida < 0.0f) fracaoVida = 0.0f;
+        if (fracaoVida > 1.0f) fracaoVida = 1.0f;
+        return 1.0f + CHOCOLATE_VELOCIDADE_EXTRA * (1.0f - fracaoVida);
+    }
 
     return 1.0f;
 }

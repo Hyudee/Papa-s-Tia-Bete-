@@ -642,8 +642,55 @@ void Jogo::DispararTiroInimigo(const Inimigo& p)
         tirosInimigos[k].frame = 0;
         tirosInimigos[k].ultimoFrame = SDL_GetTicks();
         tirosInimigos[k].impacto = false;
+        tirosInimigos[k].tipo = TIRO_CALDA;
         return;
     }
+}
+
+void Jogo::DispararPedacoChocolate()
+{
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+    {
+        if (tirosInimigos[k].ativo)
+            continue;
+
+        float tam = CHOCOLATE_PEDACO_TAMANHO * escalaJogo;
+        float bocaX = boss.rect.x + boss.rect.w * CHOCOLATE_BOCA_X;
+        float bocaY = boss.rect.y + boss.rect.h * CHOCOLATE_BOCA_Y;
+
+        MiraDoTiro mira = MirarTiro(bocaX, bocaY,
+            player.x + player.w / 2.0f, player.y + player.h / 2.0f,
+            CHOCOLATE_PEDACO_VELOCIDADE * escalaJogo);
+
+        tirosInimigos[k].ativo = true;
+        tirosInimigos[k].rect = { bocaX - tam / 2.0f, bocaY - tam / 2.0f, tam, tam };
+        tirosInimigos[k].velX = mira.velX;
+        tirosInimigos[k].velY = mira.velY;
+        tirosInimigos[k].angulo = 0.0f;
+        tirosInimigos[k].frame = 0;
+        tirosInimigos[k].ultimoFrame = SDL_GetTicks();
+        tirosInimigos[k].impacto = false;
+        tirosInimigos[k].tipo = TIRO_PEDACO_CHOCOLATE;
+        return;
+    }
+}
+
+int Jogo::PedacosChocolateNoAr() const
+{
+    int n = 0;
+
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+        if (tirosInimigos[k].ativo && !tirosInimigos[k].impacto && tirosInimigos[k].tipo == TIRO_PEDACO_CHOCOLATE)
+            n++;
+
+    return n;
+}
+
+void Jogo::LimparPedacosChocolate()
+{
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+        if (tirosInimigos[k].ativo && !tirosInimigos[k].impacto && tirosInimigos[k].tipo == TIRO_PEDACO_CHOCOLATE)
+            tirosInimigos[k].ativo = false;
 }
 
 void Jogo::AtualizarTirosInimigos()
@@ -656,15 +703,20 @@ void Jogo::AtualizarTirosInimigos()
         if (!tirosInimigos[k].ativo)
             continue;
 
-        // Impacto: parado, toca os quadros de tiro_calda_impacto.png uma vez e some
+        bool pedaco = (tirosInimigos[k].tipo == TIRO_PEDACO_CHOCOLATE);
+        int  msImpacto = pedaco ? CHOCOLATE_IMPACTO_MS_FRAME : TIRO_IMPACTO_MS_FRAME;
+        int  framesImpacto = pedaco ? CHOCOLATE_IMPACTO_FRAMES : TIRO_IMPACTO_FRAMES;
+        int  msVoo = pedaco ? CHOCOLATE_PEDACO_MS_FRAME : TIRO_INIMIGO_MS_FRAME;
+        int  framesVoo = pedaco ? CHOCOLATE_PEDACO_FRAMES : TIRO_INIMIGO_FRAMES;
+
         if (tirosInimigos[k].impacto)
         {
-            if (SDL_GetTicks() - tirosInimigos[k].ultimoFrame > (Uint64)TIRO_IMPACTO_MS_FRAME)
+            if (SDL_GetTicks() - tirosInimigos[k].ultimoFrame > (Uint64)msImpacto)
             {
                 tirosInimigos[k].frame++;
                 tirosInimigos[k].ultimoFrame = SDL_GetTicks();
 
-                if (tirosInimigos[k].frame >= TIRO_IMPACTO_FRAMES)
+                if (tirosInimigos[k].frame >= framesImpacto)
                     tirosInimigos[k].ativo = false;
             }
 
@@ -674,14 +726,12 @@ void Jogo::AtualizarTirosInimigos()
         tirosInimigos[k].rect.x += tirosInimigos[k].velX;
         tirosInimigos[k].rect.y += tirosInimigos[k].velY;
 
-        // Quadros de voo (tiro_calda.png tem 4)
-        if (SDL_GetTicks() - tirosInimigos[k].ultimoFrame > (Uint64)TIRO_INIMIGO_MS_FRAME)
+        if (SDL_GetTicks() - tirosInimigos[k].ultimoFrame > (Uint64)msVoo)
         {
-            tirosInimigos[k].frame = (tirosInimigos[k].frame + 1) % TIRO_INIMIGO_FRAMES;
+            tirosInimigos[k].frame = (tirosInimigos[k].frame + 1) % framesVoo;
             tirosInimigos[k].ultimoFrame = SDL_GetTicks();
         }
 
-        // Some quando sai inteiro da tela
         if (tirosInimigos[k].rect.x + tirosInimigos[k].rect.w < 0 ||
             tirosInimigos[k].rect.x > larguraTela ||
             tirosInimigos[k].rect.y + tirosInimigos[k].rect.h < 0 ||
@@ -855,15 +905,60 @@ void Jogo::AtualizarBoss() {
                 }
             }
 
+            // Chocolate: arremessa pedacos enquanto anda e derrete conforme perde vida
+            if (boss.tipo == BOSS_CHOCOLATE)
+            {
+                Uint64 agora = SDL_GetTicks();
+                float fracao = FracaoVidaBoss(boss.vida, boss.vidaMax);
+
+                bool pode = ChocolatePodeArremessar(boss.rect.x, boss.rect.w, (float)larguraTela,
+                    boss.rect.x + boss.rect.w / 2.0f, player.x + player.w / 2.0f,
+                    stun, PedacosChocolateNoAr(), boss.frame);
+
+                EstadoBoss novo = TransicaoChocolate(boss.estado, boss.estagioArte, fracao,
+                    agora, boss.estadoInicio, boss.proximoArremesso, pode);
+
+                if (novo != boss.estado)
+                {
+                    if (boss.estado == BOSS_DERRETENDO)
+                        boss.estagioArte++;
+
+                    if (boss.estado == BOSS_ARREMESSANDO)
+                        boss.proximoArremesso = agora + CHOCOLATE_ARREMESSO_INTERVALO_MS;
+
+                    boss.estado = novo;
+                    boss.estadoInicio = agora;
+                    boss.frame = 0;
+                    boss.ultimoFrame = agora;
+                    boss.arremessou = false;
+                }
+
+                if (boss.estado == BOSS_ARREMESSANDO && !boss.arremessou && ArremessoPronto(agora, boss.estadoInicio))
+                {
+                    boss.arremessou = true;
+                    DispararPedacoChocolate();
+                }
+
+                // Encolhe ancorado nos pes (centro horizontal e chao fixos)
+                float escala = EscalaChocolate(fracao);
+                float novoW = (float)tamanhoBoss * escala;
+                float novoH = (float)tamanhoBoss * escala;
+
+                boss.rect.x += (boss.rect.w - novoW) / 2.0f;
+                boss.rect.y += (boss.rect.h - novoH);
+                boss.rect.w = novoW;
+                boss.rect.h = novoH;
+            }
+
             // Glacê Pegajoso: enquanto a lentidão durar, o boss anda mais devagar
-            float fatorBoss = FatorVelocidadeBoss(boss.tipo, boss.estado);
+            float fatorBoss = FatorVelocidadeBoss(boss.tipo, boss.estado, FracaoVidaBoss(boss.vida, boss.vidaMax));
 
             if (SDL_GetTicks() < boss.lentidaoFim)
                 fatorBoss *= (100 - boss.lentidaoPercent) / 100.0f;
 
             boss.rect.x -= boss.speed * fatorBoss;
 
-            const AnimBoss& anim = TABELA_ANIM_BOSS[AnimacaoDoBoss(boss.tipo, boss.estado)];
+            const AnimBoss& anim = TABELA_ANIM_BOSS[AnimacaoDoBoss(boss.tipo, boss.estado, boss.estagioArte)];
 
             if (SDL_GetTicks() - boss.ultimoFrame > (Uint64)anim.msFrame)
             {
