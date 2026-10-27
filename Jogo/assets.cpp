@@ -107,17 +107,42 @@ void Assets::Carregar(SDL_Renderer* renderer)
     carregar(upgradeImgBalaPesada, "assets/bala_pesada.png");
     carregar(upgradeImgPernas, "assets/pernas_acucar.png");
     carregar(upgradeImgDoceSorte, "assets/doce_sorte.png");
-    carregar(upgradeImgGlace, "assets/glace.png");
+    carregar(upgradeImgGlace, "assets/glace_pegajoso.png");
     carregar(upgradeImgPerfurante, "assets/perfurante.png");
-    carregar(upgradeImgBarreira, "assets/barreira.png");
-    carregar(upgradeImgExplosao, "assets/explosao.png");
-    carregar(upgradeImgFuria, "assets/furia.png");
+    carregar(upgradeImgBarreira, "assets/barreira_base.png");
+    carregar(upgradeImgExplosao, "assets/explosao_acucarada.png");
+    carregar(upgradeImgFuria, "assets/furia_combo.png");
     carregar(upgradeImgPacto, "assets/pacto_amargo.png");
     carregarOpcional(molduraCarta[0], "assets/carta_comum.png");
     carregarOpcional(molduraCarta[1], "assets/carta_rara.png");
     carregarOpcional(molduraCarta[2], "assets/carta_epica.png");
     carregarOpcional(brilhoCarta, "assets/carta_brilho.png");
     carregarOpcional(burstCarta, "assets/carta_burst.png");
+    carregarOpcional(burstCarta, "assets/carta_burst.png");
+
+    // Arte dos minions por tipo: se faltar o arquivo, o jogo desenha o cubo de acucar com a cor provisoria da tabela
+    carregarOpcional(texturasInimigo[INIMIGO_RAPADURA], "assets/minion_rapadura.png");
+    carregarOpcional(texturasInimigo[INIMIGO_GRANULADO], "assets/minion_granulado.png");
+    carregarOpcional(texturasInimigo[INIMIGO_CARAMELO], "assets/minion_caramelo.png");
+    carregarOpcional(texturasInimigo[INIMIGO_DIVISOR], "assets/minion_marshmallow.png");
+    carregarOpcional(texturasInimigo[INIMIGO_FILHOTE], "assets/minion_marshmallow_filhote.png");
+    carregarOpcional(texturasInimigo[INIMIGO_PIRULITO], "assets/minion_pirulito.png");
+    carregarOpcional(texturaDivisaoMarshmallow, "assets/minion_marshmallow_divisao.png");
+
+    carregarOpcional(texturaTiroCalda, "assets/tiro_calda.png");
+    carregarOpcional(texturaTiroCaldaImpacto, "assets/tiro_calda_impacto.png");
+    carregarOpcional(texturaFaiscaEscudo, "assets/fx_faisca_escudo.png");
+
+    // Bosses (Lote 13f): o chocolate usa texturaBoss; os demais sao opcionais
+    carregarOpcional(texturasBoss[ANIM_TOURO_ANDAR], "assets/boss_touro_andar.png");
+    carregarOpcional(texturasBoss[ANIM_TOURO_CARREGAR], "assets/boss_touro_carregar.png");
+    carregarOpcional(texturasBoss[ANIM_TOURO_INVESTIDA], "assets/boss_touro_investida.png");
+    carregarOpcional(texturasBoss[ANIM_CHURROS_ANDAR], "assets/boss_churros_andar.png");
+    carregarOpcional(texturasBoss[ANIM_CHURROS_INVOCAR], "assets/boss_churros_invocar.png");
+    carregarOpcional(texturasBoss[ANIM_BROWNIE_ANDAR], "assets/boss_brownie_andar.png");
+    carregarOpcional(texturasBoss[ANIM_BROWNIE_TRANSICAO], "assets/boss_brownie_transicao.png");
+    carregarOpcional(texturasBoss[ANIM_BROWNIE_ESCUDO], "assets/boss_brownie_escudo.png");
+
     pilulaDestaque.reset(CriarTexturaDestaque(renderer));
 
     if (!pilulaDestaque)

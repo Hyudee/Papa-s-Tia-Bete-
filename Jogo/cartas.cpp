@@ -24,7 +24,7 @@ static const CartaDef TABELA_CARTAS[NUM_CARTAS] =
     { CARTA_MAIS_DANO,    "MAIS DANO",       "+1 de dano por tiro",       RARIDADE_COMUM, MAX_DANO_EXTRA,                  100, 0 },
     { CARTA_MAIS_VIDA,    "MAIS VIDA",       "+1 vida max. e +1 vida",   RARIDADE_COMUM, MAX_VIDA_EXTRA,                  100, 0 },
     { CARTA_MAIS_BALAS,   "MAIS BALAS",      "+1 projetil simultaneo",    RARIDADE_COMUM, MAX_BALAS_EXTRAS,                100, 0 },
-    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_RARA, 1,                            40,  0 },
+    { CARTA_TIRO_DUPLO,   "TIRO DUPLO",      "+2 balas em leque, 60% do dano", RARIDADE_EPICA, 1,                            40,  0 },
     { CARTA_CACADOR_BOSS, "CACADOR DE BOSS", "+5 de dano nos bosses",     RARIDADE_RARA,  1,                               25,  0 },
     { CARTA_CADENCIA,     "CADENCIA",        "-20% tempo entre tiros",    RARIDADE_COMUM, MAX_CADENCIA,                    90,  0 },
     { CARTA_BALA_PESADA,  "BALA PESADA",     "+2 dano, tiro mais lento",  RARIDADE_COMUM, MAX_BALA_PESADA,                 80,  0 },

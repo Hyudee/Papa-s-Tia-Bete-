@@ -167,21 +167,134 @@ void Jogo::RenderizarMundo() {
         if (!inimigos[i].ativo && !inimigos[i].morrendo)
             continue;
 
-        if (inimigos[i].morrendo)
-            SDL_SetTextureColorMod(texturaInimigo, 255, 80, 80);
+        const DadosInimigo& dados = DadosDoInimigo(inimigos[i].tipo);
 
-        SDL_FRect src = {            // bloco dos inimigos
-            (float)(inimigos[i].frame * larguraFrameInimigo),
-            0,
-            (float)larguraFrameInimigo,
-            (float)alturaFrameInimigo
+        // Arte do tipo; se o arquivo nao existir, usa o cubo de acucar com a cor provisoria da tabela
+        SDL_Texture* textura = texturasInimigo[inimigos[i].tipo];
+        bool arteProvisoria = (textura == NULL);
+
+        if (inimigos[i].temCor)
+            SDL_SetTextureColorMod(textura, inimigos[i].corR, inimigos[i].corG, inimigos[i].corB);
+        else if (arteProvisoria)
+            SDL_SetTextureColorMod(textura, dados.corR, dados.corG, dados.corB);
+
+        // A geometria da folha acompanha a textura realmente usada
+        const DadosInimigo& folha = arteProvisoria ? DadosDoInimigo(INIMIGO_COMUM) : dados;
+
+        int coluna = inimigos[i].frame % folha.framesAndar;
+
+        // Pirulito disparando: quadros 4 e 5 da folha. A arte provisoria (cubo) so tem os quadros de andar.
+        if (inimigos[i].tipo == INIMIGO_PIRULITO && inimigos[i].estadoPirulito == PIRULITO_DISPARANDO &&
+            !arteProvisoria)
+            coluna = inimigos[i].frame;
+
+        int linha = EstadoDeVida(folha, inimigos[i].vida, inimigos[i].vidaMax);
+
+        SDL_FRect src = {            // bloco dos inimigos: colunas = frames, linhas = estados de vida
+            (float)(coluna * folha.frameLargura),
+            (float)(linha * folha.frameAltura),
+            (float)folha.frameLargura,
+            (float)folha.frameAltura
         };
 
-        SDL_RenderTexture(renderer, texturaInimigo, &src, &inimigos[i].rect);
+        // Divisor morrendo: toca a animacao de divisao (3 quadros, uma vez), sem o tom vermelho
+        bool dividindo = inimigos[i].morrendo && inimigos[i].tipo == INIMIGO_DIVISOR &&
+            texturaDivisaoMarshmallow != NULL;
 
-        if (inimigos[i].morrendo)
-            SDL_SetTextureColorMod(texturaInimigo, 255, 255, 255);
+        if (dividindo)
+        {
+            textura = texturaDivisaoMarshmallow;
+            arteProvisoria = false;
+
+            int frameDivisao = FrameDivisao(SDL_GetTicks() - inimigos[i].flashInicio, dados.msMorte);
+
+            src = { (float)(frameDivisao * 64), 0.0f, 64.0f, 64.0f };
+        }
+
+        if (inimigos[i].temCor)
+            SDL_SetTextureColorMod(textura, inimigos[i].corR, inimigos[i].corG, inimigos[i].corB);
+        else if (arteProvisoria)
+            SDL_SetTextureColorMod(textura, dados.corR, dados.corG, dados.corB);
+
+        if (inimigos[i].morrendo && !dividindo)
+            SDL_SetTextureColorMod(textura, 255, 80, 80);
+
+        // angulo = 0 para todos os tipos, menos o Caramelo (inclina junto com o zigue-zague)
+        SDL_RenderTextureRotated(renderer, textura, &src, &inimigos[i].rect,
+            inimigos[i].angulo, NULL, SDL_FLIP_NONE);
+
+        // Flash branco de acerto (camada aditiva): so quando o tiro acertou e o minion sobreviveu
+        if (!inimigos[i].morrendo && inimigos[i].hitInicio != 0 &&
+            SDL_GetTicks() - inimigos[i].hitInicio < (Uint64)MS_FLASH_ACERTO)
+        {
+            SDL_BlendMode modoAntigo = SDL_BLENDMODE_BLEND;
+            SDL_GetTextureBlendMode(textura, &modoAntigo);
+
+            SDL_SetTextureBlendMode(textura, SDL_BLENDMODE_ADD);
+            SDL_SetTextureColorMod(textura, 255, 255, 255);
+            SDL_RenderTextureRotated(renderer, textura, &src, &inimigos[i].rect,
+                inimigos[i].angulo, NULL, SDL_FLIP_NONE);
+            SDL_SetTextureBlendMode(textura, modoAntigo);
+        }
+
+        // A textura e compartilhada: devolve a cor ao normal depois de cada minion
+        SDL_SetTextureColorMod(textura, 255, 255, 255);
     }
+
+    // Tiros dos Pirulitos: tiro_calda.png (4 quadros de 24x24) e, ao acertar, tiro_calda_impacto.png
+    // (3 quadros de 32x32). Sem a arte, cai no tiro.png em vermelho (a textura e compartilhada: a cor volta ao normal).
+    bool tiroProvisorio = (texturaTiroCalda == NULL);
+
+    if (tiroProvisorio)
+        SDL_SetTextureColorMod(projetil, 255, 70, 70);
+
+    for (int i = 0; i < MAX_TIROS_INIMIGOS; i++)
+    {
+        if (!tirosInimigos[i].ativo)
+            continue;
+
+        if (tirosInimigos[i].impacto)
+        {
+            // impacto so existe com a textura carregada (sem ela o tiro some direto)
+            SDL_FRect srcImpacto = {
+                (float)(tirosInimigos[i].frame * (int)TIRO_IMPACTO_TAMANHO),
+                0,
+                TIRO_IMPACTO_TAMANHO,
+                TIRO_IMPACTO_TAMANHO
+            };
+
+            SDL_RenderTexture(renderer, texturaTiroCaldaImpacto, &srcImpacto, &tirosInimigos[i].rect);
+            continue;
+        }
+
+        if (tiroProvisorio)
+        {
+            SDL_FRect srcTiroInimigo = {
+                (float)((tirosInimigos[i].frame % 3) * larguraFrameTiro),
+                0,
+                (float)larguraFrameTiro,
+                (float)alturaFrameTiro
+            };
+
+            SDL_RenderTextureRotated(renderer, projetil, &srcTiroInimigo, &tirosInimigos[i].rect,
+                (double)tirosInimigos[i].angulo, NULL, SDL_FLIP_NONE);
+        }
+        else
+        {
+            SDL_FRect srcTiroInimigo = {
+                (float)(tirosInimigos[i].frame * (int)TIRO_INIMIGO_TAMANHO),
+                0,
+                TIRO_INIMIGO_TAMANHO,
+                TIRO_INIMIGO_TAMANHO
+            };
+
+            SDL_RenderTextureRotated(renderer, texturaTiroCalda, &srcTiroInimigo, &tirosInimigos[i].rect,
+                (double)tirosInimigos[i].angulo, NULL, SDL_FLIP_NONE);
+        }
+    }
+
+    if (tiroProvisorio)
+        SDL_SetTextureColorMod(projetil, 255, 255, 255);
 
     // Obstáculos
     for (int i = 0; i < MAX_OBSTACULOS; i++)
@@ -236,14 +349,64 @@ void Jogo::RenderizarMundo() {
     // Boss
     if (boss.ativo)
     {
+        AnimBossId idAnim = AnimacaoDoBoss(boss.tipo, boss.estado);
+        const AnimBoss& anim = TABELA_ANIM_BOSS[idAnim];
+
+        SDL_Texture* texBoss = texturasBoss[idAnim];
+        bool provisorio = false;
+
+        if (!texBoss)   // arte do tipo ausente: usa o chocolate com cor provisoria
+        {
+            texBoss = texturaBoss;
+            provisorio = true;
+        }
+
+        int frameBoss = FrameExibidoBoss(boss.estado, boss.frame, anim.frames);   // saida do escudo toca ao contrario
+
         SDL_FRect srcBoss = {
-            (float)(boss.frame * 128),
+            (float)(frameBoss * LARGURA_FRAME_BOSS),
             0,
-            128,
-            128
+            (float)LARGURA_FRAME_BOSS,
+            (float)LARGURA_FRAME_BOSS
         };
 
-        SDL_RenderTexture(renderer, texturaBoss, &srcBoss, &boss.rect);
+        if (provisorio)
+            SDL_SetTextureColorMod(texBoss, anim.corR, anim.corG, anim.corB);
+
+        // Aviso do Touro: treme so no desenho (o rect, e a colisao, ficam parados)
+        SDL_FRect destBoss = boss.rect;
+
+        if (boss.estado == BOSS_AVISANDO)
+        {
+            float t = (float)SDL_GetTicks();
+            destBoss.x += SDL_sinf(t * 0.08f) * 4.0f * escalaJogo;
+            destBoss.y += SDL_cosf(t * 0.11f) * 2.0f * escalaJogo;
+        }
+
+        SDL_RenderTexture(renderer, texBoss, &srcBoss, &destBoss);
+
+        if (provisorio)
+            SDL_SetTextureColorMod(texBoss, 255, 255, 255);   // textura compartilhada: sempre restaurar
+    }
+
+    // Faiscas de bloqueio do escudo (desenhadas por cima do boss)
+    if (texturaFaiscaEscudo != NULL)
+    {
+        for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        {
+            if (!faiscas[i].ativa)
+                continue;
+
+            int f = (int)((SDL_GetTicks() - faiscas[i].inicio) / FAISCA_MS_FRAME);
+            if (f >= FAISCA_FRAMES) f = FAISCA_FRAMES - 1;
+
+            float t = FAISCA_TAMANHO * escalaJogo;
+
+            SDL_FRect srcFaisca = { (float)(f * (int)FAISCA_TAMANHO), 0, FAISCA_TAMANHO, FAISCA_TAMANHO };
+            SDL_FRect dstFaisca = { faiscas[i].x - t / 2.0f, faiscas[i].y - t / 2.0f, t, t };
+
+            SDL_RenderTexture(renderer, texturaFaiscaEscudo, &srcFaisca, &dstFaisca);
+        }
     }
 
     // Powerups
@@ -355,7 +518,11 @@ void Jogo::RenderizarHud() {
         SDL_SetRenderDrawColor(renderer, 100, 0, 0, 255);
         SDL_RenderFillRect(renderer, &fundoVida);
 
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        if (BossInvulneravel(boss.tipo, boss.estado))
+            SDL_SetRenderDrawColor(renderer, 120, 180, 255, 255);   // escudo ativo: barra azul
+        else
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+
         SDL_RenderFillRect(renderer, &vidaBoss);
     }
 

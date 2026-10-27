@@ -1,6 +1,21 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include "inimigos.h"
+#include "bosses.h"
+
+// Contadores da partida em andamento (Lote 13j). Zerados em ReiniciarPartida.
+struct ContadoresPartida
+{
+    int abatesTiro[TOTAL_TIPOS_INIMIGO];            // minions mortos por tiro, por tipo
+    int abatesExplosao[TOTAL_TIPOS_INIMIGO];        // minions mortos pela Explosao Acucarada, por tipo
+    int bossesEnfrentados[TOTAL_TIPOS_BOSS];        // bosses que nasceram, por tipo
+    int bossesDerrotados[TOTAL_TIPOS_BOSS];         // bosses mortos, por tipo
+    int stunsTiroInimigo;                           // vezes que o tiro do Pirulito acertou o jogador
+    int divisoes;                                   // vezes que um Divisor se dividiu
+    int invocacoes;                                 // invocacoes do Churros
+    int tirosBloqueadosEscudo;                      // balas gastas no escudo do Brownie
+};
 
 // Dados de uma partida que vão para o CSV (preenchidos pelo Jogo ao fim da partida)
 struct ResumoPartida
@@ -26,6 +41,7 @@ struct ResumoPartida
     int pacto;
     int larguraTela;
     int alturaTela;
+    ContadoresPartida contadores;
 };
 
 // Medição de desempenho e registro de partidas em "metricas.csv" (na pasta de execução)

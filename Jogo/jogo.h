@@ -9,6 +9,7 @@
 #include "audio.h"
 #include "metricas.h"
 #include "curva.h"
+#include "inimigos.h"
 #include "cartas.h"
 #include "anim_cartas.h"
 
@@ -91,6 +92,11 @@ private:
     SDL_Texture* creditos;
     SDL_Texture* sair;
     SDL_Texture* texturaInimigo;
+    SDL_Texture* texturasInimigo[TOTAL_TIPOS_INIMIGO] = { 0 };   // por tipo; [0] = texturaInimigo
+    SDL_Texture* texturaDivisaoMarshmallow = NULL;   // animacao de divisao do Divisor
+    SDL_Texture* texturaFaiscaEscudo = NULL;         // faisca de bloqueio do escudo (NULL = sem faisca)
+    SDL_Texture* texturaTiroCalda = NULL;            // tiro do Pirulito (NULL = usa tiro.png em vermelho)
+    SDL_Texture* texturaTiroCaldaImpacto = NULL;     // impacto do tiro (NULL = o tiro some sem animacao)
     SDL_Texture* texturaPlayer;
     SDL_Texture* texturaPlayerSujo;
     SDL_Texture* projetil;
@@ -103,11 +109,14 @@ private:
     SDL_Texture* texturaControles;
     SDL_Texture* texturaAjuda;
     SDL_Texture* texturaBoss;
+    SDL_Texture* texturasBoss[TOTAL_ANIM_BOSS] = { 0 };   // por animacao; [ANIM_CHOCOLATE_ANDAR] = texturaBoss
     SDL_Texture* texturaObstaculo;
     SDL_Texture* texturaSombra;
     SDL_Texture* baseTexture;
 
     // Texturas das cartas de upgrade
+    SDL_Texture* 
+        Dano;
     SDL_Texture* upgradeImgDano;
     SDL_Texture* upgradeImgVida;
     SDL_Texture* upgradeImgBalas;
@@ -208,12 +217,18 @@ private:
     void AtualizarSpawn();
     void AtualizarProjeteis();
     void AtualizarInimigos();
+    void AtualizarPirulito(Inimigo& p);                        // estados do atirador (indo, pairando, disparando)
+    void DispararTiroInimigo(const Inimigo& p);                // cria o tiro na boca do Pirulito, mirando no jogador agora
+    void AtualizarTirosInimigos();
+    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga
+    void DividirDivisor(SDL_FRect pai);                        // cria os filhotes do Divisor que acabou de morrer
     void AtualizarPowerups();
     void AtualizarBoss();
     void AtualizarObstaculos();
 
     // Colisões
     void ColisaoPlayerInimigos();
+    void ColisaoTirosInimigosPlayer();
     void ColisaoPlayerBase();
     void ColisaoTiroPowerups();
     void ColisaoTiroBoss();
@@ -221,6 +236,9 @@ private:
     void ColisaoBossBase();
     void ColisaoProjeteisObstaculos();
     void ColisaoProjeteisInimigos();
+
+    void AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto);   // vida, Glace e morte do boss (ponto unico; o Escudo entra aqui)
+    void InvocarMinionsDoBoss();        // Churros: cria os minions da invocacao (sem vaga = invoca menos)
 
     // Fim de partida
     void RegistrarFimDePartida(const char* causa);
@@ -292,6 +310,9 @@ private:
     const Uint64 LIMITE_BORDA = 2000;
     const Uint64 DURACAO_SUJO = 5000;
     const Uint64 STUN_DURACAO = 1250;
+    const Uint64 DURACAO_DANO = 900;     // animacao de dano do jogador (3 quadros)
+    Uint64 stunDuracaoAtual = 1250;      // duracao do stun em andamento (definida quando o stun comeca)
+    Uint64 danoDuracaoAtual = 900;       // duracao da animacao de dano em andamento
     const Uint64 DURACAO_BUFF = 10000;
     const Uint64 DURACAO_GLACE = 1500;   // ms de lentidão do boss depois de cada acerto com Glacê
     const Uint64 RECARGA_BARREIRA = 25000;   // ms para recuperar 1 carga da Barreira
@@ -319,6 +340,9 @@ private:
 
     Projetil projeteis[MAX_PROJETEIS] = { 0 };
     Inimigo inimigos[MAX_INIMIGOS] = { 0 };
+    TipoInimigo tiposAtivos[TOTAL_TIPOS_INIMIGO] = { INIMIGO_COMUM };   // tipos que nascem nesta onda (Lote 13c)
+    int totalTiposAtivos = 1;  
+    TiroInimigo tirosInimigos[MAX_TIROS_INIMIGOS] = { 0 };   // tiros do Pirulito
     Boss boss = { 0 };
     PowerupVida vidasPowerup[MAX_POWERUPS] = { 0 };
     PowerupAtq ataquePowerup[MAX_POWERUPSATQ] = { 0 };
@@ -381,6 +405,7 @@ private:
     // 0 Jogar, 1 Créditos, 2 Sair, 3 Engrenagem, 4 Controles, 5 Troféu, 6 Ajuda
     int itemMenu = 0;
 
+    ContadoresPartida contadores = { 0 };   // contagens da partida para o CSV
     Metricas metricas;            // FPS e registro das partidas (metricas.csv)
     Uint64 proximoFrameNs = 0;    // limitador de quadros
     Uint64 inicioResultado = 0; // quando a tela de resultado abriu
@@ -415,6 +440,7 @@ private:
     int barreiraCargas = 0;
     Uint64 inicioRecargaBarreira = 0;
     Explosao explosoes[MAX_EXPLOSOES] = { 0 };
+    FaiscaEscudo faiscas[MAX_FAISCAS_ESCUDO] = { 0 };   // faiscas de bloqueio do escudo do Brownie
     int sequenciaAbates = 0;
     bool furiaAtiva = false;
     Uint64 furiaInicio = 0;

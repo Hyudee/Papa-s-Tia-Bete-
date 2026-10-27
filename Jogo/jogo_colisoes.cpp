@@ -40,6 +40,8 @@ void Jogo::ColisaoPlayerInimigos() {
                     // Stun
                     stun = true;
                     stunStart = SDL_GetTicks();
+                    stunDuracaoAtual = STUN_DURACAO;
+                    danoDuracaoAtual = DURACAO_DANO;
 
                     // animação de dano
 
@@ -55,10 +57,60 @@ void Jogo::ColisaoPlayerInimigos() {
                 }
             }
         }
-        if (stun && SDL_GetTicks() - stunStart >= STUN_DURACAO) {
+        if (stun && SDL_GetTicks() - stunStart >= stunDuracaoAtual) {
             stun = false;
             if (!dano)
                 framePlayer = olhandoDireita ? 0 : 1;
+        }
+    }
+}
+
+// Tiro do 
+// to x jogador: SO stun (700 ms). Sem perder pontos, vida nem empurrao.
+// O tiro some ao acertar. Com o jogador ja atordoado o tiro passa direto: nao prolonga
+// nem encadeia o stun. Obstaculos e balas do jogador nao interferem no tiro.
+void Jogo::ColisaoTirosInimigosPlayer() {
+    if (estado != JOGAR)
+        return;
+
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+    {
+        if (!tirosInimigos[k].ativo || tirosInimigos[k].impacto || stun)
+            continue;
+
+        if (SDL_HasRectIntersectionFloat(&player, &tirosInimigos[k].rect))
+        {
+            if (texturaTiroCaldaImpacto != NULL)
+            {
+                // Toca a animacao de impacto no ponto do acerto (o tiro para e deixa de colidir)
+                float cx = tirosInimigos[k].rect.x + tirosInimigos[k].rect.w / 2.0f;
+                float cy = tirosInimigos[k].rect.y + tirosInimigos[k].rect.h / 2.0f;
+                float t = TIRO_IMPACTO_TAMANHO * escalaJogo;
+
+                tirosInimigos[k].rect = { cx - t / 2.0f, cy - t / 2.0f, t, t };
+                tirosInimigos[k].velX = 0.0f;
+                tirosInimigos[k].velY = 0.0f;
+                tirosInimigos[k].impacto = true;
+                tirosInimigos[k].frame = 0;
+                tirosInimigos[k].ultimoFrame = SDL_GetTicks();
+            }
+            else
+            {
+                tirosInimigos[k].ativo = false;
+            }
+
+            stun = true;
+            stunStart = SDL_GetTicks();
+            stunDuracaoAtual = STUN_TIRO_INIMIGO;
+            contadores.stunsTiroInimigo++;
+
+            QuebrarSequenciaAbates();
+
+            dano = true;
+            danoStart = SDL_GetTicks();
+            danoDuracaoAtual = STUN_TIRO_INIMIGO;
+
+            framePlayer = olhandoDireita ? 13 : 27;
         }
     }
 }
@@ -147,38 +199,62 @@ void Jogo::ColisaoTiroBoss() {
                 projeteis[j].velX = 0;
                 projeteis[j].velY = 0;
                 projeteis[j].ultimoFrame = SDL_GetTicks();
-
-                boss.vida -= projeteis[j].dano;
-
-                // Glacê Pegajoso: cada acerto renova a lentidão do boss
-                if (lentidaoBossPercent > 0)
-                {
-                    boss.lentidaoPercent = lentidaoBossPercent;
-                    boss.lentidaoFim = SDL_GetTicks() + DURACAO_GLACE;
-                }
-
                 projeteis[j].ativo = false;
 
-                if (boss.vida <= 0)
-                {
-                    boss.ativo = false;
-                    pontos += 100;
-                    bossAtivados++;
-                    fimUltimoBoss = SDL_GetTicks();
-
-                    // A oferta já conta o boss que acabou de morrer
-                    totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
-                    opcaoUpgrade = 0;
-
-                    // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
-                    if (totalOfertaCartas > 0)
-                    {
-                        inicioPausa = SDL_GetTicks();
-                        estado = UPGRADE;
-                        IniciarTelaCartas();
-                    }
-                }
+                AplicarDanoAoBoss(projeteis[j].dano,
+                    projeteis[j].rect.x + projeteis[j].rect.w / 2.0f,
+                    projeteis[j].rect.y + projeteis[j].rect.h / 2.0f);
             }
+        }
+    }
+}
+
+void Jogo::AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto) {
+    // Brownie com escudo (e nas transicoes): a bala ja foi consumida; nao tira vida,
+    // nao renova o Glace e o Cacador de Boss nao fura (P9). So solta a faisca.
+    if (BossInvulneravel(boss.tipo, boss.estado))
+    {
+        for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        {
+            if (faiscas[i].ativa)
+                continue;
+
+            faiscas[i].ativa = true;
+            faiscas[i].x = xAcerto;
+            faiscas[i].y = yAcerto;
+            faiscas[i].inicio = SDL_GetTicks();
+            break;
+        }
+        return;
+    }
+
+    boss.vida -= dano;
+
+    // Glacê Pegajoso: cada acerto renova a lentidão do boss
+    if (lentidaoBossPercent > 0)
+    {
+        boss.lentidaoPercent = lentidaoBossPercent;
+        boss.lentidaoFim = SDL_GetTicks() + DURACAO_GLACE;
+    }
+
+    if (boss.vida <= 0)
+    {
+        boss.ativo = false;
+        contadores.bossesDerrotados[boss.tipo]++;
+        pontos += 100;
+        bossAtivados++;
+        fimUltimoBoss = SDL_GetTicks();
+
+        // A oferta já conta o boss que acabou de morrer
+        totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
+        opcaoUpgrade = 0;
+
+        // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
+        if (totalOfertaCartas > 0)
+        {
+            inicioPausa = SDL_GetTicks();
+            estado = UPGRADE;
+            IniciarTelaCartas();
         }
     }
 }
@@ -316,17 +392,40 @@ void Jogo::ColisaoProjeteisInimigos() {
                 if (!projeteis[j].ativo || projeteis[j].explodindo)
                     continue;
 
+                // Bala perfurante que acabou de atravessar este minion nao o acerta de novo
+                if (projeteis[j].alvoAtravessado == i + 1)
+                    continue;
+
                 if (SDL_HasRectIntersectionFloat(
                     &inimigos[i].rect,
                     &projeteis[j].rect))
                 {
-                    inimigos[i].morrendo = true;
-                    inimigos[i].flashInicio = SDL_GetTicks();
+                    // O tiro causa dano; o minion so morre quando a vida chega a 0.
+                    // Tipos com golpesFixos (Rapadura) perdem 1 de vida por DISPARO, qualquer que seja o dano.
+                    int danoNoMinion = DanoNoMinion(DadosDoInimigo(inimigos[i].tipo),
+                        projeteis[j].dano, projeteis[j].idDisparo, inimigos[i].ultimoIdDisparo);
+
+                    if (DadosDoInimigo(inimigos[i].tipo).golpesFixos)
+                        inimigos[i].ultimoIdDisparo = projeteis[j].idDisparo;
+
+                    inimigos[i].vida -= danoNoMinion;
+                    bool morreu = inimigos[i].vida <= 0;
+
+                    if (morreu)
+                    {
+                        inimigos[i].morrendo = true;
+                        inimigos[i].flashInicio = SDL_GetTicks();
+                    }
+                    else if (danoNoMinion > 0)
+                    {
+                        inimigos[i].hitInicio = SDL_GetTicks();
+                    }
 
                     if (projeteis[j].perfuracoes > 0)
                     {
                         // Perfurante: a bala atravessa este minion e segue em frente
                         projeteis[j].perfuracoes--;
+                        projeteis[j].alvoAtravessado = i + 1;
                     }
                     else
                     {
@@ -336,8 +435,12 @@ void Jogo::ColisaoProjeteisInimigos() {
                         projeteis[j].velY = 0;
                         projeteis[j].ultimoFrame = SDL_GetTicks();
                     }
-                    pontos += 50;
+                    if (!morreu)
+                        break;      // so levou dano: sem pontos, sem abate, sem explosao
+
+                    pontos += DadosDoInimigo(inimigos[i].tipo).pontos;
                     inimigosDerrotados++;
+                    contadores.abatesTiro[inimigos[i].tipo]++;
                     RegistrarAbate();
 
 

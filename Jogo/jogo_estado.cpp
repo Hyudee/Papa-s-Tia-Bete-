@@ -25,6 +25,7 @@ void Jogo::ReiniciarPartida()
     vidaMaxima = MAX_VIDAS;
     inimigosAtivos = MaximoInimigosVivos(ondas);
     inimigosDerrotados = 0;
+    contadores = {};
     spam = false;
     intervaloSpawn = IntervaloSpawn(ondas);
 
@@ -46,6 +47,7 @@ void Jogo::ReiniciarPartida()
 
     // Boss
     boss = { 0 };
+    memset(faiscas, 0, sizeof(faiscas));
     spawnBoss = 1000;
     bossAtivados = 0;
     fimUltimoBoss = SDL_GetTicks();
@@ -62,6 +64,11 @@ void Jogo::ReiniciarPartida()
 
     // Entidades
     memset(inimigos, 0, sizeof(inimigos));
+    memset(tirosInimigos, 0, sizeof(tirosInimigos));
+    stunDuracaoAtual = STUN_DURACAO;
+    danoDuracaoAtual = DURACAO_DANO;
+    tiposAtivos[0] = INIMIGO_COMUM;     // onda 1: so minion comum
+    totalTiposAtivos = 1;    
     memset(projeteis, 0, sizeof(projeteis));
     memset(vidasPowerup, 0, sizeof(vidasPowerup));
     memset(ataquePowerup, 0, sizeof(ataquePowerup));
@@ -214,6 +221,8 @@ void Jogo::ExplodirAcucar(float centroX, float centroY)
         {
             inimigos[i].morrendo = true;
             inimigos[i].flashInicio = agora;
+            inimigos[i].vida = 0;   // a explosao mata qualquer tipo
+            contadores.abatesExplosao[inimigos[i].tipo]++;
         }
     }
 
@@ -258,6 +267,7 @@ void Jogo::RegistrarFimDePartida(const char* causa)
     resumo.explosao = cartas.Quantidade(CARTA_EXPLOSAO);
     resumo.furia = cartas.Quantidade(CARTA_FURIA);
     resumo.pacto = cartas.Quantidade(CARTA_PACTO_AMARGO);
+    resumo.contadores = contadores;
 
     metricas.FinalizarPartida(resumo);
 }
@@ -298,7 +308,13 @@ void Jogo::DeslocarTimers(Uint64 delta)
     {
         inimigos[i].ultimoFrame += delta;
         inimigos[i].flashInicio += delta;
+        inimigos[i].hitInicio += delta;
+        inimigos[i].ultimoDisparo += delta;
+        inimigos[i].disparoInicio += delta;
     }
+
+    for (int i = 0; i < MAX_TIROS_INIMIGOS; i++)
+        tirosInimigos[i].ultimoFrame += delta;
 
     for (int i = 0; i < MAX_PROJETEIS; i++)
         projeteis[i].ultimoFrame += delta;
@@ -316,8 +332,13 @@ void Jogo::DeslocarTimers(Uint64 delta)
     }
 
     boss.ultimoFrame += delta;
-    boss.lentidaoFim += delta;
+    boss.lentidaoFim += delta;    
+    boss.estadoInicio += delta;
+    boss.proximaInvocacao += delta;
 
     for (int i = 0; i < MAX_EXPLOSOES; i++)
         explosoes[i].inicio += delta;
+
+    for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        faiscas[i].inicio += delta;
 }

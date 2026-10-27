@@ -152,7 +152,14 @@ bool Jogo::Iniciar()
     creditos = assets.creditos.get();
     sair = assets.sair.get();
     texturaInimigo = assets.texturaInimigo.get();
-    texturaPlayer = assets.texturaPlayer.get();
+    texturasInimigo[INIMIGO_COMUM] = texturaInimigo;
+    for (int t = INIMIGO_COMUM + 1; t < TOTAL_TIPOS_INIMIGO; t++)
+        texturasInimigo[t] = assets.texturasInimigo[t].get();
+    texturaDivisaoMarshmallow = assets.texturaDivisaoMarshmallow.get();
+    texturaTiroCalda = assets.texturaTiroCalda.get();
+    texturaTiroCaldaImpacto = assets.texturaTiroCaldaImpacto.get();
+    texturaFaiscaEscudo = assets.texturaFaiscaEscudo.get();
+    texturaPlayer = assets.texturaPlayer.get();    
     texturaPlayerSujo = assets.texturaPlayerSujo.get();
     projetil = assets.projetil.get();
     gameover = assets.gameover.get();
@@ -164,6 +171,9 @@ bool Jogo::Iniciar()
     texturaControles = assets.texturaControles.get();
     texturaAjuda = assets.texturaAjuda.get();
     texturaBoss = assets.texturaBoss.get();
+    texturasBoss[ANIM_CHOCOLATE_ANDAR] = texturaBoss;
+    for (int a = ANIM_CHOCOLATE_ANDAR + 1; a < TOTAL_ANIM_BOSS; a++)
+        texturasBoss[a] = assets.texturasBoss[a].get();
     texturaObstaculo = assets.texturaObstaculo.get();
     texturaSombra = assets.texturaSombra.get();
     baseTexture = assets.baseTexture.get();
@@ -368,10 +378,12 @@ void Jogo::Executar()
         AtualizarSpawn();
         AtualizarProjeteis();
         AtualizarInimigos();
+        AtualizarTirosInimigos();
         AtualizarPowerups();
         AtualizarBoss();
         AtualizarObstaculos();
         ColisaoPlayerInimigos();
+        ColisaoTirosInimigosPlayer();
         ColisaoPlayerBase();
         ColisaoTiroPowerups();
         ColisaoTiroBoss();
