@@ -316,6 +316,9 @@ void Jogo::SpawnarBoss() {
             boss.proximaInvocacao = SDL_GetTicks() + CHURROS_MS_PRIMEIRA;   // so o Churros usa            
             boss.investiu = false;
             boss.invocou = false;
+            boss.estagioArte = 0;
+            boss.arremessou = false;
+            boss.proximoArremesso = SDL_GetTicks() + CHOCOLATE_ARREMESSO_PRIMEIRO_MS;
 
             shakeDuracao = 600.0f;
             shakeForca = 8.0f * escalaJogo;

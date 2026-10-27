@@ -97,6 +97,8 @@ private:
     SDL_Texture* texturaFaiscaEscudo = NULL;         // faisca de bloqueio do escudo (NULL = sem faisca)
     SDL_Texture* texturaTiroCalda = NULL;            // tiro do Pirulito (NULL = usa tiro.png em vermelho)
     SDL_Texture* texturaTiroCaldaImpacto = NULL;     // impacto do tiro (NULL = o tiro some sem animacao)
+    SDL_Texture* texturaPedacoChocolate = NULL;      // projetil do boss Chocolate
+    SDL_Texture* texturaPedacoImpacto = NULL;        // impacto do pedaco
     SDL_Texture* texturaPlayer;
     SDL_Texture* texturaPlayerSujo;
     SDL_Texture* projetil;
@@ -219,6 +221,9 @@ private:
     void AtualizarInimigos();
     void AtualizarPirulito(Inimigo& p);                        // estados do atirador (indo, pairando, disparando)
     void DispararTiroInimigo(const Inimigo& p);                // cria o tiro na boca do Pirulito, mirando no jogador agora
+    void DispararPedacoChocolate();                            // pedaco que sai da mao do boss Chocolate
+    int  PedacosChocolateNoAr() const;
+    void LimparPedacosChocolate();
     void AtualizarTirosInimigos();
     bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga
     void DividirDivisor(SDL_FRect pai);                        // cria os filhotes do Divisor que acabou de morrer

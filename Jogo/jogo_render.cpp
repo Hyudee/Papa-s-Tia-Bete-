@@ -253,9 +253,41 @@ void Jogo::RenderizarMundo() {
         if (!tirosInimigos[i].ativo)
             continue;
 
+        if (tirosInimigos[i].tipo == TIRO_PEDACO_CHOCOLATE)
+        {
+            if (tirosInimigos[i].impacto)
+            {
+                SDL_FRect srcImp = {
+                    (float)(tirosInimigos[i].frame * (int)CHOCOLATE_IMPACTO_TAMANHO),
+                    0,
+                    CHOCOLATE_IMPACTO_TAMANHO,
+                    CHOCOLATE_IMPACTO_TAMANHO
+                };
+
+                SDL_RenderTexture(renderer, texturaPedacoImpacto, &srcImp, &tirosInimigos[i].rect);
+            }
+            else if (texturaPedacoChocolate != NULL)
+            {
+                SDL_FRect srcPedaco = {
+                    (float)(tirosInimigos[i].frame * (int)CHOCOLATE_PEDACO_TAMANHO),
+                    0,
+                    CHOCOLATE_PEDACO_TAMANHO,
+                    CHOCOLATE_PEDACO_TAMANHO
+                };
+
+                SDL_RenderTexture(renderer, texturaPedacoChocolate, &srcPedaco, &tirosInimigos[i].rect);   // sem rotacao: gira pelos quadros
+            }
+            else
+            {
+                SDL_SetRenderDrawColor(renderer, 0x88, 0x50, 0x38, 255);
+                SDL_RenderFillRect(renderer, &tirosInimigos[i].rect);
+            }
+
+            continue;
+        }
+
         if (tirosInimigos[i].impacto)
         {
-            // impacto so existe com a textura carregada (sem ela o tiro some direto)
             SDL_FRect srcImpacto = {
                 (float)(tirosInimigos[i].frame * (int)TIRO_IMPACTO_TAMANHO),
                 0,
@@ -349,7 +381,7 @@ void Jogo::RenderizarMundo() {
     // Boss
     if (boss.ativo)
     {
-        AnimBossId idAnim = AnimacaoDoBoss(boss.tipo, boss.estado);
+        AnimBossId idAnim = AnimacaoDoBoss(boss.tipo, boss.estado, boss.estagioArte);
         const AnimBoss& anim = TABELA_ANIM_BOSS[idAnim];
 
         SDL_Texture* texBoss = texturasBoss[idAnim];

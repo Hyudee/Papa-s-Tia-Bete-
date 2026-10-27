@@ -158,6 +158,8 @@ bool Jogo::Iniciar()
     texturaDivisaoMarshmallow = assets.texturaDivisaoMarshmallow.get();
     texturaTiroCalda = assets.texturaTiroCalda.get();
     texturaTiroCaldaImpacto = assets.texturaTiroCaldaImpacto.get();
+    texturaPedacoChocolate = assets.texturaPedacoChocolate.get();
+    texturaPedacoImpacto = assets.texturaPedacoImpacto.get();
     texturaFaiscaEscudo = assets.texturaFaiscaEscudo.get();
     texturaPlayer = assets.texturaPlayer.get();    
     texturaPlayerSujo = assets.texturaPlayerSujo.get();
@@ -171,8 +173,7 @@ bool Jogo::Iniciar()
     texturaControles = assets.texturaControles.get();
     texturaAjuda = assets.texturaAjuda.get();
     texturaBoss = assets.texturaBoss.get();
-    texturasBoss[ANIM_CHOCOLATE_ANDAR] = texturaBoss;
-    for (int a = ANIM_CHOCOLATE_ANDAR + 1; a < TOTAL_ANIM_BOSS; a++)
+    for (int a = ANIM_BOSS_NENHUMA + 1; a < TOTAL_ANIM_BOSS; a++)
         texturasBoss[a] = assets.texturasBoss[a].get();
     texturaObstaculo = assets.texturaObstaculo.get();
     texturaSombra = assets.texturaSombra.get();

@@ -21,3 +21,4 @@
 #define DANO_BOSS_BASE 3              // vidas que o boss tira ao chegar na base (cada carga de Barreira absorve 1)
 #define GRUDENTO_COOLDOWN_PERCENT 140         // obstáculo grudento: tempo entre tiros x1,4 enquanto sujo
 #define GRUDENTO_VELOCIDADE_TIRO_PERCENT 80   // obstáculo grudento: bala a 80% da velocidade enquanto sujo
+#define MAX_TIROS_INIMIGOS 12
