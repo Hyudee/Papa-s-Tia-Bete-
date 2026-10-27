@@ -48,7 +48,7 @@ struct DadosInimigo
 // Duracao do flash branco quando o tiro acerta mas nao mata, em ms
 inline constexpr int MS_FLASH_ACERTO = 90;
 
-// ---- Sorteio de tipos (Lote 13c) ----
+// ---- Sorteio de tipos ----
 inline constexpr int ONDA_NAO_LIBERADA   = 999;   // tipo ainda sem comportamento pronto: nunca sorteado
 
 // Bando do Granulado: quantos nascem juntos (cada um conta no teto de vivos)
@@ -56,8 +56,6 @@ inline constexpr int BANDO_GRANULADO_MIN = 3;
 inline constexpr int BANDO_GRANULADO_MAX = 4;
 inline constexpr int MAX_GRANULADOS_POR_SPAWN = 10;   // teto de granulados num mesmo spawn (somando todos os bandos)
 
-// Ordem das linhas = ordem do enum TipoInimigo
-// ondaMinima: ONDA_NAO_LIBERADA ate o lote que implementa o comportamento do tipo
 //   O Filhote NUNCA entra no sorteio: so nasce quando o Divisor morre.
 inline constexpr DadosInimigo TABELA_INIMIGOS[TOTAL_TIPOS_INIMIGO] =
 {
@@ -71,7 +69,7 @@ inline constexpr DadosInimigo TABELA_INIMIGOS[TOTAL_TIPOS_INIMIGO] =
     { 2, false, 1.0f, 1.0f,   50,  2, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
 };
 
-// Pirulito: folha de 6 quadros (384x64). Quadros 0 a 3 = voo (framesAndar); 4 e 5 = disparo (Lote 13e).
+// Pirulito: folha de 6 quadros (384x64). Quadros 0 a 3 = voo (framesAndar); 4 e 5 = disparo
 inline constexpr int PIRULITO_FRAME_DISPARO_INICIO = 4;
 inline constexpr int PIRULITO_FRAMES_DISPARO       = 2;
 
@@ -96,7 +94,7 @@ inline constexpr int EstadoDeVida(const DadosInimigo& dados, int vida, int vidaM
 }
 
 // ---------------------------------------------------------------------------
-// Sorteio (Lote 13c). Todas as funcoes aceitam um "sorteio(n)" que devolve 0..n-1,
+// Todas as funcoes aceitam um "sorteio(n)" que devolve 0..n-1,
 // para poder ser testado com numeros previsiveis. O padrao usa rand().
 // ---------------------------------------------------------------------------
 inline int SorteioPadrao(int n)
@@ -199,7 +197,7 @@ inline CorRGB CorAleatoriaGranulado(int (*sorteio)(int) = SorteioPadrao)
 }
 
 // ---------------------------------------------------------------------------
-// Caramelo (Lote 13d): zigue-zague senoidal. A fase avanca com a distancia andada
+// Caramelo: zigue-zague senoidal. A fase avanca com a distancia andada
 // (nada de timestamp: pausa e upgrade nao precisam de DeslocarTimers).
 // ---------------------------------------------------------------------------
 inline constexpr float CARAMELO_AMPLITUDE        = 60.0f;    // px (multiplicada por escalaJogo)
@@ -245,7 +243,7 @@ inline float CarameloAngulo(float fase)
 }
 
 // ---------------------------------------------------------------------------
-// Divisor (Lote 13d)
+// Divisor
 // ---------------------------------------------------------------------------
 inline constexpr int DIVISOR_FRAMES_DIVISAO = 3;   // minion_marshmallow_divisao.png: 3 quadros de 64x64
 inline constexpr int FILHOTES_POR_DIVISAO   = 2;
@@ -283,7 +281,7 @@ inline void PosicaoFilhote(float paiX, float paiY, float paiW, float paiH, float
 }
 
 // ---------------------------------------------------------------------------
-// Pirulito, o atirador (Lote 13e). Tudo aqui e logica pura (testavel sem SDL).
+// Pirulito, o atirador. Tudo aqui e logica pura (testavel sem SDL).
 // ---------------------------------------------------------------------------
 enum EstadoPirulito
 {

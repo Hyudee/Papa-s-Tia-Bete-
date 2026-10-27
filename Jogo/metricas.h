@@ -4,7 +4,7 @@
 #include "inimigos.h"
 #include "bosses.h"
 
-// Contadores da partida em andamento (Lote 13j). Zerados em ReiniciarPartida.
+// Contadores da partida em andamento Zerados em ReiniciarPartida.
 struct ContadoresPartida
 {
     int abatesTiro[TOTAL_TIPOS_INIMIGO];            // minions mortos por tiro, por tipo

@@ -696,7 +696,7 @@ void Jogo::RenderizarPause() {
         DesenharTextoCentrado(renderer, font, "PAUSADO", branco,
             painel.x + painel.w / 2, painel.y + 30);
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 3; i++)
         {
             SDL_FRect rect = RetanguloOpcaoPause(i);
 

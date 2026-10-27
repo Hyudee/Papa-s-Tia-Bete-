@@ -80,10 +80,12 @@ void Jogo::DesenharCartaNaTextura(SDL_Texture* alvo, IdCarta id, bool destacada)
         ? SDL_Color{ 220, 160, 20, 255 }
     : SDL_Color{ (Uint8)(corRaridade.r * 6 / 10), (Uint8)(corRaridade.g * 6 / 10), (Uint8)(corRaridade.b * 6 / 10), 255 };
 
-    // Fundo
+    // Fundo (com moldura de arte, recua 3% para o canto arredondado ficar transparente)
     SDL_FRect cartaRect = { 0.0f, 0.0f, w, h };
+    float recuoFundo = assets.molduraCarta[carta.raridade] ? w * 0.03f : 0.0f;
+    SDL_FRect fundoRect = { recuoFundo, recuoFundo, w - 2.0f * recuoFundo, h - 2.0f * recuoFundo };
     SDL_SetRenderDrawColor(renderer, fundo.r, fundo.g, fundo.b, 255);
-    SDL_RenderFillRect(renderer, &cartaRect);
+    SDL_RenderFillRect(renderer, &fundoRect);
 
     // Moldura da raridade: se existir a arte, ela é desenhada por cima no fim;
     // senão, borda externa na cor da raridade e uma linha interna
@@ -128,7 +130,7 @@ void Jogo::DesenharCartaNaTextura(SDL_Texture* alvo, IdCarta id, bool destacada)
         h * 0.10f + alturaImagem + h * 0.04f, w - 8.0f, corNome);
 
     DesenharTextoNaCarta(renderer, descricao.get(), w / 2.0f,
-        h * 0.10f + alturaImagem + h * 0.14f, w - 8.0f, corDescricao);
+        h * 0.10f + alturaImagem + h * 0.14f, w * 0.72f, corDescricao);
 
     if (molduraArte)
         SDL_RenderTexture(renderer, molduraArte, NULL, &cartaRect);
