@@ -1,6 +1,18 @@
 #include <stdio.h>
 #include "metricas.h"
 
+// Formato v2 (Lote 13j): colunas novas no fim. Arquivo novo para nao misturar com o metricas.csv antigo.
+#define ARQUIVO_METRICAS "metricas_v2.csv"
+
+static_assert(TOTAL_TIPOS_INIMIGO == 7, "atualize NOMES_TIPO_INIMIGO em metricas.cpp");
+static_assert(TOTAL_TIPOS_BOSS == 4, "atualize NOMES_TIPO_BOSS em metricas.cpp");
+
+static const char* const NOMES_TIPO_INIMIGO[TOTAL_TIPOS_INIMIGO] =
+{ "comum", "rapadura", "granulado", "caramelo", "divisor", "filhote", "pirulito" };
+
+static const char* const NOMES_TIPO_BOSS[TOTAL_TIPOS_BOSS] =
+{ "chocolate", "touro", "churros", "brownie" };
+
 void Metricas::AtualizarFrame(bool emPartida)
 {
     Uint64 agora = SDL_GetTicksNS();
@@ -61,7 +73,7 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
     bool escreverCabecalho = true;
     FILE* teste = nullptr;
 
-    fopen_s(&teste, "metricas.csv", "rb");
+    fopen_s(&teste, ARQUIVO_METRICAS, "rb");
 
     if (teste)
     {
@@ -71,11 +83,11 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
 
     FILE* arquivo = nullptr;
 
-    fopen_s(&arquivo, "metricas.csv", "ab");
+    fopen_s(&arquivo, ARQUIVO_METRICAS, "ab");
 
     if (!arquivo)
     {
-        SDL_Log("Nao foi possivel abrir metricas.csv para escrita");
+        SDL_Log("Nao foi possivel abrir " ARQUIVO_METRICAS " para escrita");
         return;
     }
 
@@ -86,7 +98,20 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
             "dano_base,tiros_extras,vida_maxima,tiro_duplo,cacador_boss,"
             "cadencia,bala_pesada,pernas_acucar,doce_sorte,glace,perfurante,"
             "barreira,explosao,furia,pacto,"
-            "fps_medio,largura,altura\n");
+            "fps_medio,largura,altura");
+
+        for (int t = 0; t < TOTAL_TIPOS_INIMIGO; t++)
+            fprintf(arquivo, ",abates_tiro_%s", NOMES_TIPO_INIMIGO[t]);
+
+        fprintf(arquivo, ",abates_explosao");
+
+        for (int t = 0; t < TOTAL_TIPOS_BOSS; t++)
+            fprintf(arquivo, ",boss_enfrentado_%s", NOMES_TIPO_BOSS[t]);
+
+        for (int t = 0; t < TOTAL_TIPOS_BOSS; t++)
+            fprintf(arquivo, ",boss_derrotado_%s", NOMES_TIPO_BOSS[t]);
+
+        fprintf(arquivo, ",stuns_tiro_inimigo,divisoes,invocacoes,tiros_bloqueados_escudo\n");
     }
 
     // Data e hora locais
@@ -103,7 +128,7 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
     float tempoS = tempoPartidaMs / 1000.0f;
     float fpsMedio = (tempoS > 0.0f) ? framesPartida / tempoS : 0.0f;
 
-    fprintf(arquivo, "%s,%.1f,%d,%d,%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d\n",
+    fprintf(arquivo, "%s,%.1f,%d,%d,%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d",
         dataHora,
         tempoS,
         resumo.onda,
@@ -128,6 +153,26 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
         fpsMedio,
         resumo.larguraTela,
         resumo.alturaTela);
+
+    const ContadoresPartida& c = resumo.contadores;
+
+    int totalExplosao = 0;
+
+    for (int t = 0; t < TOTAL_TIPOS_INIMIGO; t++)
+    {
+        fprintf(arquivo, ",%d", c.abatesTiro[t]);
+        totalExplosao += c.abatesExplosao[t];
+    }
+
+    fprintf(arquivo, ",%d", totalExplosao);
+
+    for (int t = 0; t < TOTAL_TIPOS_BOSS; t++)
+        fprintf(arquivo, ",%d", c.bossesEnfrentados[t]);
+
+    for (int t = 0; t < TOTAL_TIPOS_BOSS; t++)
+        fprintf(arquivo, ",%d", c.bossesDerrotados[t]);
+
+    fprintf(arquivo, ",%d,%d,%d,%d\n", c.stunsTiroInimigo, c.divisoes, c.invocacoes, c.tirosBloqueadosEscudo);
 
     fclose(arquivo);
 }

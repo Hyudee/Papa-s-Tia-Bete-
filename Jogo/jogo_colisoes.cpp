@@ -65,7 +65,8 @@ void Jogo::ColisaoPlayerInimigos() {
     }
 }
 
-// Tiro do Pirulito x jogador: SO stun (700 ms). Sem perder pontos, vida nem empurrao.
+// Tiro do 
+// to x jogador: SO stun (700 ms). Sem perder pontos, vida nem empurrao.
 // O tiro some ao acertar. Com o jogador ja atordoado o tiro passa direto: nao prolonga
 // nem encadeia o stun. Obstaculos e balas do jogador nao interferem no tiro.
 void Jogo::ColisaoTirosInimigosPlayer() {
@@ -101,6 +102,7 @@ void Jogo::ColisaoTirosInimigosPlayer() {
             stun = true;
             stunStart = SDL_GetTicks();
             stunDuracaoAtual = STUN_TIRO_INIMIGO;
+            contadores.stunsTiroInimigo++;
 
             QuebrarSequenciaAbates();
 
@@ -197,38 +199,62 @@ void Jogo::ColisaoTiroBoss() {
                 projeteis[j].velX = 0;
                 projeteis[j].velY = 0;
                 projeteis[j].ultimoFrame = SDL_GetTicks();
-
-                boss.vida -= projeteis[j].dano;
-
-                // Glacê Pegajoso: cada acerto renova a lentidão do boss
-                if (lentidaoBossPercent > 0)
-                {
-                    boss.lentidaoPercent = lentidaoBossPercent;
-                    boss.lentidaoFim = SDL_GetTicks() + DURACAO_GLACE;
-                }
-
                 projeteis[j].ativo = false;
 
-                if (boss.vida <= 0)
-                {
-                    boss.ativo = false;
-                    pontos += 100;
-                    bossAtivados++;
-                    fimUltimoBoss = SDL_GetTicks();
-
-                    // A oferta já conta o boss que acabou de morrer
-                    totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
-                    opcaoUpgrade = 0;
-
-                    // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
-                    if (totalOfertaCartas > 0)
-                    {
-                        inicioPausa = SDL_GetTicks();
-                        estado = UPGRADE;
-                        IniciarTelaCartas();
-                    }
-                }
+                AplicarDanoAoBoss(projeteis[j].dano,
+                    projeteis[j].rect.x + projeteis[j].rect.w / 2.0f,
+                    projeteis[j].rect.y + projeteis[j].rect.h / 2.0f);
             }
+        }
+    }
+}
+
+void Jogo::AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto) {
+    // Brownie com escudo (e nas transicoes): a bala ja foi consumida; nao tira vida,
+    // nao renova o Glace e o Cacador de Boss nao fura (P9). So solta a faisca.
+    if (BossInvulneravel(boss.tipo, boss.estado))
+    {
+        for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        {
+            if (faiscas[i].ativa)
+                continue;
+
+            faiscas[i].ativa = true;
+            faiscas[i].x = xAcerto;
+            faiscas[i].y = yAcerto;
+            faiscas[i].inicio = SDL_GetTicks();
+            break;
+        }
+        return;
+    }
+
+    boss.vida -= dano;
+
+    // Glacê Pegajoso: cada acerto renova a lentidão do boss
+    if (lentidaoBossPercent > 0)
+    {
+        boss.lentidaoPercent = lentidaoBossPercent;
+        boss.lentidaoFim = SDL_GetTicks() + DURACAO_GLACE;
+    }
+
+    if (boss.vida <= 0)
+    {
+        boss.ativo = false;
+        contadores.bossesDerrotados[boss.tipo]++;
+        pontos += 100;
+        bossAtivados++;
+        fimUltimoBoss = SDL_GetTicks();
+
+        // A oferta já conta o boss que acabou de morrer
+        totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
+        opcaoUpgrade = 0;
+
+        // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
+        if (totalOfertaCartas > 0)
+        {
+            inicioPausa = SDL_GetTicks();
+            estado = UPGRADE;
+            IniciarTelaCartas();
         }
     }
 }
@@ -414,6 +440,7 @@ void Jogo::ColisaoProjeteisInimigos() {
 
                     pontos += DadosDoInimigo(inimigos[i].tipo).pontos;
                     inimigosDerrotados++;
+                    contadores.abatesTiro[inimigos[i].tipo]++;
                     RegistrarAbate();
 
 

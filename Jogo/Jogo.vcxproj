@@ -171,6 +171,7 @@
     <ClInclude Include="anim_cartas.h" />
     <ClInclude Include="assets.h" />
     <ClInclude Include="audio.h" />
+    <ClInclude Include="bosses.h" />
     <ClInclude Include="botoes.h" />
     <ClInclude Include="cartas.h" />
     <ClInclude Include="config.h" />

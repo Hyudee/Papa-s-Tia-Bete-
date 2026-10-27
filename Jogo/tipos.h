@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include "inimigos.h"
+#include "bosses.h"
 
 // Enums e structs do jogo
 
@@ -100,6 +101,13 @@ typedef struct {
 
     Uint64 lentidaoFim;     // instante em que acaba a lentidão do Glacê (0 = sem lentidão)
     int lentidaoPercent;    // quanto da velocidade ele perde enquanto durar
+
+    TipoBoss   tipo;        // 0 = chocolate (precisa ser zero por causa do boss = { 0 })
+    EstadoBoss estado;      // 0 = andando
+    Uint64 estadoInicio;    // instante em que entrou no estado atual
+    Uint64 proximaInvocacao;// Churros: instante da proxima invocacao (13h)
+    bool   investiu;        // Touro: ja fez a investida deste boss (13g)
+    bool   invocou;         // Churros: a invocacao da animacao atual ja saiu (13h)
 }Boss;
 
 typedef struct
@@ -118,6 +126,14 @@ typedef struct
     Uint64 ultimoFrame;
     bool explodindo;
 } Projetil;
+
+typedef struct
+{
+    bool   ativa;
+    float  x;       // centro da faisca (ponto do acerto)
+    float  y;
+    Uint64 inicio;
+} FaiscaEscudo;
 
 typedef struct
 {

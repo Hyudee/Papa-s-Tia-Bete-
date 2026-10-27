@@ -2,6 +2,7 @@
 
 #include "sdl_raii.h"
 #include "inimigos.h"
+#include "bosses.h"
 
 // Texturas do jogo (RAII)
 
@@ -16,6 +17,7 @@ struct Assets
     SdlPtr<SDL_Texture> sair;
     SdlPtr<SDL_Texture> texturaTiroCalda;           // tiro do Pirulito: 4 quadros de 24x24
     SdlPtr<SDL_Texture> texturaTiroCaldaImpacto;    // impacto do tiro do Pirulito: 3 quadros de 32x32
+    SdlPtr<SDL_Texture> texturaFaiscaEscudo;        // bloqueio do escudo do Brownie: 3 quadros de 32x32
     SdlPtr<SDL_Texture> texturaInimigo;
     SdlPtr<SDL_Texture> texturasInimigo[TOTAL_TIPOS_INIMIGO];   // arte de cada tipo; [0] nao e usado (o comum e texturaInimigo)
     SdlPtr<SDL_Texture> texturaDivisaoMarshmallow;   // animacao de divisao do Divisor (3 quadros de 64x64)
@@ -31,6 +33,7 @@ struct Assets
     SdlPtr<SDL_Texture> texturaControles;
     SdlPtr<SDL_Texture> texturaAjuda;
     SdlPtr<SDL_Texture> texturaBoss;
+    SdlPtr<SDL_Texture> texturasBoss[TOTAL_ANIM_BOSS];   // [ANIM_CHOCOLATE_ANDAR] e texturaBoss
     SdlPtr<SDL_Texture> texturaObstaculo;
     SdlPtr<SDL_Texture> texturaSombra;
     SdlPtr<SDL_Texture> baseTexture;

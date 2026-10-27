@@ -25,6 +25,7 @@ void Jogo::ReiniciarPartida()
     vidaMaxima = MAX_VIDAS;
     inimigosAtivos = MaximoInimigosVivos(ondas);
     inimigosDerrotados = 0;
+    contadores = {};
     spam = false;
     intervaloSpawn = IntervaloSpawn(ondas);
 
@@ -46,6 +47,7 @@ void Jogo::ReiniciarPartida()
 
     // Boss
     boss = { 0 };
+    memset(faiscas, 0, sizeof(faiscas));
     spawnBoss = 1000;
     bossAtivados = 0;
     fimUltimoBoss = SDL_GetTicks();
@@ -220,6 +222,7 @@ void Jogo::ExplodirAcucar(float centroX, float centroY)
             inimigos[i].morrendo = true;
             inimigos[i].flashInicio = agora;
             inimigos[i].vida = 0;   // a explosao mata qualquer tipo
+            contadores.abatesExplosao[inimigos[i].tipo]++;
         }
     }
 
@@ -264,6 +267,7 @@ void Jogo::RegistrarFimDePartida(const char* causa)
     resumo.explosao = cartas.Quantidade(CARTA_EXPLOSAO);
     resumo.furia = cartas.Quantidade(CARTA_FURIA);
     resumo.pacto = cartas.Quantidade(CARTA_PACTO_AMARGO);
+    resumo.contadores = contadores;
 
     metricas.FinalizarPartida(resumo);
 }
@@ -328,8 +332,13 @@ void Jogo::DeslocarTimers(Uint64 delta)
     }
 
     boss.ultimoFrame += delta;
-    boss.lentidaoFim += delta;
+    boss.lentidaoFim += delta;    
+    boss.estadoInicio += delta;
+    boss.proximaInvocacao += delta;
 
     for (int i = 0; i < MAX_EXPLOSOES; i++)
         explosoes[i].inicio += delta;
+
+    for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        faiscas[i].inicio += delta;
 }

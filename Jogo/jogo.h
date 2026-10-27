@@ -94,6 +94,7 @@ private:
     SDL_Texture* texturaInimigo;
     SDL_Texture* texturasInimigo[TOTAL_TIPOS_INIMIGO] = { 0 };   // por tipo; [0] = texturaInimigo
     SDL_Texture* texturaDivisaoMarshmallow = NULL;   // animacao de divisao do Divisor
+    SDL_Texture* texturaFaiscaEscudo = NULL;         // faisca de bloqueio do escudo (NULL = sem faisca)
     SDL_Texture* texturaTiroCalda = NULL;            // tiro do Pirulito (NULL = usa tiro.png em vermelho)
     SDL_Texture* texturaTiroCaldaImpacto = NULL;     // impacto do tiro (NULL = o tiro some sem animacao)
     SDL_Texture* texturaPlayer;
@@ -108,6 +109,7 @@ private:
     SDL_Texture* texturaControles;
     SDL_Texture* texturaAjuda;
     SDL_Texture* texturaBoss;
+    SDL_Texture* texturasBoss[TOTAL_ANIM_BOSS] = { 0 };   // por animacao; [ANIM_CHOCOLATE_ANDAR] = texturaBoss
     SDL_Texture* texturaObstaculo;
     SDL_Texture* texturaSombra;
     SDL_Texture* baseTexture;
@@ -234,6 +236,9 @@ private:
     void ColisaoBossBase();
     void ColisaoProjeteisObstaculos();
     void ColisaoProjeteisInimigos();
+
+    void AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto);   // vida, Glace e morte do boss (ponto unico; o Escudo entra aqui)
+    void InvocarMinionsDoBoss();        // Churros: cria os minions da invocacao (sem vaga = invoca menos)
 
     // Fim de partida
     void RegistrarFimDePartida(const char* causa);
@@ -400,6 +405,7 @@ private:
     // 0 Jogar, 1 Créditos, 2 Sair, 3 Engrenagem, 4 Controles, 5 Troféu, 6 Ajuda
     int itemMenu = 0;
 
+    ContadoresPartida contadores = { 0 };   // contagens da partida para o CSV
     Metricas metricas;            // FPS e registro das partidas (metricas.csv)
     Uint64 proximoFrameNs = 0;    // limitador de quadros
     Uint64 inicioResultado = 0; // quando a tela de resultado abriu
@@ -434,6 +440,7 @@ private:
     int barreiraCargas = 0;
     Uint64 inicioRecargaBarreira = 0;
     Explosao explosoes[MAX_EXPLOSOES] = { 0 };
+    FaiscaEscudo faiscas[MAX_FAISCAS_ESCUDO] = { 0 };   // faiscas de bloqueio do escudo do Brownie
     int sequenciaAbates = 0;
     bool furiaAtiva = false;
     Uint64 furiaInicio = 0;

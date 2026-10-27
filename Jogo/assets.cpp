@@ -131,6 +131,17 @@ void Assets::Carregar(SDL_Renderer* renderer)
 
     carregarOpcional(texturaTiroCalda, "assets/tiro_calda.png");
     carregarOpcional(texturaTiroCaldaImpacto, "assets/tiro_calda_impacto.png");
+    carregarOpcional(texturaFaiscaEscudo, "assets/fx_faisca_escudo.png");
+
+    // Bosses (Lote 13f): o chocolate usa texturaBoss; os demais sao opcionais
+    carregarOpcional(texturasBoss[ANIM_TOURO_ANDAR], "assets/boss_touro_andar.png");
+    carregarOpcional(texturasBoss[ANIM_TOURO_CARREGAR], "assets/boss_touro_carregar.png");
+    carregarOpcional(texturasBoss[ANIM_TOURO_INVESTIDA], "assets/boss_touro_investida.png");
+    carregarOpcional(texturasBoss[ANIM_CHURROS_ANDAR], "assets/boss_churros_andar.png");
+    carregarOpcional(texturasBoss[ANIM_CHURROS_INVOCAR], "assets/boss_churros_invocar.png");
+    carregarOpcional(texturasBoss[ANIM_BROWNIE_ANDAR], "assets/boss_brownie_andar.png");
+    carregarOpcional(texturasBoss[ANIM_BROWNIE_TRANSICAO], "assets/boss_brownie_transicao.png");
+    carregarOpcional(texturasBoss[ANIM_BROWNIE_ESCUDO], "assets/boss_brownie_escudo.png");
 
     pilulaDestaque.reset(CriarTexturaDestaque(renderer));
 

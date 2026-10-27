@@ -65,10 +65,10 @@ inline constexpr DadosInimigo TABELA_INIMIGOS[TOTAL_TIPOS_INIMIGO] =
     { 1, false, 1.0f, 1.0f,   50,  1,    3,     150,    120,     64,  64, 1,       255, 255, 255 },   // COMUM
     { 3, true,  0.7f, 1.0f,   60,  2,    3,     150,    120,     64,  64, 3,       190, 120,  40 },   // RAPADURA (192x192: 3 frames x 3 estados de vida)
     { 1, false, 1.6f, 0.625f, 50,  2,    4,     100,    120,     40,  40, 1,       200, 200, 255 },   // GRANULADO (40/64: tamanho nativo da arte; cor aleatoria por minion)
-    { 1, false, 1.0f, 1.0f,   60,  2,    4,     150,    120,     64,  64, 1,       230, 160,  40 },   // CARAMELO (zigue-zague senoidal)
+    { 2, false, 1.0f, 1.0f,   60,  2,    4,     150,    120,     64,  64, 1,       230, 160,  40 },   // CARAMELO (zigue-zague senoidal)
     { 2, false, 1.0f, 1.0f,   50,  2,    3,     150,    300,     64,  64, 2,       255, 150, 190 },   // DIVISOR (msMorte 300 = animacao de divisao de 3 frames)
     { 1, false, 1.0f, 0.5f,   25,  ONDA_NAO_LIBERADA, 3, 150, 120, 32,  32, 1,       255, 150, 190 },   // FILHOTE (nunca sorteado)
-    { 1, false, 1.0f, 1.0f,   50,  2, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
+    { 2, false, 1.0f, 1.0f,   50,  2, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
 };
 
 // Pirulito: folha de 6 quadros (384x64). Quadros 0 a 3 = voo (framesAndar); 4 e 5 = disparo (Lote 13e).

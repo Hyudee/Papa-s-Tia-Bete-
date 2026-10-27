@@ -242,7 +242,7 @@ void Jogo::RenderizarMundo() {
     }
 
     // Tiros dos Pirulitos: tiro_calda.png (4 quadros de 24x24) e, ao acertar, tiro_calda_impacto.png
-// (3 quadros de 32x32). Sem a arte, cai no tiro.png em vermelho (a textura e compartilhada: a cor volta ao normal).
+    // (3 quadros de 32x32). Sem a arte, cai no tiro.png em vermelho (a textura e compartilhada: a cor volta ao normal).
     bool tiroProvisorio = (texturaTiroCalda == NULL);
 
     if (tiroProvisorio)
@@ -349,14 +349,64 @@ void Jogo::RenderizarMundo() {
     // Boss
     if (boss.ativo)
     {
+        AnimBossId idAnim = AnimacaoDoBoss(boss.tipo, boss.estado);
+        const AnimBoss& anim = TABELA_ANIM_BOSS[idAnim];
+
+        SDL_Texture* texBoss = texturasBoss[idAnim];
+        bool provisorio = false;
+
+        if (!texBoss)   // arte do tipo ausente: usa o chocolate com cor provisoria
+        {
+            texBoss = texturaBoss;
+            provisorio = true;
+        }
+
+        int frameBoss = FrameExibidoBoss(boss.estado, boss.frame, anim.frames);   // saida do escudo toca ao contrario
+
         SDL_FRect srcBoss = {
-            (float)(boss.frame * 128),
+            (float)(frameBoss * LARGURA_FRAME_BOSS),
             0,
-            128,
-            128
+            (float)LARGURA_FRAME_BOSS,
+            (float)LARGURA_FRAME_BOSS
         };
 
-        SDL_RenderTexture(renderer, texturaBoss, &srcBoss, &boss.rect);
+        if (provisorio)
+            SDL_SetTextureColorMod(texBoss, anim.corR, anim.corG, anim.corB);
+
+        // Aviso do Touro: treme so no desenho (o rect, e a colisao, ficam parados)
+        SDL_FRect destBoss = boss.rect;
+
+        if (boss.estado == BOSS_AVISANDO)
+        {
+            float t = (float)SDL_GetTicks();
+            destBoss.x += SDL_sinf(t * 0.08f) * 4.0f * escalaJogo;
+            destBoss.y += SDL_cosf(t * 0.11f) * 2.0f * escalaJogo;
+        }
+
+        SDL_RenderTexture(renderer, texBoss, &srcBoss, &destBoss);
+
+        if (provisorio)
+            SDL_SetTextureColorMod(texBoss, 255, 255, 255);   // textura compartilhada: sempre restaurar
+    }
+
+    // Faiscas de bloqueio do escudo (desenhadas por cima do boss)
+    if (texturaFaiscaEscudo != NULL)
+    {
+        for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        {
+            if (!faiscas[i].ativa)
+                continue;
+
+            int f = (int)((SDL_GetTicks() - faiscas[i].inicio) / FAISCA_MS_FRAME);
+            if (f >= FAISCA_FRAMES) f = FAISCA_FRAMES - 1;
+
+            float t = FAISCA_TAMANHO * escalaJogo;
+
+            SDL_FRect srcFaisca = { (float)(f * (int)FAISCA_TAMANHO), 0, FAISCA_TAMANHO, FAISCA_TAMANHO };
+            SDL_FRect dstFaisca = { faiscas[i].x - t / 2.0f, faiscas[i].y - t / 2.0f, t, t };
+
+            SDL_RenderTexture(renderer, texturaFaiscaEscudo, &srcFaisca, &dstFaisca);
+        }
     }
 
     // Powerups
@@ -468,7 +518,11 @@ void Jogo::RenderizarHud() {
         SDL_SetRenderDrawColor(renderer, 100, 0, 0, 255);
         SDL_RenderFillRect(renderer, &fundoVida);
 
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        if (BossInvulneravel(boss.tipo, boss.estado))
+            SDL_SetRenderDrawColor(renderer, 120, 180, 255, 255);   // escudo ativo: barra azul
+        else
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+
         SDL_RenderFillRect(renderer, &vidaBoss);
     }
 

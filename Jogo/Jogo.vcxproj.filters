@@ -34,6 +34,9 @@
     <Filter Include="src\upgrades">
       <UniqueIdentifier>{0de2ee2c-83ea-49a8-b076-dc8a07e964ef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\inimigos">
+      <UniqueIdentifier>{7c45f4b2-d32d-4b7e-835b-b4cfba081aa6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ranking.cpp">
@@ -139,6 +142,12 @@
     </ClInclude>
     <ClInclude Include="anim_cartas.h">
       <Filter>src\upgrades</Filter>
+    </ClInclude>
+    <ClInclude Include="inimigos.h">
+      <Filter>src\inimigos</Filter>
+    </ClInclude>
+    <ClInclude Include="bosses.h">
+      <Filter>src\inimigos</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

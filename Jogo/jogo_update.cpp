@@ -539,6 +539,7 @@ bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
 // Se faltar vaga, nasce so o que couber.
 void Jogo::DividirDivisor(SDL_FRect pai)
 {
+    contadores.divisoes++;
     float tamFilhote = tamanhoInimigo * DadosDoInimigo(INIMIGO_FILHOTE).fatorTamanho;
 
     for (int k = 0; k < FILHOTES_POR_DIVISAO; k++)
@@ -787,26 +788,110 @@ void Jogo::AtualizarPowerups() {
 
 void Jogo::AtualizarBoss() {
     if (estado == JOGAR) {
+        // Faiscas do escudo: somem quando a animacao termina
+        for (int i = 0; i < MAX_FAISCAS_ESCUDO; i++)
+        {
+            if (faiscas[i].ativa && SDL_GetTicks() - faiscas[i].inicio >= FAISCA_MS_FRAME * FAISCA_FRAMES)
+                faiscas[i].ativa = false;
+        }
+
         if (boss.ativo)
         {
+            // Touro: andando -> avisando -> investindo -> andando (uma vez por boss)
+            if (boss.tipo == BOSS_TOURO)
+            {
+                float progresso = ProgressoBoss(boss.rect.x, (float)larguraTela, base.x + base.w);
+                EstadoBoss novo = TransicaoTouro(boss.estado, boss.investiu, progresso,
+                    SDL_GetTicks(), boss.estadoInicio);
+
+                if (novo != boss.estado)
+                {
+                    if (novo == BOSS_AVISANDO)
+                        boss.investiu = true;
+
+                    boss.estado = novo;
+                    boss.estadoInicio = SDL_GetTicks();
+                    boss.frame = 0;
+                    boss.ultimoFrame = SDL_GetTicks();
+                }
+            }
+
+            // Brownie: vulneravel -> escudo entrando -> escudo -> escudo saindo -> vulneravel
+            if (boss.tipo == BOSS_BROWNIE)
+            {
+                EstadoBoss novo = TransicaoBrownie(boss.estado, SDL_GetTicks(), boss.estadoInicio);
+
+                if (novo != boss.estado)
+                {
+                    boss.estado = novo;
+                    boss.estadoInicio = SDL_GetTicks();
+                    boss.frame = 0;
+                    boss.ultimoFrame = SDL_GetTicks();
+                }
+            }
+
+            // Churros: andando -> invocando -> andando; os minions nascem no pico do brilho
+            if (boss.tipo == BOSS_CHURROS)
+            {
+                Uint64 agora = SDL_GetTicks();
+                EstadoBoss novo = TransicaoChurros(boss.estado, agora, boss.estadoInicio, boss.proximaInvocacao);
+
+                if (novo != boss.estado)
+                {
+                    boss.estado = novo;
+                    boss.estadoInicio = agora;
+                    boss.frame = 0;
+                    boss.ultimoFrame = agora;
+                    boss.invocou = false;
+
+                    if (novo == BOSS_ANDANDO)
+                        boss.proximaInvocacao = agora + CHURROS_MS_INTERVALO;
+                }
+
+                if (boss.estado == BOSS_INVOCANDO && !boss.invocou && InvocacaoPronta(agora, boss.estadoInicio))
+                {
+                    boss.invocou = true;
+                    InvocarMinionsDoBoss();
+                }
+            }
+
             // Glacê Pegajoso: enquanto a lentidão durar, o boss anda mais devagar
-            float fatorBoss = 1.0f;
+            float fatorBoss = FatorVelocidadeBoss(boss.tipo, boss.estado);
 
             if (SDL_GetTicks() < boss.lentidaoFim)
-                fatorBoss = (100 - boss.lentidaoPercent) / 100.0f;
+                fatorBoss *= (100 - boss.lentidaoPercent) / 100.0f;
 
             boss.rect.x -= boss.speed * fatorBoss;
 
-            if (SDL_GetTicks() - boss.ultimoFrame > 120)
+            const AnimBoss& anim = TABELA_ANIM_BOSS[AnimacaoDoBoss(boss.tipo, boss.estado)];
+
+            if (SDL_GetTicks() - boss.ultimoFrame > (Uint64)anim.msFrame)
             {
                 boss.frame++;
 
-                if (boss.frame >= 6)
-                    boss.frame = 0;
+                if (boss.frame >= anim.frames)
+                    boss.frame = AnimacaoBossEmLoop(boss.estado) ? 0 : anim.frames - 1;   // transicoes seguram o ultimo frame
 
                 boss.ultimoFrame = SDL_GetTicks();
             }
         }
+    }
+}
+
+void Jogo::InvocarMinionsDoBoss() {
+
+    contadores.invocacoes++;
+    // Excecao deliberada a regra "sem spawn com boss vivo": so o boss invoca.
+    // Respeita so MAX_INIMIGOS (SpawnarInimigo devolve false sem vaga) e ignora inimigosAtivos.
+    for (int k = 0; k < CHURROS_QTD_INVOCACAO; k++)
+    {
+        TipoInimigo tipo = SortearTipoInvocado();
+        float lado = tamanhoInimigo * DadosDoInimigo(tipo).fatorTamanho;
+
+        PosicaoInvocado p = PosInvocado(k, boss.rect.x, boss.rect.y, boss.rect.w, boss.rect.h,
+            lado, lado, base.x + base.w, (float)larguraTela, (float)alturaTela, escalaJogo);
+
+        SpawnarInimigo(tipo, p.x, p.y);
     }
 }
 

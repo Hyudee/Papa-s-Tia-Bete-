@@ -309,6 +309,13 @@ void Jogo::SpawnarBoss() {
         if (!boss.ativo && pontos >= spawnBoss &&
             SDL_GetTicks() - fimUltimoBoss >= INTERVALO_MINIMO_BOSS) {
             boss.ativo = true;
+            boss.tipo = SortearTipoBoss();       // sorteio a cada spawn, sem restricao por onda
+            contadores.bossesEnfrentados[boss.tipo]++;
+            boss.estado = BOSS_ANDANDO;
+            boss.estadoInicio = SDL_GetTicks();
+            boss.proximaInvocacao = SDL_GetTicks() + CHURROS_MS_PRIMEIRA;   // so o Churros usa            
+            boss.investiu = false;
+            boss.invocou = false;
 
             shakeDuracao = 600.0f;
             shakeForca = 8.0f * escalaJogo;
