@@ -242,6 +242,15 @@ void Jogo::AtualizarSpawn() {
             int criados = 0;            // quantos minions ja nasceram neste spawn (o bando conta cada membro)
             int granuladosNoSpawn = 0;  // granulados deste spawn, somando todos os bandos (maximo MAX_GRANULADOS_POR_SPAWN)
 
+
+            int pirulitosVivos = 0;     // atiradores na tela (limite MAX_PIRULITOS)
+
+            for (int i = 0; i < MAX_INIMIGOS; i++)
+            {
+                if (inimigos[i].ativo && inimigos[i].tipo == INIMIGO_PIRULITO)
+                    pirulitosVivos++;
+            }
+
             for (int s = 0; s < quantidadeSpawn; s++)
             {
                 int vagas = VagasNoTeto(inimigosAtivos, vivos, criados);
@@ -250,6 +259,10 @@ void Jogo::AtualizarSpawn() {
                     break;
 
                 TipoInimigo tipo = SortearTipoInimigo(tiposAtivos, totalTiposAtivos);
+
+
+                // Ja ha Pirulitos demais na tela: este vira minion comum
+                tipo = LimitarPirulitos(tipo, pirulitosVivos);
 
                 // Granulado nasce em bando; os outros tipos nascem um por vez
                 int membros = 1;
@@ -264,10 +277,8 @@ void Jogo::AtualizarSpawn() {
                 }
 
                 float altura = tamanhoInimigo * DadosDoInimigo(tipo).fatorTamanho;
-                int faixaY = alturaTela - (int)altura;
 
-                if (faixaY < 1)
-                    faixaY = 1;
+                int faixaY = FaixaYSpawn(tipo, alturaTela, (int)altura);   // Pirulito: so a metade superior
 
                 for (int m = 0; m < membros; m++)
                 {
@@ -280,6 +291,9 @@ void Jogo::AtualizarSpawn() {
 
                         if (tipo == INIMIGO_GRANULADO)
                             granuladosNoSpawn++;
+
+                        if (tipo == INIMIGO_PIRULITO)
+                            pirulitosVivos++;
                     }
                 }
             }
@@ -483,6 +497,20 @@ bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
         inimigos[i].fase = 0.0f;
         inimigos[i].angulo = 0.0f;
 
+        // Pirulito (a vaga pode ter sido de outro tipo: sempre reescrever)
+        inimigos[i].estadoPirulito = PIRULITO_INDO;
+        inimigos[i].alvoX = 0.0f;
+        inimigos[i].ultimoDisparo = 0;
+        inimigos[i].disparoInicio = 0;
+        inimigos[i].atirou = false;
+
+        if (tipo == INIMIGO_PIRULITO)
+        {
+            // Para num x aleatorio, nunca atras da base
+            inimigos[i].alvoX = AlvoXPirulito(base.x + base.w, (float)larguraTela, inimigos[i].rect.w,
+                PIRULITO_MARGEM_BASE * escalaJogo);
+        }
+
         // Caramelo: zigue-zague em torno de uma linha central que deixa a onda inteira dentro da tela
         if (tipo == INIMIGO_CARAMELO)
         {
@@ -523,6 +551,146 @@ void Jogo::DividirDivisor(SDL_FRect pai)
     }
 }
 
+// Pirulito, o atirador. Tres estados:
+//   INDO       anda para a esquerda ate alvoX (que fica sempre a frente da base)
+//   PAIRANDO   parado, oscila de leve; quando passa PIRULITO_INTERVALO_TIRO_MS, comeca a disparar
+//   DISPARANDO toca os quadros 4 e 5 da folha; o tiro sai quando o quadro 5 aparece;
+//              no fim volta a pairar e a espera do proximo tiro conta a partir de AGORA
+void Jogo::AtualizarPirulito(Inimigo& p)
+{
+    Uint64 agora = SDL_GetTicks();
+    const DadosInimigo& dados = DadosDoInimigo(INIMIGO_PIRULITO);
+
+    if (p.estadoPirulito == PIRULITO_DISPARANDO)
+    {
+        Uint64 decorrido = agora - p.disparoInicio;
+
+        p.frame = PIRULITO_FRAME_DISPARO_INICIO + FrameDisparoPirulito(decorrido);
+
+        if (!p.atirou && TiroSaiAgora(decorrido))
+        {
+            DispararTiroInimigo(p);
+            p.atirou = true;
+        }
+
+        if (DisparoTerminou(decorrido))
+        {
+            p.estadoPirulito = PIRULITO_PAIRANDO;
+            p.ultimoDisparo = agora;
+            p.frame = 0;
+            p.ultimoFrame = agora;
+        }
+
+        return;
+    }
+
+    // Voo (indo ou pairando): quadros 0 a 3 em loop
+    if (agora - p.ultimoFrame > (Uint64)dados.msPorFrame)
+    {
+        p.frame = (p.frame + 1) % dados.framesAndar;
+        p.ultimoFrame = agora;
+    }
+
+    if (p.estadoPirulito == PIRULITO_INDO)
+    {
+        p.rect.x -= p.speed;
+
+        if (p.rect.x <= p.alvoX)
+        {
+            p.rect.x = p.alvoX;
+            p.estadoPirulito = PIRULITO_PAIRANDO;
+            p.ultimoDisparo = agora;    // o primeiro tiro vem depois de um intervalo inteiro
+        }
+    }
+    else    // PAIRANDO
+    {
+        p.fase += PIRULITO_PAIRAR_PASSO;
+        p.rect.y = CarameloY(p.yBase, PIRULITO_PAIRAR_AMPLITUDE * escalaJogo, p.fase,
+            (float)alturaTela, p.rect.h);
+
+        if (agora - p.ultimoDisparo >= (Uint64)PIRULITO_INTERVALO_TIRO_MS)
+        {
+            p.estadoPirulito = PIRULITO_DISPARANDO;
+            p.disparoInicio = agora;
+            p.atirou = false;
+        }
+    }
+}
+
+// Cria o tiro na boca do Pirulito, mirando na posicao do jogador NESTE instante (nao persegue).
+// Sem vaga no vetor, o tiro e perdido (nunca estoura o array).
+void Jogo::DispararTiroInimigo(const Inimigo& p)
+{
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+    {
+        if (tirosInimigos[k].ativo)
+            continue;
+
+        float tam = TIRO_INIMIGO_TAMANHO * escalaJogo;        float bocaX = p.rect.x + p.rect.w * PIRULITO_BOCA_X;
+        float bocaY = p.rect.y + p.rect.h * PIRULITO_BOCA_Y;
+
+        MiraDoTiro mira = MirarTiro(bocaX, bocaY,
+            player.x + player.w / 2.0f, player.y + player.h / 2.0f,
+            TIRO_INIMIGO_VELOCIDADE * escalaJogo);
+
+        tirosInimigos[k].ativo = true;
+        tirosInimigos[k].rect = { bocaX - tam / 2.0f, bocaY - tam / 2.0f, tam, tam };
+        tirosInimigos[k].velX = mira.velX;
+        tirosInimigos[k].velY = mira.velY;
+        tirosInimigos[k].angulo = mira.angulo;
+        tirosInimigos[k].frame = 0;
+        tirosInimigos[k].ultimoFrame = SDL_GetTicks();
+        tirosInimigos[k].impacto = false;
+        return;
+    }
+}
+
+void Jogo::AtualizarTirosInimigos()
+{
+    if (estado != JOGAR)
+        return;
+
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+    {
+        if (!tirosInimigos[k].ativo)
+            continue;
+
+        // Impacto: parado, toca os quadros de tiro_calda_impacto.png uma vez e some
+        if (tirosInimigos[k].impacto)
+        {
+            if (SDL_GetTicks() - tirosInimigos[k].ultimoFrame > (Uint64)TIRO_IMPACTO_MS_FRAME)
+            {
+                tirosInimigos[k].frame++;
+                tirosInimigos[k].ultimoFrame = SDL_GetTicks();
+
+                if (tirosInimigos[k].frame >= TIRO_IMPACTO_FRAMES)
+                    tirosInimigos[k].ativo = false;
+            }
+
+            continue;
+        }
+
+        tirosInimigos[k].rect.x += tirosInimigos[k].velX;
+        tirosInimigos[k].rect.y += tirosInimigos[k].velY;
+
+        // Quadros de voo (tiro_calda.png tem 4)
+        if (SDL_GetTicks() - tirosInimigos[k].ultimoFrame > (Uint64)TIRO_INIMIGO_MS_FRAME)
+        {
+            tirosInimigos[k].frame = (tirosInimigos[k].frame + 1) % TIRO_INIMIGO_FRAMES;
+            tirosInimigos[k].ultimoFrame = SDL_GetTicks();
+        }
+
+        // Some quando sai inteiro da tela
+        if (tirosInimigos[k].rect.x + tirosInimigos[k].rect.w < 0 ||
+            tirosInimigos[k].rect.x > larguraTela ||
+            tirosInimigos[k].rect.y + tirosInimigos[k].rect.h < 0 ||
+            tirosInimigos[k].rect.y > alturaTela)
+        {
+            tirosInimigos[k].ativo = false;
+        }
+    }
+}
+
 void Jogo::AtualizarInimigos() {
     if (estado == JOGAR) {
         for (int i = 0; i < MAX_INIMIGOS; i++)
@@ -545,6 +713,13 @@ void Jogo::AtualizarInimigos() {
 
             if (inimigos[i].ativo)
             {
+                // O Pirulito tem movimento e animacao proprios
+                if (inimigos[i].tipo == INIMIGO_PIRULITO)
+                {
+                    AtualizarPirulito(inimigos[i]);
+                    continue;
+                }
+
                 if (SDL_GetTicks() - inimigos[i].ultimoFrame > (Uint64)DadosDoInimigo(inimigos[i].tipo).msPorFrame) {
                     inimigos[i].frame++;
 
@@ -681,6 +856,8 @@ void Jogo::AtualizarObstaculos()
 
                     stun = true;
                     stunStart = SDL_GetTicks();
+                    stunDuracaoAtual = STUN_DURACAO;
+                    danoDuracaoAtual = DURACAO_DANO;
 
                     dano = true;
                     danoStart = SDL_GetTicks();

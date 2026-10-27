@@ -46,7 +46,25 @@ typedef struct
     float  yBase;           // Caramelo: linha central do zigue-zague
     float  fase;            // Caramelo: fase da senoide, em radianos
     float  angulo;          // inclinacao do sprite em graus (so o Caramelo usa; 0 nos demais)
+
+    EstadoPirulito estadoPirulito;
+    float  alvoX;           // x onde para
+    Uint64 ultimoDisparo;   // inicio da espera pelo proximo tiro (= fim do ultimo disparo)
+    Uint64 disparoInicio;   // inicio da animacao de disparo atual
+    bool   atirou;          // o tiro deste disparo ja saiu
 } Inimigo;
+
+typedef struct
+{
+    SDL_FRect rect;
+    bool   ativo;
+    float  velX;
+    float  velY;
+    float  angulo;          // em graus; o sprite aponta para a direita
+    int    frame;
+    Uint64 ultimoFrame;
+    bool   impacto;         // true = acertou o jogador e toca a animacao de impacto (parado, sem colisao)
+} TiroInimigo;
 
 typedef struct
 {

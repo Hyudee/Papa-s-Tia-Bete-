@@ -182,6 +182,12 @@ void Jogo::RenderizarMundo() {
         const DadosInimigo& folha = arteProvisoria ? DadosDoInimigo(INIMIGO_COMUM) : dados;
 
         int coluna = inimigos[i].frame % folha.framesAndar;
+
+        // Pirulito disparando: quadros 4 e 5 da folha. A arte provisoria (cubo) so tem os quadros de andar.
+        if (inimigos[i].tipo == INIMIGO_PIRULITO && inimigos[i].estadoPirulito == PIRULITO_DISPARANDO &&
+            !arteProvisoria)
+            coluna = inimigos[i].frame;
+
         int linha = EstadoDeVida(folha, inimigos[i].vida, inimigos[i].vidaMax);
 
         SDL_FRect src = {            // bloco dos inimigos: colunas = frames, linhas = estados de vida
@@ -234,6 +240,61 @@ void Jogo::RenderizarMundo() {
         // A textura e compartilhada: devolve a cor ao normal depois de cada minion
         SDL_SetTextureColorMod(textura, 255, 255, 255);
     }
+
+    // Tiros dos Pirulitos: tiro_calda.png (4 quadros de 24x24) e, ao acertar, tiro_calda_impacto.png
+// (3 quadros de 32x32). Sem a arte, cai no tiro.png em vermelho (a textura e compartilhada: a cor volta ao normal).
+    bool tiroProvisorio = (texturaTiroCalda == NULL);
+
+    if (tiroProvisorio)
+        SDL_SetTextureColorMod(projetil, 255, 70, 70);
+
+    for (int i = 0; i < MAX_TIROS_INIMIGOS; i++)
+    {
+        if (!tirosInimigos[i].ativo)
+            continue;
+
+        if (tirosInimigos[i].impacto)
+        {
+            // impacto so existe com a textura carregada (sem ela o tiro some direto)
+            SDL_FRect srcImpacto = {
+                (float)(tirosInimigos[i].frame * (int)TIRO_IMPACTO_TAMANHO),
+                0,
+                TIRO_IMPACTO_TAMANHO,
+                TIRO_IMPACTO_TAMANHO
+            };
+
+            SDL_RenderTexture(renderer, texturaTiroCaldaImpacto, &srcImpacto, &tirosInimigos[i].rect);
+            continue;
+        }
+
+        if (tiroProvisorio)
+        {
+            SDL_FRect srcTiroInimigo = {
+                (float)((tirosInimigos[i].frame % 3) * larguraFrameTiro),
+                0,
+                (float)larguraFrameTiro,
+                (float)alturaFrameTiro
+            };
+
+            SDL_RenderTextureRotated(renderer, projetil, &srcTiroInimigo, &tirosInimigos[i].rect,
+                (double)tirosInimigos[i].angulo, NULL, SDL_FLIP_NONE);
+        }
+        else
+        {
+            SDL_FRect srcTiroInimigo = {
+                (float)(tirosInimigos[i].frame * (int)TIRO_INIMIGO_TAMANHO),
+                0,
+                TIRO_INIMIGO_TAMANHO,
+                TIRO_INIMIGO_TAMANHO
+            };
+
+            SDL_RenderTextureRotated(renderer, texturaTiroCalda, &srcTiroInimigo, &tirosInimigos[i].rect,
+                (double)tirosInimigos[i].angulo, NULL, SDL_FLIP_NONE);
+        }
+    }
+
+    if (tiroProvisorio)
+        SDL_SetTextureColorMod(projetil, 255, 255, 255);
 
     // Obstáculos
     for (int i = 0; i < MAX_OBSTACULOS; i++)

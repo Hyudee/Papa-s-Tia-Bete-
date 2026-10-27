@@ -49,16 +49,15 @@ struct DadosInimigo
 inline constexpr int MS_FLASH_ACERTO = 90;
 
 // ---- Sorteio de tipos (Lote 13c) ----
-inline constexpr int ONDA_NAO_LIBERADA = 999;   // tipo ainda sem comportamento pronto: nunca sorteado
+inline constexpr int ONDA_NAO_LIBERADA   = 999;   // tipo ainda sem comportamento pronto: nunca sorteado
 
 // Bando do Granulado: quantos nascem juntos (cada um conta no teto de vivos)
 inline constexpr int BANDO_GRANULADO_MIN = 3;
 inline constexpr int BANDO_GRANULADO_MAX = 4;
-inline constexpr int MAX_GRANULADOS_POR_SPAWN = 5;   // teto de granulados num mesmo spawn (somando todos os bandos)
+inline constexpr int MAX_GRANULADOS_POR_SPAWN = 10;   // teto de granulados num mesmo spawn (somando todos os bandos)
 
 // Ordem das linhas = ordem do enum TipoInimigo
 // ondaMinima: ONDA_NAO_LIBERADA ate o lote que implementa o comportamento do tipo
-//   (Pirulito: Lote 13e -> trocar para 2).
 //   O Filhote NUNCA entra no sorteio: so nasce quando o Divisor morre.
 inline constexpr DadosInimigo TABELA_INIMIGOS[TOTAL_TIPOS_INIMIGO] =
 {
@@ -69,12 +68,12 @@ inline constexpr DadosInimigo TABELA_INIMIGOS[TOTAL_TIPOS_INIMIGO] =
     { 1, false, 1.0f, 1.0f,   60,  2,    4,     150,    120,     64,  64, 1,       230, 160,  40 },   // CARAMELO (zigue-zague senoidal)
     { 2, false, 1.0f, 1.0f,   50,  2,    3,     150,    300,     64,  64, 2,       255, 150, 190 },   // DIVISOR (msMorte 300 = animacao de divisao de 3 frames)
     { 1, false, 1.0f, 0.5f,   25,  ONDA_NAO_LIBERADA, 3, 150, 120, 32,  32, 1,       255, 150, 190 },   // FILHOTE (nunca sorteado)
-    { 1, false, 1.0f, 1.0f,   50,  ONDA_NAO_LIBERADA, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
+    { 1, false, 1.0f, 1.0f,   50,  2, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
 };
 
 // Pirulito: folha de 6 quadros (384x64). Quadros 0 a 3 = voo (framesAndar); 4 e 5 = disparo (Lote 13e).
 inline constexpr int PIRULITO_FRAME_DISPARO_INICIO = 4;
-inline constexpr int PIRULITO_FRAMES_DISPARO = 2;
+inline constexpr int PIRULITO_FRAMES_DISPARO       = 2;
 
 inline const DadosInimigo& DadosDoInimigo(TipoInimigo tipo)
 {
@@ -185,9 +184,9 @@ inline constexpr CorRGB CORES_GRANULADO[] =
     { 255,  70,  70 },   // vermelho
     { 255, 150,  50 },   // laranja
     { 255, 230,  60 },   // amarelo
-    { 90, 220,  90 },   // verde
-    { 80, 220, 230 },   // ciano
-    { 90, 130, 255 },   // azul
+    {  90, 220,  90 },   // verde
+    {  80, 220, 230 },   // ciano
+    {  90, 130, 255 },   // azul
     { 180, 100, 255 },   // roxo
     { 255, 110, 200 },   // rosa
 };
@@ -203,10 +202,10 @@ inline CorRGB CorAleatoriaGranulado(int (*sorteio)(int) = SorteioPadrao)
 // Caramelo (Lote 13d): zigue-zague senoidal. A fase avanca com a distancia andada
 // (nada de timestamp: pausa e upgrade nao precisam de DeslocarTimers).
 // ---------------------------------------------------------------------------
-inline constexpr float CARAMELO_AMPLITUDE = 60.0f;    // px (multiplicada por escalaJogo)
+inline constexpr float CARAMELO_AMPLITUDE        = 60.0f;    // px (multiplicada por escalaJogo)
 inline constexpr float CARAMELO_COMPRIMENTO_ONDA = 320.0f;   // px andados na horizontal por ciclo completo (x escalaJogo)
-inline constexpr float CARAMELO_INCLINACAO_MAX = 15.0f;    // graus de inclinacao do sprite no ponto mais inclinado
-inline constexpr float PI_INIMIGOS = 3.14159265f;
+inline constexpr float CARAMELO_INCLINACAO_MAX   = 15.0f;    // graus de inclinacao do sprite no ponto mais inclinado
+inline constexpr float PI_INIMIGOS               = 3.14159265f;
 
 // Quanto a fase avanca em um quadro, dada a velocidade (ja multiplicada por escalaJogo)
 inline float AvancoFaseCaramelo(float velocidade, float escalaJogo)
@@ -249,7 +248,7 @@ inline float CarameloAngulo(float fase)
 // Divisor (Lote 13d)
 // ---------------------------------------------------------------------------
 inline constexpr int DIVISOR_FRAMES_DIVISAO = 3;   // minion_marshmallow_divisao.png: 3 quadros de 64x64
-inline constexpr int FILHOTES_POR_DIVISAO = 2;
+inline constexpr int FILHOTES_POR_DIVISAO   = 2;
 
 // Quadro da animacao de divisao (tocada uma vez durante a janela de morte). Nunca passa do ultimo.
 inline int FrameDivisao(unsigned long long decorrido, int msMorte)
@@ -281,4 +280,111 @@ inline void PosicaoFilhote(float paiX, float paiY, float paiW, float paiH, float
 
     *saidaX = x;
     *saidaY = y;
+}
+
+// ---------------------------------------------------------------------------
+// Pirulito, o atirador (Lote 13e). Tudo aqui e logica pura (testavel sem SDL).
+// ---------------------------------------------------------------------------
+enum EstadoPirulito
+{
+    PIRULITO_INDO = 0,      // anda para a esquerda ate o ponto (0 = zero seguro por causa do memset)
+    PIRULITO_PAIRANDO,      // parado, com leve oscilacao, esperando o proximo tiro
+    PIRULITO_DISPARANDO     // tocando os quadros de disparo; o tiro sai no ultimo quadro
+};
+
+inline constexpr int   MAX_PIRULITOS = 3;                   // vivos ao mesmo tempo
+inline constexpr int   PIRULITO_INTERVALO_TIRO_MS = 1500;   // espera entre o FIM de um disparo e o inicio do proximo
+inline constexpr int   PIRULITO_MS_FRAME_DISPARO = 150;     // duracao de cada quadro de disparo (4 e 5 da folha)
+inline constexpr float PIRULITO_MARGEM_BASE = 24.0f;        // folga entre a base e o ponto de parada (x escalaJogo)
+inline constexpr float PIRULITO_PAIRAR_AMPLITUDE = 4.0f;    // oscilacao vertical enquanto paira (x escalaJogo)
+inline constexpr float PIRULITO_PAIRAR_PASSO = 0.08f;       // radianos por quadro da oscilacao
+inline constexpr float PIRULITO_BOCA_X = 0.10f;             // boca do disco: fracao da largura, a partir da esquerda
+inline constexpr float PIRULITO_BOCA_Y = 0.50f;             // boca do disco: fracao da altura, a partir do topo
+inline constexpr float TIRO_INIMIGO_TAMANHO = 24.0f;        // tiro_calda.png: quadros de 24x24 (hitbox = arte, x escalaJogo)
+inline constexpr int   TIRO_INIMIGO_FRAMES = 4;             // quadros de voo
+inline constexpr int   TIRO_INIMIGO_MS_FRAME = 80;
+inline constexpr float TIRO_IMPACTO_TAMANHO = 32.0f;        // tiro_calda_impacto.png: quadros de 32x32 (x escalaJogo)
+inline constexpr int   TIRO_IMPACTO_FRAMES = 3;
+inline constexpr int   TIRO_IMPACTO_MS_FRAME = 70;
+inline constexpr float TIRO_INIMIGO_VELOCIDADE = 6.0f;      // pixels por quadro (x escalaJogo); hipotese, calibrar no teste
+
+// Faixa de y sorteavel no spawn: o Pirulito so nasce na metade superior da tela
+inline int FaixaYSpawn(TipoInimigo tipo, int alturaTela, int alturaMinion)
+{
+    int area = (tipo == INIMIGO_PIRULITO) ? alturaTela / 2 : alturaTela;
+    int faixa = area - alturaMinion;
+
+    return (faixa < 1) ? 1 : faixa;
+}
+
+// Teto de Pirulitos vivos: se ja ha demais, o sorteio vira minion comum
+inline TipoInimigo LimitarPirulitos(TipoInimigo tipo, int pirulitosVivos)
+{
+    if (tipo == INIMIGO_PIRULITO && pirulitosVivos >= MAX_PIRULITOS)
+        return INIMIGO_COMUM;
+
+    return tipo;
+}
+
+// x onde o Pirulito para: nunca atras da base (com folga) nem fora da borda direita
+inline float AlvoXPirulito(float baseDireita, float larguraTela, float larguraMinion, float margem,
+    int (*sorteio)(int) = SorteioPadrao)
+{
+    float minimo = baseDireita + margem;
+    float maximo = larguraTela - larguraMinion - margem;
+
+    if (maximo <= minimo)
+        return minimo;
+
+    return minimo + (float)sorteio((int)(maximo - minimo) + 1);
+}
+
+// Quadro de disparo (0 ou 1, somar PIRULITO_FRAME_DISPARO_INICIO) para o tempo decorrido desde o inicio do disparo
+inline int FrameDisparoPirulito(unsigned long long decorrido)
+{
+    unsigned long long frame = decorrido / (unsigned long long)PIRULITO_MS_FRAME_DISPARO;
+
+    if (frame > (unsigned long long)(PIRULITO_FRAMES_DISPARO - 1))
+        frame = PIRULITO_FRAMES_DISPARO - 1;
+
+    return (int)frame;
+}
+
+// O tiro sai quando o ULTIMO quadro de disparo aparece
+inline bool TiroSaiAgora(unsigned long long decorrido)
+{
+    return FrameDisparoPirulito(decorrido) == PIRULITO_FRAMES_DISPARO - 1;
+}
+
+// A animacao de disparo acabou (todos os quadros ja tiveram seu tempo)
+inline bool DisparoTerminou(unsigned long long decorrido)
+{
+    return decorrido >= (unsigned long long)(PIRULITO_FRAMES_DISPARO * PIRULITO_MS_FRAME_DISPARO);
+}
+
+// Velocidade e angulo (graus; o sprite aponta para a direita) do tiro. A mira e fixada no disparo:
+// o tiro nao persegue. Origem = destino: segue para a esquerda.
+struct MiraDoTiro
+{
+    float velX, velY, angulo;
+};
+
+inline MiraDoTiro MirarTiro(float origemX, float origemY, float destinoX, float destinoY, float velocidade)
+{
+    float dx = destinoX - origemX;
+    float dy = destinoY - origemY;
+    float dist = sqrtf(dx * dx + dy * dy);
+
+    if (dist <= 0.0001f)
+    {
+        dx = -1.0f;
+        dy = 0.0f;
+        dist = 1.0f;
+    }
+
+    MiraDoTiro mira;
+    mira.velX = dx / dist * velocidade;
+    mira.velY = dy / dist * velocidade;
+    mira.angulo = atan2f(dy, dx) * 57.29578f;
+    return mira;
 }

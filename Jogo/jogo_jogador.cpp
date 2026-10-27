@@ -94,28 +94,14 @@ void Jogo::AnimarDano() {
         {
             Uint64 tempo = SDL_GetTicks() - danoStart;
 
-            if (olhandoDireita)
-            {
-                if (tempo < 300)
-                    framePlayer = 13;
-                else if (tempo < 600)
-                    framePlayer = 14;
-                else if (tempo < 900)
-                    framePlayer = 15;
-                else
-                    dano = false;
-            }
+            // 3 quadros de dano espalhados pela duracao atual (900 ms = 300/600/900, como antes;
+            // o stun do tiro do Pirulito usa 700 ms e a animacao acaba junto com ele)
+            int passo = (int)(tempo * 3 / danoDuracaoAtual);
+
+            if (passo >= 3)
+                dano = false;
             else
-            {
-                if (tempo < 300)
-                    framePlayer = 27;
-                else if (tempo < 600)
-                    framePlayer = 28;
-                else if (tempo < 900)
-                    framePlayer = 29;
-                else
-                    dano = false;
-            }
+                framePlayer = (olhandoDireita ? 13 : 27) + passo;
         }
     }
 }
@@ -144,6 +130,8 @@ void Jogo::ColisoesTela() {
                 // Stun
                 stun = true;
                 stunStart = SDL_GetTicks();
+                stunDuracaoAtual = STUN_DURACAO;
+                danoDuracaoAtual = DURACAO_DANO;
                 dano = true;
                 danoStart = SDL_GetTicks();
 

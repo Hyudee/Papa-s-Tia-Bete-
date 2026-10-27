@@ -40,6 +40,8 @@ void Jogo::ColisaoPlayerInimigos() {
                     // Stun
                     stun = true;
                     stunStart = SDL_GetTicks();
+                    stunDuracaoAtual = STUN_DURACAO;
+                    danoDuracaoAtual = DURACAO_DANO;
 
                     // animação de dano
 
@@ -55,10 +57,58 @@ void Jogo::ColisaoPlayerInimigos() {
                 }
             }
         }
-        if (stun && SDL_GetTicks() - stunStart >= STUN_DURACAO) {
+        if (stun && SDL_GetTicks() - stunStart >= stunDuracaoAtual) {
             stun = false;
             if (!dano)
                 framePlayer = olhandoDireita ? 0 : 1;
+        }
+    }
+}
+
+// Tiro do Pirulito x jogador: SO stun (700 ms). Sem perder pontos, vida nem empurrao.
+// O tiro some ao acertar. Com o jogador ja atordoado o tiro passa direto: nao prolonga
+// nem encadeia o stun. Obstaculos e balas do jogador nao interferem no tiro.
+void Jogo::ColisaoTirosInimigosPlayer() {
+    if (estado != JOGAR)
+        return;
+
+    for (int k = 0; k < MAX_TIROS_INIMIGOS; k++)
+    {
+        if (!tirosInimigos[k].ativo || tirosInimigos[k].impacto || stun)
+            continue;
+
+        if (SDL_HasRectIntersectionFloat(&player, &tirosInimigos[k].rect))
+        {
+            if (texturaTiroCaldaImpacto != NULL)
+            {
+                // Toca a animacao de impacto no ponto do acerto (o tiro para e deixa de colidir)
+                float cx = tirosInimigos[k].rect.x + tirosInimigos[k].rect.w / 2.0f;
+                float cy = tirosInimigos[k].rect.y + tirosInimigos[k].rect.h / 2.0f;
+                float t = TIRO_IMPACTO_TAMANHO * escalaJogo;
+
+                tirosInimigos[k].rect = { cx - t / 2.0f, cy - t / 2.0f, t, t };
+                tirosInimigos[k].velX = 0.0f;
+                tirosInimigos[k].velY = 0.0f;
+                tirosInimigos[k].impacto = true;
+                tirosInimigos[k].frame = 0;
+                tirosInimigos[k].ultimoFrame = SDL_GetTicks();
+            }
+            else
+            {
+                tirosInimigos[k].ativo = false;
+            }
+
+            stun = true;
+            stunStart = SDL_GetTicks();
+            stunDuracaoAtual = STUN_TIRO_INIMIGO;
+
+            QuebrarSequenciaAbates();
+
+            dano = true;
+            danoStart = SDL_GetTicks();
+            danoDuracaoAtual = STUN_TIRO_INIMIGO;
+
+            framePlayer = olhandoDireita ? 13 : 27;
         }
     }
 }

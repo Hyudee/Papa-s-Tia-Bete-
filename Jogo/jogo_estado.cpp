@@ -62,6 +62,9 @@ void Jogo::ReiniciarPartida()
 
     // Entidades
     memset(inimigos, 0, sizeof(inimigos));
+    memset(tirosInimigos, 0, sizeof(tirosInimigos));
+    stunDuracaoAtual = STUN_DURACAO;
+    danoDuracaoAtual = DURACAO_DANO;
     tiposAtivos[0] = INIMIGO_COMUM;     // onda 1: so minion comum
     totalTiposAtivos = 1;    
     memset(projeteis, 0, sizeof(projeteis));
@@ -302,7 +305,12 @@ void Jogo::DeslocarTimers(Uint64 delta)
         inimigos[i].ultimoFrame += delta;
         inimigos[i].flashInicio += delta;
         inimigos[i].hitInicio += delta;
+        inimigos[i].ultimoDisparo += delta;
+        inimigos[i].disparoInicio += delta;
     }
+
+    for (int i = 0; i < MAX_TIROS_INIMIGOS; i++)
+        tirosInimigos[i].ultimoFrame += delta;
 
     for (int i = 0; i < MAX_PROJETEIS; i++)
         projeteis[i].ultimoFrame += delta;
