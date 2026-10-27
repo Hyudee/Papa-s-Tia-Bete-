@@ -53,6 +53,7 @@ typedef struct
     Uint64 ultimoDisparo;   // inicio da espera pelo proximo tiro (= fim do ultimo disparo)
     Uint64 disparoInicio;   // inicio da animacao de disparo atual
     bool   atirou;          // o tiro deste disparo ja saiu
+	bool invocado;         // Churros: este Pirulito foi invocado pelo boss e nao nasceu de spawn normal
 } Inimigo;
 
 typedef struct

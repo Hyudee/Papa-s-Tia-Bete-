@@ -228,8 +228,8 @@ private:
     int  PedacosChocolateNoAr() const;
     void LimparPedacosChocolate();
     void AtualizarTirosInimigos();
-    bool SpawnarInimigo(TipoInimigo tipo, float x, float y);   // false se nao houver vaga
-    void DividirDivisor(SDL_FRect pai);                        // cria os filhotes do Divisor que acabou de morrer
+    bool SpawnarInimigo(TipoInimigo tipo, float x, float y, bool invocado = false);   // false se nao houver vaga
+    void DividirDivisor(SDL_FRect pai, bool invocado = false);                        // cria os filhotes do Divisor que acabou de morrer
     void AtualizarPowerups();
     void AtualizarBoss();
     void AtualizarObstaculos();
@@ -263,6 +263,14 @@ private:
     void RegistrarAbate();              // conta um abate para a Furia
     void QuebrarSequenciaAbates();      // o jogador ou a base foi atingido
     int DanoAtualDoTiro() const;        // dano do tiro agora (com a Furia, se ativa)
+    void DarXp(int quantidade);          // soma XP e registra os level ups
+    void AtualizarBarraXp();   // animacao da barra de XP (liquido, flash, posicao)
+    void ProcessarLevelUps();            // abre a tela de cartas se houver level up pendente
+    float XpFracaoBarra() const
+    {
+        float necessario = (float)XpParaProximoNivel(nivel);
+        return SDL_min(1.0f, SDL_max(0.0f, (float)xpAtual / necessario));
+    }
 
     // Teclado, movimento e física do jogador
     void LerTeclado();
@@ -289,6 +297,9 @@ private:
     void IniciarTelaCartas();
     void AtualizarUpgrade();
     void ConstruirTexturasCartas();
+    void GarantirTexturaCarta(IdCarta id);   // cria (se faltar) as duas texturas da carta no cache
+    void ValidarCacheCartas();               // esvazia o cache se a resolucao mudou
+    void PreAquecerCartas();                 // cria o cache de todas as cartas de uma vez
     void DesenharCartaNaTextura(SDL_Texture* alvo, IdCarta id, bool destacada);
     void EncerrarTelaCartas();
     void ConfirmarCarta(int indice);
@@ -357,6 +368,16 @@ private:
     Obstaculo obstaculos[MAX_OBSTACULOS] = { 0 };
     int mapa[LINHAS][COLUNAS] = { 0 };
     int pontos = 0;
+    int nivel = 1;
+    int xpAtual = 0;
+    int    nivelExibido = 1;         // nivel mostrado na barra (alcanca `nivel` aos poucos)
+    float  xpFracaoExibida = 0.0f;   // preenchimento animado, 0..1
+    float  xpAgitacao = 0.0f;        // 0..1: intensidade da onda na ponta do liquido
+    float  xpFlashMs = 0.0f;         // tempo restante do flash de level up
+    float  xpBarraY = 20.0f;         // y atual da barra (desce quando o boss nasce)
+    Uint64 ultimoTickXp = 0;
+    const float DURACAO_FLASH_XP = 450.0f;
+    int levelUpsPendentes = 0;
     int pontosAntigos = -1;
     int ondas = 1;
     int ondaAntiga = -1;
@@ -465,8 +486,12 @@ private:
     bool cartasProntas = false;
     int larguraCartasConstruida = 0;
     int alturaCartasConstruida = 0;
-    SdlPtr<SDL_Texture> cartaNormal[CARTAS_POR_OFERTA];
-    SdlPtr<SDL_Texture> cartaDestacada[CARTAS_POR_OFERTA];
+    SdlPtr<SDL_Texture> cacheCartaNormal[NUM_CARTAS];       // indexadas por IdCarta; persistem entre telas
+    SdlPtr<SDL_Texture> cacheCartaDestacada[NUM_CARTAS];
+    int larguraCacheCartas = 0;                             // resolucao com que o cache foi feito
+    int alturaCacheCartas = 0;
     SdlPtr<SDL_Texture> textoTituloCartas;
     SdlPtr<SDL_Texture> textoDicaCartas;
+    SdlPtr<SDL_Texture> textoNivelXp;   // "NV N" da barra de XP (refeita so quando o nivel exibido muda)
+    int nivelTextoXp = -1;
 };

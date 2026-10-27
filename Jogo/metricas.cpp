@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "metricas.h"
 
-#define ARQUIVO_METRICAS "metricas_v2.csv"
+#define ARQUIVO_METRICAS "metricas_v3.csv"
 
 static_assert(TOTAL_TIPOS_INIMIGO == 7, "atualize NOMES_TIPO_INIMIGO em metricas.cpp");
 static_assert(TOTAL_TIPOS_BOSS == 4, "atualize NOMES_TIPO_BOSS em metricas.cpp");
@@ -110,7 +110,7 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
         for (int t = 0; t < TOTAL_TIPOS_BOSS; t++)
             fprintf(arquivo, ",boss_derrotado_%s", NOMES_TIPO_BOSS[t]);
 
-        fprintf(arquivo, ",stuns_tiro_inimigo,divisoes,invocacoes,tiros_bloqueados_escudo\n");
+        fprintf(arquivo, ",stuns_tiro_inimigo,divisoes,invocacoes,tiros_bloqueados_escudo,nivel_final\n");
     }
 
     // Data e hora locais
@@ -171,7 +171,6 @@ void Metricas::FinalizarPartida(const ResumoPartida& resumo)
     for (int t = 0; t < TOTAL_TIPOS_BOSS; t++)
         fprintf(arquivo, ",%d", c.bossesDerrotados[t]);
 
-    fprintf(arquivo, ",%d,%d,%d,%d\n", c.stunsTiroInimigo, c.divisoes, c.invocacoes, c.tirosBloqueadosEscudo);
-
+    fprintf(arquivo, ",%d,%d,%d,%d,%d\n", c.stunsTiroInimigo, c.divisoes, c.invocacoes, c.tirosBloqueadosEscudo, resumo.nivel);
     fclose(arquivo);
 }

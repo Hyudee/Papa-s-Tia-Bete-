@@ -454,7 +454,7 @@ void Jogo::AtualizarProjeteis() {
     }
 }
 
-bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
+bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y, bool invocado)
 {
     const DadosInimigo& dados = DadosDoInimigo(tipo);
 
@@ -465,6 +465,7 @@ bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
 
         inimigos[i].ativo = true;
         inimigos[i].morrendo = false;
+        inimigos[i].invocado = invocado;
         inimigos[i].tipo = tipo;
         inimigos[i].vida = dados.vida;
         inimigos[i].vidaMax = dados.vida;
@@ -537,7 +538,7 @@ bool Jogo::SpawnarInimigo(TipoInimigo tipo, float x, float y)
 // O Divisor terminou a animacao de divisao: nascem os filhotes.
 // Os filhotes NAO contam no teto de vivos (inimigosAtivos); so a vaga no array limita.
 // Se faltar vaga, nasce so o que couber.
-void Jogo::DividirDivisor(SDL_FRect pai)
+void Jogo::DividirDivisor(SDL_FRect pai, bool invocado)
 {
     contadores.divisoes++;
     float tamFilhote = tamanhoInimigo * DadosDoInimigo(INIMIGO_FILHOTE).fatorTamanho;
@@ -547,7 +548,7 @@ void Jogo::DividirDivisor(SDL_FRect pai)
         float x, y;
         PosicaoFilhote(pai.x, pai.y, pai.w, pai.h, tamFilhote, k, (float)alturaTela, &x, &y);
 
-        if (!SpawnarInimigo(INIMIGO_FILHOTE, x, y))
+        if (!SpawnarInimigo(INIMIGO_FILHOTE, x, y, invocado))
             break;
     }
 }
@@ -751,13 +752,14 @@ void Jogo::AtualizarInimigos() {
                 if (SDL_GetTicks() - inimigos[i].flashInicio >= (Uint64)DadosDoInimigo(inimigos[i].tipo).msMorte) {
                     SDL_FRect posicaoPai = inimigos[i].rect;
                     bool eraDivisor = (inimigos[i].tipo == INIMIGO_DIVISOR);
+                    bool eraInvocado = inimigos[i].invocado;
 
                     // Libera a vaga ANTES de criar os filhotes (um deles pode ocupar a vaga do pai)
                     inimigos[i].morrendo = false;
                     inimigos[i].ativo = false;
 
                     if (eraDivisor)
-                        DividirDivisor(posicaoPai);
+                        DividirDivisor(posicaoPai, eraInvocado);
                 }
                 continue;
             }
@@ -986,7 +988,7 @@ void Jogo::InvocarMinionsDoBoss() {
         PosicaoInvocado p = PosInvocado(k, boss.rect.x, boss.rect.y, boss.rect.w, boss.rect.h,
             lado, lado, base.x + base.w, (float)larguraTela, (float)alturaTela, escalaJogo);
 
-        SpawnarInimigo(tipo, p.x, p.y);
+        SpawnarInimigo(tipo, p.x, p.y, true);
     }
 }
 

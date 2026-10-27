@@ -139,39 +139,68 @@ void Jogo::DesenharCartaNaTextura(SDL_Texture* alvo, IdCarta id, bool destacada)
     SDL_SetRenderDrawBlendMode(renderer, modoAnterior);
 }
 
-// Cria as texturas das cartas oferecidas e os textos fixos da tela
+// Esvazia o cache se a resolucao mudou desde que ele foi feito
+void Jogo::ValidarCacheCartas()
+{
+    if (larguraCacheCartas == larguraTela && alturaCacheCartas == alturaTela)
+        return;
+
+    for (int i = 0; i < NUM_CARTAS; i++)
+    {
+        cacheCartaNormal[i].reset();
+        cacheCartaDestacada[i].reset();
+    }
+
+    larguraCacheCartas = larguraTela;
+    alturaCacheCartas = alturaTela;
+}
+
+// Cria as texturas (normal e destacada) de uma carta, se ainda nao existirem
+void Jogo::GarantirTexturaCarta(IdCarta id)
+{
+    LayoutCartas medida = CalcularLayoutCartas(CARTAS_POR_OFERTA, larguraTela, alturaTela);
+    int larguraTextura = (int)SDL_ceilf(medida.largura);
+    int alturaTextura = (int)SDL_ceilf(medida.altura);
+
+    for (int variante = 0; variante < 2; variante++)
+    {
+        SdlPtr<SDL_Texture>& destino = (variante == 0) ? cacheCartaNormal[id] : cacheCartaDestacada[id];
+
+        if (destino)
+            continue;
+
+        destino.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+            SDL_TEXTUREACCESS_TARGET, larguraTextura, alturaTextura));
+
+        if (!destino)
+        {
+            SDL_Log("Falha ao criar a textura da carta: %s", SDL_GetError());
+            continue;
+        }
+
+        SDL_SetTextureBlendMode(destino.get(), SDL_BLENDMODE_BLEND);
+        DesenharCartaNaTextura(destino.get(), id, variante == 1);
+    }
+}
+
+// Cria o cache de todas as cartas (chamar fora do desenho do quadro, ex.: ao iniciar a partida)
+void Jogo::PreAquecerCartas()
+{
+    ValidarCacheCartas();
+
+    for (int i = 0; i < NUM_CARTAS; i++)
+        GarantirTexturaCarta((IdCarta)i);
+}
+
+// Prepara a tela: layout, texturas das cartas oferecidas (do cache) e textos fixos
 void Jogo::ConstruirTexturasCartas()
 {
     layoutCartas = CalcularLayoutCartas(totalOfertaCartas, larguraTela, alturaTela);
 
-    int larguraTextura = (int)SDL_ceilf(layoutCartas.largura);
-    int alturaTextura = (int)SDL_ceilf(layoutCartas.altura);
-
-    for (int i = 0; i < CARTAS_POR_OFERTA; i++)
-    {
-        cartaNormal[i].reset();
-        cartaDestacada[i].reset();
-    }
+    ValidarCacheCartas();
 
     for (int i = 0; i < layoutCartas.total; i++)
-    {
-        for (int variante = 0; variante < 2; variante++)
-        {
-            SdlPtr<SDL_Texture>& destino = (variante == 0) ? cartaNormal[i] : cartaDestacada[i];
-
-            destino.reset(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
-                SDL_TEXTUREACCESS_TARGET, larguraTextura, alturaTextura));
-
-            if (!destino)
-            {
-                SDL_Log("Falha ao criar a textura da carta: %s", SDL_GetError());
-                continue;
-            }
-
-            SDL_SetTextureBlendMode(destino.get(), SDL_BLENDMODE_BLEND);
-            DesenharCartaNaTextura(destino.get(), ofertaCartas[i], variante == 1);
-        }
-    }
+        GarantirTexturaCarta(ofertaCartas[i]);   // no-op quando ja esta no cache
 
     // Textos fixos da tela
     textoTituloCartas = TextoEmTextura(renderer, font, "ESCOLHA UMA MELHORIA");
@@ -191,15 +220,8 @@ void Jogo::ConstruirTexturasCartas()
     alturaCartasConstruida = alturaTela;
 }
 
-// Libera as texturas da tela (só existem enquanto ela está aberta)
 void Jogo::EncerrarTelaCartas()
 {
-    for (int i = 0; i < CARTAS_POR_OFERTA; i++)
-    {
-        cartaNormal[i].reset();
-        cartaDestacada[i].reset();
-    }
-
     textoTituloCartas.reset();
     textoDicaCartas.reset();
     cartasProntas = false;
@@ -402,8 +424,8 @@ bool Jogo::RenderizarUpgrade()
 
     auto desenharCarta = [&](int i)
         {
-            SDL_Texture* normal = cartaNormal[i].get();
-            SDL_Texture* destacada = cartaDestacada[i].get();
+            SDL_Texture* normal = cacheCartaNormal[ofertaCartas[i]].get();
+            SDL_Texture* destacada = cacheCartaDestacada[ofertaCartas[i]].get();
 
             if (!normal || !destacada)
                 return;

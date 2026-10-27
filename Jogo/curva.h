@@ -33,10 +33,25 @@ inline float VelocidadeInimigo(int onda)
 // Boss: vida e aumento de velocidade (somado à velocidade base de 1,5)
 inline int BossVidaMax(int bossesDerrotados)
 {
-    return 60 + 10 * bossesDerrotados;
+    return 55 + 10 * bossesDerrotados;
 }
 
 inline float BossVelocidadeExtra(int bossesDerrotados)
 {
     return std::min(1.5f, 0.15f * bossesDerrotados);
+}
+
+// ---- XP e nivel do jogador ----
+inline constexpr int XP_BASE = 150;   // XP para sair do nivel 1
+inline constexpr int XP_INCREMENTO = 60;    // quanto a barra cresce a cada nivel
+inline constexpr int XP_BOSS_PERCENT_DA_BARRA = 25;    // % da barra do nivel atual que o boss concede
+
+inline int XpParaProximoNivel(int nivel)
+{
+    return XP_BASE + XP_INCREMENTO * (nivel - 1);
+}
+
+inline int XpDoBoss(int nivel)
+{
+    return (XpParaProximoNivel(nivel) * XP_BOSS_PERCENT_DA_BARRA + 50) / 100;   // arredondado
 }

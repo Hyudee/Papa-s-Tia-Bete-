@@ -248,17 +248,7 @@ void Jogo::AplicarDanoAoBoss(int dano, float xAcerto, float yAcerto) {
         bossAtivados++;
         fimUltimoBoss = SDL_GetTicks();
 
-        // A oferta já conta o boss que acabou de morrer
-        totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
-        opcaoUpgrade = 0;
-
-        // Se não sobrou carta para oferecer, o jogo segue sem a tela de escolha
-        if (totalOfertaCartas > 0)
-        {
-            inicioPausa = SDL_GetTicks();
-            estado = UPGRADE;
-            IniciarTelaCartas();
-        }
+        DarXp(XpDoBoss(nivel));
     }
 }
 
@@ -445,6 +435,8 @@ void Jogo::ColisaoProjeteisInimigos() {
                     pontos += DadosDoInimigo(inimigos[i].tipo).pontos;
                     inimigosDerrotados++;
                     contadores.abatesTiro[inimigos[i].tipo]++;
+                    if (!inimigos[i].invocado)
+                        DarXp(DadosDoInimigo(inimigos[i].tipo).xp);
                     RegistrarAbate();
 
 
