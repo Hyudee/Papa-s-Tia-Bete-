@@ -29,6 +29,7 @@ struct DadosInimigo
     float fatorVelocidade;  // multiplica VelocidadeInimigo(onda)
     float fatorTamanho;     // multiplica tamanhoInimigo (tambem e a hitbox)
     int   pontos;           // pontos por abate
+	int xp;                // XP por abate  
     int   ondaMinima;       // primeira onda em que o tipo entra no sorteio (ONDA_NAO_LIBERADA = nunca sorteado)
 
     // Animacao
@@ -53,20 +54,20 @@ inline constexpr int ONDA_NAO_LIBERADA   = 999;   // tipo ainda sem comportament
 
 // Bando do Granulado: quantos nascem juntos (cada um conta no teto de vivos)
 inline constexpr int BANDO_GRANULADO_MIN = 3;
-inline constexpr int BANDO_GRANULADO_MAX = 4;
-inline constexpr int MAX_GRANULADOS_POR_SPAWN = 10;   // teto de granulados num mesmo spawn (somando todos os bandos)
+inline constexpr int BANDO_GRANULADO_MAX = 3;
+inline constexpr int MAX_GRANULADOS_POR_SPAWN = 3;   // teto de granulados num mesmo spawn (somando todos os bandos)
 
 //   O Filhote NUNCA entra no sorteio: so nasce quando o Divisor morre.
 inline constexpr DadosInimigo TABELA_INIMIGOS[TOTAL_TIPOS_INIMIGO] =
 {
-    // vida fixo veloc tam    pts  onda  frames msFrame msMorte  larg alt estados  cor provisoria
-    { 1, false, 1.0f, 1.0f,   50,  1,    3,     150,    120,     64,  64, 1,       255, 255, 255 },   // COMUM
-    { 3, true,  0.7f, 1.0f,   60,  2,    3,     150,    120,     64,  64, 3,       190, 120,  40 },   // RAPADURA (192x192: 3 frames x 3 estados de vida)
-    { 1, false, 1.6f, 0.625f, 50,  2,    4,     100,    120,     40,  40, 1,       200, 200, 255 },   // GRANULADO (40/64: tamanho nativo da arte; cor aleatoria por minion)
-    { 2, false, 1.0f, 1.0f,   60,  2,    4,     150,    120,     64,  64, 1,       230, 160,  40 },   // CARAMELO (zigue-zague senoidal)
-    { 2, false, 1.0f, 1.0f,   50,  2,    3,     150,    300,     64,  64, 2,       255, 150, 190 },   // DIVISOR (msMorte 300 = animacao de divisao de 3 frames)
-    { 1, false, 1.0f, 0.5f,   25,  ONDA_NAO_LIBERADA, 3, 150, 120, 32,  32, 1,       255, 150, 190 },   // FILHOTE (nunca sorteado)
-    { 2, false, 1.0f, 1.0f,   50,  2, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
+    // vida fixo veloc tam    pts  xp  onda  frames msFrame msMorte  larg alt estados  cor provisoria
+    { 1, false, 1.0f, 1.0f,   50,  10, 1,    3,     150,    120,     64,  64, 1,       255, 255, 255 },   // COMUM
+    { 3, true,  0.7f, 1.0f,   60,  18, 2,    3,     150,    120,     64,  64, 3,       190, 120,  40 },   // RAPADURA (192x192: 3 frames x 3 estados de vida)
+    { 1, false, 1.6f, 0.625f, 50,  6,  2,    4,     100,    120,     40,  40, 1,       200, 200, 255 },   // GRANULADO (40/64: tamanho nativo da arte; cor aleatoria por minion)
+    { 2, false, 1.0f, 1.0f,   60,  12, 2,    4,     150,    120,     64,  64, 1,       230, 160,  40 },   // CARAMELO (zigue-zague senoidal)
+    { 2, false, 1.0f, 1.0f,   50,  12, 2,    3,     150,    300,     64,  64, 2,       255, 150, 190 },   // DIVISOR (msMorte 300 = animacao de divisao de 3 frames)
+    { 1, false, 1.0f, 0.5f,   25,  3,  ONDA_NAO_LIBERADA, 3, 150, 120, 32,  32, 1,     255, 150, 190 },   // FILHOTE (nunca sorteado)
+    { 2, false, 1.0f, 1.0f,   50,  15, 2, 4, 150, 120, 64,  64, 1,       190, 150, 255 },   // PIRULITO (tiro: 13e)
 };
 
 // Pirulito: folha de 6 quadros (384x64). Quadros 0 a 3 = voo (framesAndar); 4 e 5 = disparo

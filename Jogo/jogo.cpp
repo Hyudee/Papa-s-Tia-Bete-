@@ -407,7 +407,9 @@ void Jogo::Executar()
         AnimarPulo();
         AtualizarTexturaPontos();
         SpawnarBoss();
+        ProcessarLevelUps();
         AtualizarTexturaOnda();
+        AtualizarBarraXp();
 
         // ------------------------------------------------------
         // RENDERIZAÇÃO

@@ -18,6 +18,15 @@ void Jogo::ReiniciarPartida()
 
     // Placar e progressão
     pontos = 0;
+    nivel = 1;
+    xpAtual = 0;
+    levelUpsPendentes = 0;
+    nivelExibido = 1;
+    xpFracaoExibida = 0.0f;
+    xpAgitacao = 0.0f;
+    xpFlashMs = 0.0f;
+    xpBarraY = 20.0f;
+    nivelTextoXp = -1;
     ondas = 1;
     ondaAntiga = -1;
     pontosAntigos = -1;
@@ -76,6 +85,7 @@ void Jogo::ReiniciarPartida()
     memset(obstaculos, 0, sizeof(obstaculos));
 
     metricas.IniciarPartida();
+    PreAquecerCartas();
 }
 
 // Recalcula tudo que as cartas mudam a partir da coleção de cartas
@@ -224,6 +234,8 @@ void Jogo::ExplodirAcucar(float centroX, float centroY)
             inimigos[i].flashInicio = agora;
             inimigos[i].vida = 0;   // a explosao mata qualquer tipo
             contadores.abatesExplosao[inimigos[i].tipo]++;
+            if (!inimigos[i].invocado)
+                DarXp(DadosDoInimigo(inimigos[i].tipo).xp);
         }
     }
 
@@ -242,6 +254,96 @@ void Jogo::ExplodirAcucar(float centroX, float centroY)
     }
 }
 
+// Soma XP; o excedente transborda para o proximo nivel. Um ganho pode render varios niveis.
+void Jogo::DarXp(int quantidade)
+{
+    if (quantidade <= 0)
+        return;
+
+    xpAtual += quantidade;
+
+    while (xpAtual >= XpParaProximoNivel(nivel))
+    {
+        xpAtual -= XpParaProximoNivel(nivel);
+        nivel++;
+        levelUpsPendentes++;
+    }
+}
+
+// Anima a barra de XP. So avanca em JOGAR: durante a tela de cartas fica parada
+// e o preenchimento/flash acontecem quando o jogo volta.
+void Jogo::AtualizarBarraXp()
+{
+    Uint64 agora = SDL_GetTicks();
+    float dt = (ultimoTickXp == 0) ? 0.0f : (float)(agora - ultimoTickXp);
+    ultimoTickXp = agora;
+
+    if (dt > 50.0f)
+        dt = 50.0f;
+
+    if (estado != JOGAR)
+        return;
+
+    // Desce para baixo da barra do boss (y 20 + altura 25 + folga) e volta quando ele morre
+    float alvoY = boss.ativo ? 53.0f : 20.0f;
+    xpBarraY += (alvoY - xpBarraY) * (1.0f - expf(-dt / 80.0f));
+
+    if (nivelExibido > nivel)
+    {
+        nivelExibido = nivel;
+        xpFracaoExibida = 0.0f;
+    }
+
+    // Subindo de nivel: enche ate o topo, esvazia e continua; senao vai ate o XP real
+    bool subindo = nivelExibido < nivel;
+    float alvo = subindo ? 1.0f : XpFracaoBarra();
+    float diff = alvo - xpFracaoExibida;
+
+    if (diff > 0.0f)
+    {
+        float passo = SDL_max(diff * 6.0f, 0.4f) * dt / 1000.0f;
+        xpFracaoExibida = (passo >= diff) ? alvo : xpFracaoExibida + passo;
+    }
+    else if (diff < 0.0f)
+    {
+        xpFracaoExibida = alvo;
+    }
+
+    // Onda na ponta do liquido: forte enquanto enche, acalma ao chegar
+    float alvoAgitacao = (diff > 0.0f) ? SDL_max(0.25f, SDL_min(1.0f, diff * 12.0f)) : 0.0f;
+    xpAgitacao += (alvoAgitacao - xpAgitacao) * (1.0f - expf(-dt / 120.0f));
+
+    if (subindo && xpFracaoExibida >= 1.0f)
+    {
+        nivelExibido++;
+        xpFracaoExibida = 0.0f;
+        xpFlashMs = DURACAO_FLASH_XP;
+    }
+
+    if (xpFlashMs > 0.0f)
+        xpFlashMs = SDL_max(0.0f, xpFlashMs - dt);
+}
+
+// Roda uma vez por quadro. Consome 1 level up pendente: abre a tela de cartas
+// (ou, sem cartas elegiveis, so consome o pendente).
+void Jogo::ProcessarLevelUps()
+{
+    if (estado != JOGAR || levelUpsPendentes <= 0)
+        return;
+
+    levelUpsPendentes--;
+
+    totalOfertaCartas = MontarOfertaCartas(cartas, bossAtivados, ofertaCartas, CARTAS_POR_OFERTA);
+    opcaoUpgrade = 0;
+
+    if (totalOfertaCartas > 0)
+    {
+        inicioPausa = SDL_GetTicks();
+        estado = UPGRADE;
+        IniciarTelaCartas();
+    }
+}
+
 // Grava a partida que acabou em metricas.csv (a própria Metricas ignora chamadas repetidas)
 void Jogo::RegistrarFimDePartida(const char* causa)
 {
@@ -249,6 +351,8 @@ void Jogo::RegistrarFimDePartida(const char* causa)
 
     resumo.onda = ondas;
     resumo.pontos = pontos;
+    resumo.nivel = nivel;
+    levelUpsPendentes = 0;
     resumo.bossesDerrotados = bossAtivados;
     resumo.causa = causa;
     resumo.danoBase = danoTiroBase;

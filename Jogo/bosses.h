@@ -184,7 +184,7 @@ inline EstadoBoss TransicaoTouro(EstadoBoss estado, bool jaInvestiu, float progr
 // ---- Brownie: escudo ----
 inline constexpr unsigned long long BROWNIE_MS_VULNERAVEL = 6000;   // andando e vulneravel
 inline constexpr unsigned long long BROWNIE_MS_ESCUDO = 2400;   // escudo ativo (sem contar as transicoes)
-inline constexpr float BROWNIE_FATOR_ESCUDO = 0.3f;                 // velocidade com escudo e nas transicoes (30%)
+inline constexpr float BROWNIE_FATOR_ESCUDO = 0.1f;                 // velocidade com escudo e nas transicoes (30%)
 
 inline constexpr int   FAISCA_FRAMES = 3;      // assets/fx_faisca_escudo.png: 96x32 = 3 frames de 32x32
 inline constexpr float FAISCA_TAMANHO = 32.0f;  // lado do frame, em pixels (multiplicado por escalaJogo)
@@ -376,7 +376,7 @@ inline constexpr int CHURROS_FRAME_SPAWN = 3;    // indice (0 a 5) do frame do p
 // Tipos que o Churros pode invocar: so os que andam (P10: sem Pirulito; Filhote so nasce do Divisor)
 inline constexpr TipoInimigo TIPOS_INVOCAVEIS[] =
 {
-    INIMIGO_COMUM, INIMIGO_RAPADURA, INIMIGO_GRANULADO, INIMIGO_CARAMELO, INIMIGO_DIVISOR
+    INIMIGO_COMUM
 };
 inline constexpr int TOTAL_TIPOS_INVOCAVEIS = (int)(sizeof(TIPOS_INVOCAVEIS) / sizeof(TIPOS_INVOCAVEIS[0]));
 

@@ -22,6 +22,7 @@ struct ResumoPartida
 {
     int onda;
     int pontos;
+    int nivel;
     int bossesDerrotados;
     const char* causa;      // ex.: "inimigo_na_base", "boss_na_base"
     int danoBase;

@@ -663,6 +663,85 @@ void Jogo::RenderizarHud() {
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderRect(renderer, &fundo);
     }
+
+    // Barra de XP: mesma largura e x da barra do boss; desce para baixo dela quando o boss existe
+    {
+        const float larguraBarra = 400.0f;
+        const float alturaBarra = 14.0f;
+
+        SDL_FRect fundo = { (float)(larguraTela / 2 - 200), xpBarraY, larguraBarra, alturaBarra };
+
+        SDL_SetRenderDrawColor(renderer, 20, 40, 30, 255);
+        SDL_RenderFillRect(renderer, &fundo);
+
+        // Liquido: faixas de 1 px; a ponta de cada faixa oscila (onda) e o topo e mais claro
+        float preenchido = larguraBarra * xpFracaoExibida;
+        float tempo = SDL_GetTicks() / 1000.0f;
+        float amplitude = 3.0f * xpAgitacao;
+
+        if (xpFracaoExibida > 0.0f)
+        {
+            for (int linha = 0; linha < (int)alturaBarra; linha++)
+            {
+                float borda = preenchido + sinf(tempo * 9.0f + linha * 0.8f) * amplitude;
+                borda = SDL_max(0.0f, SDL_min(larguraBarra, borda));
+
+                if (borda <= 0.0f)
+                    continue;
+
+                if (linha < (int)(alturaBarra * 0.35f))
+                    SDL_SetRenderDrawColor(renderer, 150, 245, 180, 255);
+                else
+                    SDL_SetRenderDrawColor(renderer, 60, 190, 110, 255);
+
+                SDL_FRect faixa = { fundo.x, fundo.y + linha, borda, 1.0f };
+                SDL_RenderFillRect(renderer, &faixa);
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderRect(renderer, &fundo);
+
+        // Flash de level up: clarao branco + contorno dourado que se expande
+        if (xpFlashMs > 0.0f)
+        {
+            float t = xpFlashMs / DURACAO_FLASH_XP;   // 1 -> 0
+
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, (Uint8)(200.0f * t));
+            SDL_RenderFillRect(renderer, &fundo);
+
+            float expansao = 6.0f * (1.0f - t);
+            SDL_FRect halo = { fundo.x - expansao, fundo.y - expansao,
+                fundo.w + expansao * 2.0f, fundo.h + expansao * 2.0f };
+
+            SDL_SetRenderDrawColor(renderer, 255, 215, 0, (Uint8)(255.0f * t));
+            SDL_RenderRect(renderer, &halo);
+        }
+
+        // "NV N" a esquerda da barra (textura em cache: so refaz quando o nivel muda)
+        if (nivelTextoXp != nivelExibido || !textoNivelXp)
+        {
+            char textoNivel[16];
+            sprintf_s(textoNivel, sizeof(textoNivel), "NV %d", nivelExibido);
+
+            SdlPtr<SDL_Surface> surfaceNivel(TTF_RenderText_Blended(fontHud, textoNivel, 0, preto));
+
+            if (surfaceNivel)
+                textoNivelXp.reset(SDL_CreateTextureFromSurface(renderer, surfaceNivel.get()));
+
+            nivelTextoXp = nivelExibido;
+        }
+
+        if (textoNivelXp)
+        {
+            SDL_FRect destinoNivel;
+            SDL_GetTextureSize(textoNivelXp.get(), &destinoNivel.w, &destinoNivel.h);
+            destinoNivel.x = fundo.x - 10.0f - destinoNivel.w;
+            destinoNivel.y = fundo.y - (destinoNivel.h - alturaBarra) / 2.0f;
+            SDL_RenderTexture(renderer, textoNivelXp.get(), NULL, &destinoNivel);
+        }
+    }
 }
 
 void Jogo::RenderizarPause() {
