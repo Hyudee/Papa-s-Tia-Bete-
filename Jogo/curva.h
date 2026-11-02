@@ -33,7 +33,7 @@ inline float VelocidadeInimigo(int onda)
 // Boss: vida e aumento de velocidade (somado à velocidade base de 1,5)
 inline int BossVidaMax(int bossesDerrotados)
 {
-    return 55 + 10 * bossesDerrotados;
+    return 45 + 7 * bossesDerrotados;
 }
 
 inline float BossVelocidadeExtra(int bossesDerrotados)
